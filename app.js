@@ -37,7 +37,7 @@ function challengeStop(){const d=gameDay().replaceAll("-","");let n=0;for(const 
 function visitsFor(id){return state.visits[gameDay()]?.[id]||false}
 // MapLibre + vlastní vektorový styl. Herní stav zůstává oddělený od podkladu.
 const map = new maplibregl.Map({
-  container:"map",style:createGameMapStyle(),
+  container:"map",style:"https://tiles.openfreemap.org/styles/liberty",
   center:[14.43,50.081],zoom:10.7,attributionControl:true
 });
 map.addControl(new maplibregl.NavigationControl({showCompass:false}),"top-left");
@@ -58,47 +58,33 @@ for (const stop of STOPS) {
     .addTo(map);
   pins[stop.id]=marker;
 }
-// Vlastní minimalistický styl je použit přímo při inicializaci.
-// Žádné přepínání stylů během načítání; zachováváme vlastní body i GPS.
+// Základem je funkční oficiální Liberty. Neztrácíme zdroje, glyphs ani sprite.
 const mapError=$("map-error");
-let fallbackActive=false, mapReady=false;
-let mapTimer=setTimeout(()=>{
-  if(!mapReady) useRasterFallback("Timeout načítání vektorové mapy");
+let baseStyleApplied=false;
+let rasterFallback=false;
+const mapTimer=setTimeout(()=>{
+  if(!map.isStyleLoaded()&&!baseStyleApplied) {
+    console.warn("Pomalé načítání OpenFreeMap.");
+    mapError.hidden=false;
+    mapError.textContent="Načítání mapového podkladu trvá déle než obvykle.";
+  }
 },15000);
-function mapNotice(message){
-  mapError.hidden=!message;
-  mapError.textContent=message;
-}
-function useRasterFallback(reason){
-  if(fallbackActive||mapReady)return;
-  fallbackActive=true;
+map.on("style.load",()=>{
+  if(baseStyleApplied||rasterFallback)return;
+  baseStyleApplied=true;
   clearTimeout(mapTimer);
-  console.warn("Náhradní mapa OSM:",reason);
-  map.setStyle({
-    version:8,
-    sources:{osm:{type:"raster",tiles:["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],tileSize:256,attribution:"© OpenStreetMap contributors"}},
-    layers:[{id:"osm-fallback",type:"raster",source:"osm",paint:{"raster-saturation":-.65,"raster-brightness-max":.68}}]
-  });
-  mapNotice("Vektorová mapa se nenačetla. Zobrazuje se náhradní OpenStreetMap.");
-}
-map.on("load",()=>{
-  if(fallbackActive)return;
-  mapReady=true;
-  clearTimeout(mapTimer);
-  const actual=map.getStyle().layers.map(layer=>layer.id);
-  if(actual.includes("background")&&actual.includes("tramways")&&!actual.some(id=>/building|poi/i.test(id))){
-    mapNotice("");
-    console.info("Aktivní minimalistický podklad Zastávkobraní.");
-  }else{
-    mapNotice("Nepodařilo se ověřit vlastní mapové vrstvy.");
+  try {
+    const result=applyGameMapStyle(map);
+    mapError.hidden=true;
+    console.info("Zastávkobraní: minimalistické vrstvy aktivní",result);
+  } catch(error) {
+    // Když samotná úprava selže, původní mapa má zůstat použitelná.
+    console.error("Nepodařilo se upravit mapový styl:",error);
+    mapError.hidden=false;
+    mapError.textContent="Úprava vzhledu mapy selhala. Zůstává výchozí OpenFreeMap.";
   }
 });
-map.on("error",event=>{
-  const message=String(event.error?.message||event.error||"Neznámá chyba");
-  console.warn("MapLibre:",message);
-  if(!mapReady&&!fallbackActive&&/failed to fetch|network error|403|404|401|tilejson/i.test(message))
-    useRasterFallback(message);
-});
+map.on("error",event=>console.warn("MapLibre:",event.error?.message||event.error));
 let activeScreen="map";
 function openScreen(name){
   activeScreen=name;
