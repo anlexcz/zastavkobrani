@@ -1,24 +1,20 @@
 "use strict";
-// DEMO fixtures: orientační body pouze pro ověření UI a herní logiky.
-// 14 skutečných PID skupin a jejich fyzické body.
-const STOPS = PID_KOBYLISY;
+// Celopražský statický výřez auditu PID 19. 11. 2026, bez odhadovaných bodů.
+const STOPS = PID_PRAGUE;
 const PLAYERS=[{id:"p1",name:"Hráč 1",color:"#ef4444"},{id:"p2",name:"Hráč 2",color:"#3b82f6"},{id:"p3",name:"Hráč 3",color:"#22c55e"}];
 const BASE={metro:16,train:14,funicular:12,tram:10,trolleybus:8,ferry:6,bus:4};
 // Oddělený vizuální demo scénář, původní uložená Alpha 1.2 zůstává nedotčena.
-const STORAGE="zastavkobrani-alpha-owners-v1";
-// 10 ze 14 území (~71 %) je předem rozdělených mezi tři demo hráče.
-const DEMO_OWNER_NAMES={
-  "Kobylisy":"p1",
-  "Služská":"p2",
-  "Ke Stírce":"p3",
-  "Střelničná":"p2",
-  "Březiněveská":"p1",
-  "Líbeznická":"p3",
-  "Vozovna Kobylisy":"p1",
-  "Mirovická":"p2",
-  "Vychovatelna":"p3",
-  "Hercovka":"p1"
-};
+const STORAGE="zastavkobrani-alpha-prague-v1";
+// Deterministické obsazení přibližně 70 % Prahy pro vizuální test, ne reálný herní stav.
+function demoHash(value){
+  let hash=2166136261;
+  for(let i=0;i<value.length;i++)hash=Math.imul(hash^value.charCodeAt(i),16777619);
+  return hash>>>0;
+}
+function demoOwner(stop){
+  const n=demoHash(stop.id);
+  return n%100<70?PLAYERS[(Math.floor(n/100))%PLAYERS.length].id:null;
+}
 const $=id=>document.getElementById(id);
 const shortDay=d=>d.toISOString().slice(0,10);
 const addDays = (day,n) => shortDay(new Date(Date.parse(day+"T12:00:00Z") + n*86400000));
@@ -28,7 +24,7 @@ function init(withDemo=true){
   const day=gameDay(),now=new Date();
   const stops={},ledger=[],events=[];
   for(const stop of (withDemo?STOPS:[])){
-    const owner=DEMO_OWNER_NAMES[stop.name];
+    const owner=demoOwner(stop);
     if(!owner)continue;
     stops[stop.id]={owner,anchor:day,capturedAt:now.toISOString(),protectedUntil:null};
     ledger.push({player:owner,amount:captureScore(stop),type:"demo-seed",day,at:now.toISOString()});
@@ -51,7 +47,7 @@ function visitsFor(id){return state.visits[gameDay()]?.[id]||false}
 // MapLibre + vlastní vektorový styl. Herní stav zůstává oddělený od podkladu.
 const map = new maplibregl.Map({
   container:"map",style:"https://tiles.openfreemap.org/styles/liberty",
-  center:[14.454,50.126],zoom:15.5,attributionControl:true
+  center:[14.44,50.085],zoom:10.65,attributionControl:true
 });
 map.addControl(new maplibregl.NavigationControl({showCompass:false}),"top-left");
 let selectedPlatform=null;
