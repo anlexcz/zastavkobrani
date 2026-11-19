@@ -46,13 +46,10 @@ button.danger {margin-top:22px;color:#ffc2bc}
 .listrow {display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
 .events {margin-top:10px;color:var(--muted);font-size:.84rem}
 .marker {width:18px;height:18px;border:2px solid white;border-radius:50%;box-shadow:0 1px 8px #000a}
-.leaflet-control-zoom {margin-top:calc(var(--header-h) + 48px)!important}
-.leaflet-bottom {bottom:calc(var(--nav-h) + env(safe-area-inset-bottom))!important}
 @media(min-width:760px) {
   .topbar {padding-inline:28px}
   .sheet {left:auto;right:18px;width:380px;bottom:86px;border:1px solid var(--line);border-radius:var(--radius);max-height:calc(100dvh - 110px)}
   .nav {width:450px;left:50%;right:auto;transform:translateX(-50%);bottom:12px;border:1px solid var(--line);border-radius:var(--radius);height:55px;padding:5px}
-  .leaflet-bottom {bottom:12px!important}
 }
 @media(max-width:360px) {.brand {font-size:1.35rem}.player-choice span {display:none}.test-label {font-size:.6rem}}
 
@@ -65,6 +62,20 @@ button.danger {margin-top:22px;color:#ffc2bc}
   max-width:min(270px,calc(100vw - 28px));padding:7px 10px;border-radius:10px;
   background:#16232cf2;border:1px solid var(--line);font-size:.78rem;color:var(--text)}
 .gps-status[hidden] {display:none}
-.leaflet-tile-pane {filter:grayscale(.6) invert(.92) hue-rotate(180deg) brightness(.85) contrast(.92)}
-/* U tmavě tónované standardní OSM mapy se grafické herní značky nefiltrují. */
+
 @media(min-width:760px) {.gps-toggle {bottom:85px}.gps-status {bottom:140px}}
+
+/* MapLibre: ovládání nesmí být pod horní lištou ani navigací. */
+.maplibregl-ctrl-top-left {top:calc(var(--header-h) + 45px)}
+.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right {bottom:calc(var(--nav-h) + env(safe-area-inset-bottom))}
+.maplibregl-ctrl-attrib {background:#101820d9!important;color:#b4c0cb!important}
+.maplibregl-ctrl-attrib a {color:#c9d9e6!important}
+.map-stop {width:20px;height:20px;border:2px solid #f4f7fa;border-radius:50%;box-shadow:0 1px 10px #0009;cursor:pointer}
+.map-stop.selected {outline:3px solid #ffe1a5;outline-offset:3px}
+.maplibregl-popup-content {background:var(--panel);color:var(--text);font:12px Inter,sans-serif;border-radius:9px;padding:7px 10px}
+.maplibregl-popup-tip {border-top-color:var(--panel)}
+@media(min-width:760px) {.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right {bottom:12px}}
+
+.gps-dot {width:15px;height:15px;border:3px solid white;border-radius:50%;background:#36a7e2;box-shadow:0 0 10px #0009}
+.map-error {position:fixed;z-index:990;top:calc(var(--header-h) + 65px);left:50%;transform:translateX(-50%);padding:10px 14px;border-radius:10px;background:#412d2d;color:#ffd2c6;font-size:.8rem;max-width:calc(100vw - 30px);width:340px}
+.map-error[hidden] {display:none}
