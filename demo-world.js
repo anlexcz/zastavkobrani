@@ -28,7 +28,7 @@ function demoOwner(stop){
   const centerDist=demoDistanceKm([stop.lon,stop.lat],[14.44,50.085]);
   const density=Math.exp(-.5*(centerDist/7.5)**2);
   const transit=stop.cats.some(m=>["tram","metro","train"].includes(m));
-  const probability=Math.min(.88,.61+.17*density+(transit?.055:0));
+  const probability=Math.min(.88,.61+.17*density+(transit?0.055:0));
   if(demoHash("occupied:"+stop.id)/4294967296>=probability)return null;
   let winner=null,best=-Infinity;
   for(const player of DEMO_PLAYERS){
