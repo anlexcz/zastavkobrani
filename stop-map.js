@@ -93,9 +93,9 @@ function installStopMap(map, territories, showTerritory) {
     const f=e.features?.[0],clusterId=f?.properties?.cluster_id;
     if(clusterId===undefined)return;
     const source=map.getSource("game-territories");
-    source.getClusterExpansionZoom(clusterId,(error,zoom)=>{
-      if(!error)map.easeTo({center:f.geometry.coordinates,zoom:Math.max(zoom,map.getZoom()+1)});
-    });
+    source.getClusterExpansionZoom(clusterId).then(zoom=>{
+      map.easeTo({center:f.geometry.coordinates,zoom:Math.max(zoom,map.getZoom()+1)});
+    }).catch(error=>console.warn("Shluk nelze přiblížit:",error));
   });
   for(const id of ["game-territory","game-platform","game-platform-metro","game-cluster"])
     map.on("mouseenter",id,()=>{map.getCanvas().style.cursor="pointer"});
