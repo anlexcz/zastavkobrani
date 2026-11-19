@@ -161,10 +161,14 @@ test("Přepínání vrstev skryje body a polygony nezávisle a lze je obnovit",(
  for(const id of hiddenStops)assert.equal(map.layoutVisibility[id],"none",id);
  assert.equal(map.layoutVisibility["game-strategic-fill"],"visible");
  assert.equal(map.layoutVisibility["game-owner-border"],"visible");
+ assert.equal(map.layoutVisibility["game-owner-border-glow"],"visible");
+ assert.equal(map.layoutVisibility["game-owner-border-highlight"],"visible");
  controls(map,{stops:true,polygons:false});
  assert.equal(map.layoutVisibility["game-territory"],"visible");
  assert.equal(map.layoutVisibility["game-strategic-fill"],"none");
  assert.equal(map.layoutVisibility["game-owner-border"],"none");
+ assert.equal(map.layoutVisibility["game-owner-border-glow"],"none");
+ assert.equal(map.layoutVisibility["game-owner-border-highlight"],"none");
  assert.equal(map.layoutVisibility["game-territory-area-fill"],"none");
  assert.equal(map.sources["game-territory-areas"].data.features.length,0);
  controls(map,{stops:true,polygons:true});
@@ -208,4 +212,22 @@ test("Mapa aktualizuje barvy hranic po převzetí a ovládání polygonů hranic
  api.setMapOverlayVisibility(map,{stops:false,polygons:true});
  assert.equal(map.layoutVisibility["game-owner-border"],"visible");
  assert.equal(map.layoutVisibility["game-territory"],"none");
+});
+
+test("Vlastnické hranice vykreslují tlumený glow, tmavý základ a vnitřní zvýraznění",()=>{
+ const {map}=setup();
+ const ordered=map.layers.map(l=>l.id);
+ const fill=ordered.indexOf("game-strategic-fill");
+ const glow=ordered.indexOf("game-owner-border-glow");
+ const dark=ordered.indexOf("game-owner-border");
+ const highlight=ordered.indexOf("game-owner-border-highlight");
+ const stop=ordered.indexOf("game-territory");
+ assert.ok(fill<glow && glow<dark && dark<highlight && highlight<stop);
+ const outer=map.getLayer("game-owner-border-glow");
+ const inner=map.getLayer("game-owner-border-highlight");
+ assert.equal(outer.filter[2],0);
+ assert.equal(inner.filter[2],0);
+ assert.equal(map.getLayer("game-owner-border").paint["line-color"],"#111418");
+ assert.ok(outer.paint["line-blur"]>inner.paint["line-blur"]);
+ assert.ok(outer.paint["line-opacity"]<.5);
 });
