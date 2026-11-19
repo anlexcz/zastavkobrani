@@ -22,7 +22,7 @@ function stopCardHtml({stop,record,owner,selectedPlayer,gameDay,diffDays,capture
   if(!stop)return "";
   const hasOwner=!!record?.owner;
   const mine=hasOwner&&record.owner===selectedPlayer;
-  const locked=hasOwner&&!mine&&record.protectedUntil&&Date.parse(record.protectedUntil)>now;
+  const locked=hasOwner&&record.protectedUntil&&Date.parse(record.protectedUntil)>now;
   const age=record?.anchor?Math.max(1,diffDays(gameDay,record.anchor)+1):0;
   const fullYield=hasOwner&&age<=7;
   const modes=(stop.cats.length?stop.cats:["unknown"]).map(code=>
