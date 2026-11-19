@@ -206,7 +206,7 @@ function installStopMap(map, territories, showTerritory, players=[], ownership={
     layout:{"icon-image":ringIconExpression(players),
       "icon-size":1,"icon-allow-overlap":true,"icon-ignore-placement":true}});
   map.addLayer({id:"game-cluster-count",type:"symbol",source:"game-territories",
-    filter:["has","point_count"],maxzoom:PLATFORM_ZOOM,
+    filter:["has","point_count"],minzoom:CLUSTER_VISIBLE_ZOOM,maxzoom:PLATFORM_ZOOM,
     layout:{"text-field":["to-string",["get","point_count"]],"text-size":12,
       "text-font":["Noto Sans Regular"],"text-allow-overlap":true,"text-ignore-placement":true},
     paint:{"text-color":"#f6f6f6"}});
