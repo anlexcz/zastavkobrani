@@ -1,3 +1,17 @@
+# Zastávkobraní — Alpha 2.0: zjednodušená karta zastávky
+
+[Otevřít aktuální mapu](https://anlexcz.github.io/zastavkobrani/?v=alpha20) · [Vizuální specifikace – kapitola 30](https://docs.google.com/document/d/1aYjOdabqtIEnw13ROaFMkpbyH9MKoaK2uOY3l5AGMDE/edit)
+
+Po mobilní kontrole karty z Alphy 1.9 bylo zrušeno označení „Herní zastávka“ nad názvem, velký box vlastníka, metrika počtu PID označníků i rozbalovací seznam fyzických stanovišť. Nad názvem zastávky je krátká identifikace vlastníka, horní okraj celého panelu má úzký vodorovný proužek v barvě vlastníka. Karta dále obsahuje druhy dopravy, bodování a stručnou informaci o fázi výnosu.
+
+Je-li aktivní 24h ochrana, karta nahoře zobrazuje živý časový odpočet HH:MM:SS. U cizí chráněné zastávky je převzetí zablokováno a přímo text deaktivovaného tlačítka odpočítává zbývající čas; při expiraci se karta automaticky aktualizuje. U vlastní zastávky tlačítko údržby indikuje počet zbývajících herních dní do zpřístupnění. Jde pouze o demo bez serverově ověřených GPS akcí.
+
+**Autorský status:** změny vlastníka, horního proužku a odstranění platforem jsou výslovný požadavek uživatele; přesná vizuální podoba odpočtů je pracovní implementace, protože dřívější detailní schválení není dostupné. Vše je oddělené od herních dat a od detailní mapové vrstvy PID stanovišť.
+
+Regresní testy: `node --test tests/stop-card.test.cjs`. Kód: `stop-card.js`, `app.js`, `style.css`, `index.html`.
+
+---
+
 # Zastávkobraní — Alpha 1.9: jemný glow a karta zastávky
 
 [Spustit mapu](https://anlexcz.github.io/zastavkobrani/?v=alpha19) · [Specifikace v dokumentu 06](https://docs.google.com/document/d/1aYjOdabqtIEnw13ROaFMkpbyH9MKoaK2uOY3l5AGMDE/edit)
