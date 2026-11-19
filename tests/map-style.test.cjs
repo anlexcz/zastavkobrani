@@ -15,10 +15,10 @@ function getStyle() {
   };
   return context.buildGameMapStyle(base);
 }
-test("Inicializace používá oficiální URL stylu OpenFreeMap",()=>{
-  assert.ok(appSource.includes('style:"'+documentedUrl+'"'));
-  assert.ok(!appSource.includes("styles/liberty/style.json"));
-  assert.ok(appSource.includes("buildGameMapStyle(map.getStyle())"));
+test("MapLibre startuje přímo s vlastním stylem",()=>{
+  assert.ok(appSource.includes('style:createGameMapStyle()'));
+  assert.ok(!appSource.includes('style:"https://tiles.openfreemap.org/styles/liberty"'));
+  assert.ok(!appSource.includes("buildGameMapStyle(map.getStyle())"));
 });
 test("Vlastní styl používá vektorový zdroj bez API klíče",()=>{
   const style=getStyle();
@@ -37,9 +37,18 @@ test("Železnice a tramvaje mají jiné barvy",()=>{
                   style.layers.find(x=>x.id==="tramways").paint["line-color"]);
 });
 
-test("Mapa aplikuje vlastní styl při style.load a nemá Leaflet volání",()=>{
-  assert.ok(appSource.includes('map.on("style.load"'));
-  assert.ok(appSource.includes('buildGameMapStyle(map.getStyle())'));
+test("Žádný starý Leaflet ani dvojité načítání stylu",()=>{
+  assert.ok(appSource.includes('style:createGameMapStyle()'));
+  assert.ok(!appSource.includes('buildGameMapStyle(map.getStyle())'));
   assert.ok(!appSource.includes("L.divIcon") && !appSource.includes(".setIcon(") && !appSource.includes(".setTooltipContent("));
   assert.ok(appSource.includes('getElement()'));
+});
+
+test("Přímá sestava stylu obsahuje vlastní tmavé pozadí",()=>{
+  const context={URL};
+  vm.runInNewContext(source+"\nthis.createGameMapStyle=createGameMapStyle;",context);
+  const style=context.createGameMapStyle();
+  assert.equal(style.layers[0].paint["background-color"],"#182129");
+  assert.equal(style.sources.openmaptiles.url,"https://tiles.openfreemap.org/planet");
+  assert.equal(style.glyphs,"https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf");
 });
