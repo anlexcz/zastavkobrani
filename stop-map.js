@@ -74,7 +74,8 @@ function refreshVisibleAreas(map) {
       }
       result.push({type:"Feature",geometry:areaGeometryCache.get(s.id),
         properties:{territoryId:s.id,name:s.name,approved:false,platformCount:s.points.length,
-          color:ownerColor(s.id,currentOwnership,clusterPlayers)}});
+          color:ownerColor(s.id,currentOwnership,clusterPlayers),
+          owned:clusterPlayers.some(p=>p.id===currentOwnership[s.id]?.owner)?1:0}});
     }
     source.setData(geoCollection(result));
     if(next<visible.length)requestAnimationFrame(processBatch);
@@ -166,7 +167,7 @@ function installStopMap(map, territories, showTerritory, players=[], ownership={
   // Jde o pracovní náhled neověřených GPS bodů, ne povolení herní akce.
   map.addLayer({id:"game-territory-area-fill",type:"fill",
     source:"game-territory-areas",minzoom:TERRITORY_AREA_ZOOM,
-    paint:{"fill-color":["get","color"],"fill-opacity":.095}});
+    paint:{"fill-color":["get","color"],"fill-opacity":["case",["==",["get","owned"],1],.23,.075]}});
   map.addLayer({id:"game-territory-area-outline",type:"line",
     source:"game-territory-areas",minzoom:TERRITORY_AREA_ZOOM,
     paint:{"line-color":["get","color"],"line-opacity":.38,"line-width":1.15}});
@@ -240,13 +241,10 @@ function refreshStopMapColors(map,ownership,players,selectedId) {
     map.getSource("game-platforms").setData(platformGeoJSON(territoryPoints,ownership,clusterPlayers));
     refreshVisibleAreas(map);
   }
-  const ownedIds=Object.keys(ownership).filter(id=>players.some(p=>p.id===ownership[id].owner));
-  const isOwned=ownedIds.length?["in",["get","territoryId"],["literal",ownedIds]]:false;
-  map.setPaintProperty("game-territory-area-fill","fill-opacity",
-    ownedIds.length?["case",isOwned,.23,.075]:.075);
+  // Výplň čte flag owned přímo z GeoJSON – žádný 1000položkový match výraz.
   map.setPaintProperty("game-territory-area-outline","line-opacity",
     ["case",["==",["get","territoryId"],selectedId||""],.85,
-      ...(ownedIds.length?[isOwned,.68]:[]),.26]);
+      ["==",["get","owned"],1],.68,.26]);
   for(const id of ["game-territory","game-platform","game-platform-metro"])
     map.setPaintProperty(id,"circle-stroke-width",
       ["case",["==",["get","territoryId"],selectedId||""],3,1.6]);
