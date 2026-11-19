@@ -8,18 +8,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyo3cL3i/a3kD3I=" crossorigin="">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="map" role="region" aria-label="Mapa herních zastávek Prahy"></div>
+<div id="map" role="region" aria-label="Mapa herních zastávek Prahy"></div><div id="map-error" class="map-error" hidden></div>
 <header class="topbar">
   <div class="brand">Zastávkobraní <small>ALPHA</small></div>
   <label class="player-choice"><span>Hráč</span><select id="player" aria-label="Testovací hráč"></select></label>
 </header>
 <button id="gps-toggle" class="gps-toggle" type="button" aria-pressed="false" title="Zapnout GPS">◎ <span>Zapnout GPS</span></button>
 <div id="gps-status" class="gps-status" role="status" aria-live="polite" hidden></div>
-<div class="test-label">SIMULACE · 12 ukázkových zastávek · bez GPS</div>
+<div class="test-label">SIMULACE · 12 ukázkových zastávek · GPS jen pro orientaci</div>
 <nav class="nav" aria-label="Herní nabídka">
   <button type="button" data-screen="map" class="active">Mapa</button>
   <button type="button" data-screen="daily">Zastávka dne</button>
@@ -58,6 +58,7 @@
     <button id="reset" class="danger">Resetovat testovací hru</button>
   </div>
 </section>
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="map-style.js"></script>
 <script src="app.js" defer></script>
 </body></html>
