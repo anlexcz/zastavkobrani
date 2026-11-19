@@ -7,6 +7,45 @@ const BASE={metro:16,train:14,funicular:12,tram:10,trolleybus:8,ferry:6,bus:4};
 // Oddělený scénář s deseti hráči a strategickými polygony.
 const STORAGE="zastavkobrani-alpha-prague-10players-v1";
 const $=id=>document.getElementById(id);
+const LAYER_PREFS_KEY="zastavkobrani-map-layers-v1";
+function loadLayerPrefs(){
+  try {
+    const stored=JSON.parse(localStorage.getItem(LAYER_PREFS_KEY));
+    if(stored&&typeof stored==="object")return {
+      stops:stored.stops!==false,polygons:stored.polygons!==false
+    };
+  } catch(error){console.warn("Nastavení vrstev nelze načíst:",error)}
+  return {stops:true,polygons:true};
+}
+let layerPrefs=loadLayerPrefs();
+let mapStopLayersReady=false;
+function setLayerPrefs(type,enabled){
+  layerPrefs[type]=!!enabled;
+  try{localStorage.setItem(LAYER_PREFS_KEY,JSON.stringify(layerPrefs))}
+  catch(error){console.warn("Nastavení vrstev nelze uložit:",error)}
+  if(mapStopLayersReady)setMapOverlayVisibility(map,layerPrefs);
+}
+function setupMapLayerControls(){
+  const button=$("map-layers-toggle"),panel=$("map-layers-panel");
+  const checkStops=$("layer-stops"),checkPolygons=$("layer-polygons");
+  checkStops.checked=layerPrefs.stops;
+  checkPolygons.checked=layerPrefs.polygons;
+  button.addEventListener("click",()=>{
+    const open=panel.hidden;
+    panel.hidden=!open;
+    button.setAttribute("aria-expanded",String(open));
+  });
+  checkStops.addEventListener("change",()=>setLayerPrefs("stops",checkStops.checked));
+  checkPolygons.addEventListener("change",()=>setLayerPrefs("polygons",checkPolygons.checked));
+  document.addEventListener("pointerdown",event=>{
+    if(!panel.hidden&&!event.target.closest(".map-layer-controls")){
+      panel.hidden=true;
+      button.setAttribute("aria-expanded","false");
+    }
+  });
+}
+setupMapLayerControls();
+
 const shortDay=d=>d.toISOString().slice(0,10);
 const addDays = (day,n) => shortDay(new Date(Date.parse(day+"T12:00:00Z") + n*86400000));
 const diffDays=(a,b)=>Math.round((Date.parse(a+"T12:00:00Z")-Date.parse(b+"T12:00:00Z"))/86400000);
@@ -46,6 +85,8 @@ map.on("load",()=>{
   installStopMap(map,STOPS,(id,pointId)=>{
     selectedStop=id;selectedPlatform=pointId;openScreen("stop");
   },PLAYERS,state.stops);
+  mapStopLayersReady=true;
+  setMapOverlayVisibility(map,layerPrefs);
   render();
 });
 // Základem je funkční oficiální Liberty. Neztrácíme zdroje, glyphs ani sprite.
