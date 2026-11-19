@@ -1,3 +1,15 @@
+# Zastávkobraní — Alpha 1.7: vrstvy mapy a časné body zastávek
+
+[Otevřít aplikaci](https://anlexcz.github.io/zastavkobrani/) · [Specifikace mapy](https://docs.google.com/document/d/1aYjOdabqtIEnw13ROaFMkpbyH9MKoaK2uOY3l5AGMDE/edit)
+
+**Nové oproti Alphě 1.6:** Již na úvodním celopražském zoomu 10,65 jsou přesně georeferencované malé barevné body všech 1 487 herních území, nikoliv pouze barevné strategické Voroného plochy. Drobné body tvoří oddělený neclusterovaný GeoJSON source `game-early-stop-points` s MapLibre vrstvou `game-early-stops` přibližně od zoomu 9,5 do 11,6. Od zoomu 11,6 je nahrazují hlavní značky a prstencové clustery. Zůstává 10 fiktivních hráčů, 3 659 PID stanovišť, 390metrové orientační strategické polygony a oddělené detailní 30metrové kandidátní GPS oblasti.
+
+**Mobilní přepínač vrstev:** tlačítko s ikonou vrstev otevře dva nezávislé checkboxy: `Zastávky` a `Barevná území`. První ovládá veškeré herní body, prstencové clustery a platformy. Druhý ovládá statické strategické oblasti i detailní GPS náhledové plochy. Obě volby jsou ve výchozím stavu zapnuté. Vypnutí obou nechá čistý MapLibre podklad. Nastavení se ukládá zvlášť pod `zastavkobrani-map-layers-v1`, nezávisle na simulovaném vlastnictví. Vypnutí území také ukončí výpočet a zobrazování jejich kandidátního GPS polygonového GeoJSON zdroje, takže šetří výkon. Zobrazení těchto polygonů neopravňuje k obsazování, všechny GPS body zůstávají neschválené.
+
+**Automatický test:** `node --test tests/pid-map.test.cjs`. Nové regresní kontroly ověřují 1 487 časných stop features, jejich viditelnost ve výchozím zoomu a vzájemnou nezávislost obou přepínačů.
+
+---
+
 # Zastávkobraní — Alpha 1.6: strategická Praha a deset hráčů
 
 [Otevřít mapu](https://anlexcz.github.io/zastavkobrani/) · [Mapová specifikace](https://docs.google.com/document/d/1aYjOdabqtIEnw13ROaFMkpbyH9MKoaK2uOY3l5AGMDE/edit)
