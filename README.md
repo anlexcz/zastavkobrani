@@ -1,3 +1,30 @@
+# Zastávkobraní — aktuální mapa Alpha 1.4
+
+Aktuální stav (19. 11. 2026): veřejný mobilní prototyp [GitHub Pages](https://anlexcz.github.io/zastavkobrani/) se 14 herními územími a 51 přesnými PID stanovišti ve zkušební oblasti Kobylisy. Tři přepínatelní testovací hráči (bez hesla), 10/14 území předem obsazených v jednom browser-localStorage. Není produkční databáze, server ani GPS autorizace herních akcí.
+
+**Aktuální specifikace k reprodukci je v [dokumentu 06, kapitole 24](https://docs.google.com/document/d/1aYjOdabqtIEnw13ROaFMkpbyH9MKoaK2uOY3l5AGMDE/edit).** Technické závislosti a testy: dokument 03; PID importní výřez: 04; hranice databáze a odvozených mapových dat: 05.
+
+## Aktuální mapový systém
+
+- MapLibre GL JS 4.7.1, OpenFreeMap Liberty s úpravami in-place v `map-style.js`, Turf 7.2.0 pro `union` 30m kruhů uvnitř territory. Bez API klíče; fungování závisí na dostupnosti hostovaných zdrojů a CDN.
+- `pid-kobylisy.js`: skutečné auditní PID skupiny a nástupiště. `stop-map.js`: GeoJSON body, platformy, odvozené Polygon/MultiPolygon oblasti, vlastníci, shlukování. `app.js`: testovací herní stav a UI.
+- Zoom 14,3: názvy neclusterovaných území; 15,2: společné sjednocené oblasti; 16: nástupiště místo souhrnného bodu; 17,2: platformové popisky. GeoJSON clusterRadius 45 px, clusterMaxZoom 15; agreguje **herní území**, nikoli jednotlivé PID stop points.
+- Cluster se vykresluje barevným prstencem podle počtů jednotlivých vlastníků (plus neutrální šedá) s celkovým počtem území uprostřed. Dynamické ikony jsou Canvas ImageData s pixelRatio 2; při změně vlastníka se aktualizuje GeoJSON source přes setData.
+- Sloučené plochy z Turf union odstraňují vnitřní překryvné hranice okruhů v rámci stejného territory, ale vzdálené části zůstávají jako MultiPolygon. Barva vychází z vlastníka a opacity je slabší u neutrálních zastávek.
+- **Všech 51 bodů má `captureEnabled:false`**. Sloučené kruhy jsou pouze kandidátní **vizualizace**, nikoli schválené GPS herní okruhy. Hra v této verzi dovoluje jen simulační obsazování bez backendového ověření.
+
+## Reprodukovatelné spuštění
+
+Otevřít repozitář z `main` (GitHub Pages: `Deploy from a branch → main / root`). Soubor `index.html` načítá knihovny v pořadí: MapLibre → map-style.js → pid-kobylisy.js → Turf → stop-map.js → app.js. Na `style.load` měnit podklad Liberty; na `map.load` přidat herní GeoJSON sources/layers. Po změně frontendového kódu zvýšit cache-busting parametry skriptů a viditelné označení verze.
+
+Otestovat: `node --test tests/pid-map.test.cjs`, zkontrolovat platnost staršího `tests/map-style.test.cjs`; na mobilu vyzkoušet zoom, polohu značek, klikání, slévání polygonů, poměry barevných clusterů a přenos vlastnictví. Aktuální parametry jsou prototypové, škálování do celé Prahy a bezpečné GPS capture body nejsou dokončené.
+
+---
+
+## Historický vývoj a starší poznámky (částečně překonané)
+
+Následující části README jsou archivním záznamem postupu Alphy. Informace o 12 orientačních zastávkách, Transitland souřadnicích, samostatných GPS kruzích a dřívějších mapových stylech již nejsou aktuální. Rozhoduje výše uvedený stav a dokument 06/24.
+
 # Zastávkobraní Alpha
 
 První funkční testovací prototyp geolokační hry. Obsahuje mapu, tři pevné hráče přepínané v horním menu a společný herní stav uložený v **localStorage jediného prohlížeče**.
