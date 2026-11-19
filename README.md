@@ -1,3 +1,19 @@
+# Zastávkobraní — Alpha 1.9: jemný glow a karta zastávky
+
+[Spustit mapu](https://anlexcz.github.io/zastavkobrani/?v=alpha19) · [Specifikace v dokumentu 06](https://docs.google.com/document/d/1aYjOdabqtIEnw13ROaFMkpbyH9MKoaK2uOY3l5AGMDE/edit)
+
+## Změny oproti Alphě 1.8
+
+**Hranice vlastnictví** nyní používají tři MapLibre line vrstvy nad strategickou výplní, avšak pod zastávkovými body: `game-owner-border-glow` (široký rozmazaný světelný barevný pás), `game-owner-border` (úzký tmavý základ), `game-owner-border-highlight` (subtilní barevná linka). Toto řešení vizuálně připomíná vnitřní glow, fyzicky však používá rozmazanou linku na hraně, nikoliv geometricky oříznutý světelný pás pouze uvnitř polygonu. Barevná vrstva se používá na hranách hráč/neutrální a hráč/vnější plocha; rozhraní dvou různých vlastníků si zachovává čistou tmavou hranici. Společné hrany stejného vlastníka jsou nadále filtrovány už před renderem. Všechny tři vrstvy se vypínají přepínačem `Barevná území`. Viz `stop-map.js`.
+
+**Karta zastávky** zůstává schváleným mobilním spodním sheetem. Nový samostatný `stop-card.js` generuje z herního stavu bezpečně escapovaný přehled: vlastník s barevným indikátorem, stav ochrany, dopravní kategorie, body za obsazení a plný denní výnos, počet fyzických stanovišť PID, herní stáří zastávky, ochranná lhůta a rozbalitelný výčet platforem. Výběr platformy centruje mapu na přesné PID souřadnice. `app.js` řídí akce a údržbu, jejichž dostupnost nyní vysvětluje karta; `style.css` sdílí globální barevné a typografické tokeny. Konkrétní rozložení je pracovní návrh podle [kapitoly 7 a nové kapitoly 29 dokumentu 06](https://docs.google.com/document/d/1aYjOdabqtIEnw13ROaFMkpbyH9MKoaK2uOY3l5AGMDE/edit), nikoliv dříve schválený pixelově přesný návrh.
+
+**Bezpečnostní omezení:** všech 3 659 fyzických PID bodů v prototypu má `captureEnabled:false`. Karta proto výslovně označuje současné herní akce jako „Simulovat obsazení / převzetí / údržbu“ – nikoliv serverem ověřené GPS akce. Zobrazený kandidátní GPS kruh není oprávněním ke skutečnému dobývání.
+
+**Testy:** `node --test tests/*.test.cjs`, včetně nového `tests/stop-card.test.cjs` (vlastník, ochrana, životní cyklus, PID stanoviště a bezpečnost textových údajů) a nových mapových testů vrstev glow. Mobilní vizuální zkouška obou komponent zůstává nutná.
+
+---
+
 # Zastávkobraní — Alpha 1.8: trvalé tečky a hranice hráčských území
 
 [Otevřít mapu](https://anlexcz.github.io/zastavkobrani/) · [Mapová specifikace](https://docs.google.com/document/d/1aYjOdabqtIEnw13ROaFMkpbyH9MKoaK2uOY3l5AGMDE/edit)
