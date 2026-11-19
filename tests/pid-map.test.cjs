@@ -70,3 +70,40 @@ test("Zastávky nejsou HTML markery závislé na CSS tlačítek",()=>{
  assert.ok(!appSource.includes('el.style.setProperty("--stop-color"'));
  assert.ok(appSource.includes("installStopMap(map,STOPS"));
 });
+
+test("Barevné clustery sčítají vlastnictví herních území, nikoliv nástupišť",()=>{
+ const context={console};
+ vm.runInNewContext(mapSource+"\nthis.api={ownerProperties,clusterAggregates,ringIconExpression,ringSegments,territoryGeoJSON};",context);
+ const {ownerProperties,clusterAggregates,ringIconExpression,ringSegments,territoryGeoJSON}=context.api;
+ const players=[{id:"p1",color:"#ef4444"},{id:"p2",color:"#3b82f6"},{id:"p3",color:"#22c55e"}];
+ const owners={
+  [groups[0].id]:{owner:"p1"},
+  [groups[1].id]:{owner:"p2"},
+  [groups[2].id]:{owner:"p3"}
+ };
+ const features=territoryGeoJSON(groups,owners,players).features;
+ assert.equal(features.length,14);
+ assert.equal(features.filter(f=>f.properties.owner0).length,1);
+ assert.equal(features.filter(f=>f.properties.owner1).length,1);
+ assert.equal(features.filter(f=>f.properties.owner2).length,1);
+ assert.equal(features.filter(f=>f.properties.neutral).length,11);
+ const counts=clusterAggregates(players);
+ assert.ok(counts.neutral_count);
+ assert.ok(counts.owner0_count && counts.owner1_count && counts.owner2_count);
+ const expression=ringIconExpression(players);
+ assert.equal(expression[0],"concat");
+ const segments=ringSegments([1,1,1,1],players.map(p=>p.color));
+ assert.equal(segments.length,4);
+ assert.ok(segments.every(x=>x.fraction===.25));
+ const allMine=ringSegments([3,0,0,0],players.map(p=>p.color));
+ assert.equal(allMine.length,1);
+ assert.equal(allMine[0].color,"#ef4444");
+});
+test("Vrstvy prstenců používají jednotnou geometrii clusteru",()=>{
+ assert.ok(mapSource.includes('map.on("styleimagemissing"'));
+ assert.ok(mapSource.includes('id:"game-cluster",type:"symbol"'));
+ assert.ok(mapSource.includes('icon-image":ringIconExpression(players)'));
+ assert.ok(mapSource.includes('getClusterExpansionZoom(clusterId)'));
+ assert.ok(mapSource.includes('setData(territoryGeoJSON('));
+ assert.ok(appSource.includes("},PLAYERS,state.stops)"));
+});
