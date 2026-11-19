@@ -1,54 +1,53 @@
-// Spustit: node --test tests/map-style.test.cjs (Node.js 20+)
+// Spuštění: node --test tests/map-style.test.cjs
 const test=require("node:test");
 const assert=require("node:assert/strict");
 const fs=require("node:fs");
 const vm=require("node:vm");
 const source=fs.readFileSync("map-style.js","utf8");
-const appSource=fs.readFileSync("app.js","utf8");
-const documentedUrl="https://tiles.openfreemap.org/styles/liberty";
-function getStyle() {
-  const context={URL};
-  vm.runInNewContext(source+"\nthis.buildGameMapStyle=buildGameMapStyle;",context);
-  const base={
-    sources:{openmaptiles:{type:"vector",url:"https://tiles.openfreemap.org/planet"}},
-    glyphs:"https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf"
-  };
-  return context.buildGameMapStyle(base);
+const app=fs.readFileSync("app.js","utf8");
+const context={};
+vm.runInNewContext(source+"\nthis.applyGameMapStyle=applyGameMapStyle; this.MAP_COLORS=MAP_COLORS;",context);
+const apply=context.applyGameMapStyle;
+const colors=context.MAP_COLORS;
+function mockMap(layers){
+ const writes=[],hidden=[];
+ return {
+  writes,hidden,
+  getStyle(){return {layers}},
+  setPaintProperty(id,key,value){writes.push({id,key,value})},
+  setLayoutProperty(id,key,value){hidden.push({id,key,value})}
+ };
 }
-test("MapLibre startuje přímo s vlastním stylem",()=>{
-  assert.ok(appSource.includes('style:createGameMapStyle()'));
-  assert.ok(!appSource.includes('style:"https://tiles.openfreemap.org/styles/liberty"'));
-  assert.ok(!appSource.includes("buildGameMapStyle(map.getStyle())"));
+test("Aplikace vychází z oficiálního Liberty stylu a nepřepíná zdroj",()=>{
+ assert.ok(app.includes('style:"https://tiles.openfreemap.org/styles/liberty"'));
+ assert.ok(app.includes('applyGameMapStyle(map)'));
+ assert.ok(!app.includes('style:createGameMapStyle()'));
+ assert.ok(!app.includes('setStyle('));
 });
-test("Vlastní styl používá vektorový zdroj bez API klíče",()=>{
-  const style=getStyle();
-  assert.equal(style.version,8);
-  assert.ok(Object.values(style.sources).some(x=>x.type==="vector"));
-  assert.ok(!JSON.stringify(style).includes("api_key"));
+test("Budovy, POI a čísla popisná jsou odstraněné",()=>{
+ const map=mockMap([
+  {id:"building",type:"fill","source-layer":"building"},
+  {id:"poi-label",type:"symbol","source-layer":"poi"},
+  {id:"housenumber",type:"symbol","source-layer":"housenumber"},
+  {id:"park",type:"fill","source-layer":"landuse"}
+ ]);
+ apply(map);
+ assert.deepEqual(Array.from(map.hidden,x=>x.id),["building","poi-label","housenumber"]);
+ assert.ok(map.writes.some(x=>x.id==="park"&&x.value===colors.park));
 });
-test("Bez budov a běžných POI",()=>{
-  const names=getStyle().layers.map(x=>x.id);
-  assert.ok(!names.some(x=>/building|poi|housenumber/i.test(x)));
-  assert.ok(names.includes("parks")&&names.includes("water")&&names.includes("tramways")&&names.includes("railways"));
-});
-test("Železnice a tramvaje mají jiné barvy",()=>{
-  const style=getStyle();
-  assert.notEqual(style.layers.find(x=>x.id==="railways").paint["line-color"],
-                  style.layers.find(x=>x.id==="tramways").paint["line-color"]);
-});
-
-test("Žádný starý Leaflet ani dvojité načítání stylu",()=>{
-  assert.ok(appSource.includes('style:createGameMapStyle()'));
-  assert.ok(!appSource.includes('buildGameMapStyle(map.getStyle())'));
-  assert.ok(!appSource.includes("L.divIcon") && !appSource.includes(".setIcon(") && !appSource.includes(".setTooltipContent("));
-  assert.ok(appSource.includes('getElement()'));
-});
-
-test("Přímá sestava stylu obsahuje vlastní tmavé pozadí",()=>{
-  const context={URL};
-  vm.runInNewContext(source+"\nthis.createGameMapStyle=createGameMapStyle;",context);
-  const style=context.createGameMapStyle();
-  assert.equal(style.layers[0].paint["background-color"],"#182129");
-  assert.equal(style.sources.openmaptiles.url,"https://tiles.openfreemap.org/planet");
-  assert.equal(style.glyphs,"https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf");
+test("Ulice, voda a koleje dostanou odlišné barvy",()=>{
+ const map=mockMap([
+  {id:"background",type:"background"},
+  {id:"water-fill",type:"fill","source-layer":"water"},
+  {id:"road-primary",type:"line","source-layer":"transportation"},
+  {id:"tram-line",type:"line","source-layer":"transportation"},
+  {id:"rail-line",type:"line","source-layer":"transportation"}
+ ]);
+ apply(map);
+ const paint=id=>map.writes.find(x=>x.id===id)?.value;
+ assert.equal(paint("background"),colors.background);
+ assert.equal(paint("water-fill"),colors.water);
+ assert.equal(paint("road-primary"),colors.mainRoad);
+ assert.equal(paint("tram-line"),colors.tram);
+ assert.equal(paint("rail-line"),colors.railway);
 });
