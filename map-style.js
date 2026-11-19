@@ -37,6 +37,20 @@ function applyGameMapStyle(map) {
       else set(id,"fill-color",MAP_COLORS.background);
       modified++;
     } else if (layer.type==="line") {
+      // Tunely jsou jen slabou orientační stopou. Metro ponecháváme čitelnější.
+      // Liberty má vlastní "tunnel_*" vrstvy; neovlivníme povrchové silnice.
+      if (name.startsWith("tunnel_") || name.includes("_tunnel")) {
+        const transit=/transit|subway|metro/.test(name);
+        const rail=/rail/.test(name);
+        // Tunelová obrysová linka jen zbytečně zvětšuje optickou šířku.
+        if (/casing|outline|hatching|dash/.test(name)) {
+          hide(id); modified++; continue;
+        }
+        set(id,"line-color", transit ? MAP_COLORS.railway
+          : rail ? MAP_COLORS.railway : MAP_COLORS.street);
+        set(id,"line-opacity",transit ? .45 : rail ? .13 : .09);
+        modified++; continue;
+      }
       const c=/tram/.test(name)?MAP_COLORS.tram
         :/rail|subway|transit/.test(name)?MAP_COLORS.railway
         :/water/.test(category)?MAP_COLORS.water
