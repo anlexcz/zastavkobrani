@@ -9,10 +9,12 @@ const mapSource=fs.readFileSync("stop-map.js","utf8");
 const appSource=fs.readFileSync("app.js","utf8");
 const demoSource=fs.readFileSync("demo-world.js","utf8");
 const strategicSource=fs.readFileSync("pid-strategic.js","utf8");
+const ownerBorderSource=fs.readFileSync("pid-owner-boundaries.js","utf8");
 const ctx={};
 vm.runInNewContext(dataSource+"\nthis.groups=PID_PRAGUE;",ctx);
 const groups=ctx.groups;
 vm.runInNewContext(strategicSource+"\nthis.polygons=PID_STRATEGIC_POLYGONS;",ctx);
+vm.runInNewContext(ownerBorderSource+"\nthis.borderTopology=PID_OWNER_BOUNDARIES;",ctx);
 vm.runInNewContext(demoSource+"\nthis.sim={DEMO_PLAYERS,demoOwner};",ctx);
 const players=[{id:"p1",color:"#ef4444"},{id:"p2",color:"#3b82f6"},{id:"p3",color:"#22c55e"}];
 
@@ -50,8 +52,9 @@ function setup(zoom=10){
     type:"MultiPolygon",coordinates:fc.features.map(f=>[f.geometry.coordinates[0]])
    }};}
  };
- const scope={console,turf,PID_STRATEGIC_POLYGONS:ctx.polygons,requestAnimationFrame:fn=>fn()};
- vm.runInNewContext(mapSource+"\nthis.api={installStopMap,refreshVisibleAreas,refreshStopMapColors,ringSegments,territoryGeoJSON,clusterAggregates,setMapOverlayVisibility};",scope);
+ const scope={console,turf,PID_STRATEGIC_POLYGONS:ctx.polygons,
+   PID_OWNER_BOUNDARIES:ctx.borderTopology,requestAnimationFrame:fn=>fn()};
+ vm.runInNewContext(mapSource+"\nthis.api={installStopMap,refreshVisibleAreas,refreshStopMapColors,ringSegments,territoryGeoJSON,clusterAggregates,setMapOverlayVisibility,ownerBoundaryGeoJSON};",scope);
  const map=createMock(zoom);
  scope.api.installStopMap(map,groups,()=>{},players,{});
  return {map,trace,api:scope.api};
@@ -137,26 +140,72 @@ test("Deset pojmenovaných hráčů tvoří stabilní lokálně ovlivněnou simu
  assert.ok(appSource.includes("zastavkobrani-alpha-prague-10players-v1"));
 });
 
-test("Zastávky se ukazují už na výchozím zoomu Prahy",()=>{
+test("Zastávkové tečky jsou trvale viditelné včetně mapového detailu",()=>{
  const {map}=setup(10.65);
- assert.equal(map.sources["game-early-stop-points"].data.features.length,1487);
- const early=map.layers.find(l=>l.id==="game-early-stops");
- assert.ok(early.minzoom<=10.65 && early.maxzoom>10.65);
- assert.ok(map.layers.find(l=>l.id==="game-territory").minzoom<12);
+ assert.equal(map.sources["game-stop-points"].data.features.length,1487);
+ const layer=map.layers.find(l=>l.id==="game-territory");
+ assert.equal(layer.source,"game-stop-points");
+ assert.equal(layer.minzoom,0);
+ assert.equal(layer.maxzoom,undefined);
+ assert.equal(layer.filter,undefined);
+ assert.equal(map.sources["game-territories"].cluster,true);
+ assert.ok(map.layers.findIndex(l=>l.id==="game-territory")<
+   map.layers.findIndex(l=>l.id==="game-cluster"));
 });
 test("Přepínání vrstev skryje body a polygony nezávisle a lze je obnovit",()=>{
  const {map,api}=setup();
  const controls=api.setMapOverlayVisibility;
  controls(map,{stops:false,polygons:true});
- const hiddenStops=["game-early-stops","game-cluster","game-cluster-count",
+ const hiddenStops=["game-cluster","game-cluster-count",
    "game-territory","game-territory-label","game-platform","game-platform-metro","game-platform-label"];
  for(const id of hiddenStops)assert.equal(map.layoutVisibility[id],"none",id);
  assert.equal(map.layoutVisibility["game-strategic-fill"],"visible");
+ assert.equal(map.layoutVisibility["game-owner-border"],"visible");
  controls(map,{stops:true,polygons:false});
- assert.equal(map.layoutVisibility["game-early-stops"],"visible");
+ assert.equal(map.layoutVisibility["game-territory"],"visible");
  assert.equal(map.layoutVisibility["game-strategic-fill"],"none");
+ assert.equal(map.layoutVisibility["game-owner-border"],"none");
  assert.equal(map.layoutVisibility["game-territory-area-fill"],"none");
  assert.equal(map.sources["game-territory-areas"].data.features.length,0);
  controls(map,{stops:true,polygons:true});
  assert.ok(Object.values(map.layoutVisibility).every(v=>v==="visible"));
+});
+
+test("Silnější vlastnické hranice ignorují sousedící oblasti téhož hráče",()=>{
+ const topology=ctx.borderTopology;
+ assert.equal(topology.length,3171);
+ assert.ok(topology.some(([a,b])=>!!b));
+ const adjacent=topology.find(([a,b])=>!!b);
+ const owners={
+  [adjacent[0]]:{owner:"p1"},
+  [adjacent[1]]:{owner:"p1"}
+ };
+ const {api}=setup();
+ let features=api.ownerBoundaryGeoJSON(topology,owners,players).features;
+ assert.ok(!features.some(f=>
+   (f.properties.territoryId===adjacent[0]&&f.properties.neighborId===adjacent[1]) ||
+   (f.properties.territoryId===adjacent[1]&&f.properties.neighborId===adjacent[0])));
+ owners[adjacent[1]].owner="p2";
+ features=api.ownerBoundaryGeoJSON(topology,owners,players).features;
+ const contested=features.find(f=>
+   (f.properties.territoryId===adjacent[0]&&f.properties.neighborId===adjacent[1]) ||
+   (f.properties.territoryId===adjacent[1]&&f.properties.neighborId===adjacent[0]));
+ assert.equal(contested.properties.contested,1);
+ assert.equal(contested.geometry.type,"MultiLineString");
+ assert.ok(contested.geometry.coordinates.length>0);
+});
+
+test("Mapa aktualizuje barvy hranic po převzetí a ovládání polygonů hranice skrývá",()=>{
+ const {map,api}=setup();
+ const initial=map.sources["game-owner-borders"].data.features.length;
+ assert.equal(initial,0);
+ const owners={[groups[0].id]:{owner:"p1"}};
+ api.refreshStopMapColors(map,owners,players,null);
+ assert.ok(map.sources["game-owner-borders"].data.features.length>0);
+ assert.equal(map.sources["game-stop-points"].data.features[0].properties.color,players[0].color);
+ api.setMapOverlayVisibility(map,{stops:true,polygons:false});
+ assert.equal(map.layoutVisibility["game-owner-border"],"none");
+ api.setMapOverlayVisibility(map,{stops:false,polygons:true});
+ assert.equal(map.layoutVisibility["game-owner-border"],"visible");
+ assert.equal(map.layoutVisibility["game-territory"],"none");
 });
