@@ -1,20 +1,11 @@
 "use strict";
 // Celopražský statický výřez auditu PID 19. 11. 2026, bez odhadovaných bodů.
 const STOPS = PID_PRAGUE;
-const PLAYERS=[{id:"p1",name:"Hráč 1",color:"#ef4444"},{id:"p2",name:"Hráč 2",color:"#3b82f6"},{id:"p3",name:"Hráč 3",color:"#22c55e"}];
+// Simulovaní hráči se strategií dojíždění a lokálními rivalitami.
+const PLAYERS=DEMO_PLAYERS;
 const BASE={metro:16,train:14,funicular:12,tram:10,trolleybus:8,ferry:6,bus:4};
-// Oddělený vizuální demo scénář, původní uložená Alpha 1.2 zůstává nedotčena.
-const STORAGE="zastavkobrani-alpha-prague-v1";
-// Deterministické obsazení přibližně 70 % Prahy pro vizuální test, ne reálný herní stav.
-function demoHash(value){
-  let hash=2166136261;
-  for(let i=0;i<value.length;i++)hash=Math.imul(hash^value.charCodeAt(i),16777619);
-  return hash>>>0;
-}
-function demoOwner(stop){
-  const n=demoHash(stop.id);
-  return n%100<70?PLAYERS[(Math.floor(n/100))%PLAYERS.length].id:null;
-}
+// Oddělený scénář s deseti hráči a strategickými polygony.
+const STORAGE="zastavkobrani-alpha-prague-10players-v1";
 const $=id=>document.getElementById(id);
 const shortDay=d=>d.toISOString().slice(0,10);
 const addDays = (day,n) => shortDay(new Date(Date.parse(day+"T12:00:00Z") + n*86400000));
@@ -139,7 +130,7 @@ $("player").addEventListener("change",e=>{state.selected=e.target.value;persist(
 $("capture").onclick=()=>{const s=STOPS.find(x=>x.id===selectedStop);if(!s)return;const rec=state.stops[s.id];if(remaining()===0||rec?.owner===state.selected||(rec?.protectedUntil&&Date.now()<Date.parse(rec.protectedUntil))){render();return}const day=gameDay(),now=new Date();state.stops[s.id]={owner:state.selected,anchor:day,capturedAt:now.toISOString(),protectedUntil:new Date(now.getTime()+86400000).toISOString()};const points=captureScore(s);award(state.selected,points,"capture");state.events.unshift({action:"capture",player:state.selected,day,at:now.toISOString(),text:PLAYERS.find(p=>p.id===state.selected).name+" obsadil/a "+s.name+" (+"+points+" b.)"});persist();note("Obsazeno v simulačním režimu.");render()};
 $("maintain").onclick=()=>{const s=STOPS.find(x=>x.id===selectedStop),rec=s&&state.stops[s.id];if(!rec||rec.owner!==state.selected||diffDays(gameDay(),rec.anchor)<7)return;rec.anchor=gameDay();state.events.unshift({at:new Date().toISOString(),text:PLAYERS.find(p=>p.id===state.selected).name+" provedl/a údržbu: "+s.name});persist();note("Údržba provedena. Ochrana se neobnovila.");render()};
 $("visit").onclick=()=>{const s=challengeStop();if(selectedStop!==s.id||visitsFor(state.selected))return;state.visits[gameDay()]??={};state.visits[gameDay()][state.selected]=true;state.events.unshift({at:new Date().toISOString(),text:"Návštěva zastávky dne: "+s.name});persist();note("Výzva splněna. Bodová odměna zatím není schválena.");render()};
-$("reset").onclick=()=>{if(!confirm("Opravdu smazat všechna lokální testovací data všech tří hráčů?"))return;localStorage.removeItem(STORAGE);state=init(false);persist();selectedStop=null;note("Test byl vynulován.");openScreen("profile")};
+$("reset").onclick=()=>{if(!confirm("Opravdu smazat lokální testovací stav všech deseti hráčů?"))return;localStorage.removeItem(STORAGE);state=init(false);persist();selectedStop=null;note("Test byl vynulován.");openScreen("profile")};
 window.addEventListener("storage",e=>{if(e.key===STORAGE){state=load();render()}});render();setInterval(()=>{render()},60000);
 
 // GPS je pouze orientační, bez ukládání či serverového ověřování.
