@@ -1,23 +1,28 @@
-# Zastávkobraní — aktuální mapa Alpha 1.4
+# Zastávkobraní — Alpha 1.5: celá Praha (testovací simulace)
 
-Aktuální stav (19. 11. 2026): veřejný mobilní prototyp [GitHub Pages](https://anlexcz.github.io/zastavkobrani/) se 14 herními územími a 51 přesnými PID stanovišti ve zkušební oblasti Kobylisy. Tři přepínatelní testovací hráči (bez hesla), 10/14 území předem obsazených v jednom browser-localStorage. Není produkční databáze, server ani GPS autorizace herních akcí.
+[Otevřít mapu](https://anlexcz.github.io/zastavkobrani/) · [Vizuální specifikace](https://docs.google.com/document/d/1aYjOdabqtIEnw13ROaFMkpbyH9MKoaK2uOY3l5AGMDE/edit)
 
-**Aktuální specifikace k reprodukci je v [dokumentu 06, kapitole 24](https://docs.google.com/document/d/1aYjOdabqtIEnw13ROaFMkpbyH9MKoaK2uOY3l5AGMDE/edit).** Technické závislosti a testy: dokument 03; PID importní výřez: 04; hranice databáze a odvozených mapových dat: 05.
+Aktuální stav 19. 11. 2026: **1 487 kandidátních pražských herních území a 3 659 jednotlivých fyzických stanovišť PID**, převzatých z úplného archivovaného auditu Stop Listu (generatedAt 19. 11. 2026). Nejde o finálně schválený seznam hratelných území a všechna GPS stanoviště mají `captureEnabled:false`. Mapa slouží k mobilní simulaci, backend a skutečné GPS ověřování ještě neexistují.
 
-## Aktuální mapový systém
+## Co se změnilo oproti Kobylisím
 
-- MapLibre GL JS 4.7.1, OpenFreeMap Liberty s úpravami in-place v `map-style.js`, Turf 7.2.0 pro `union` 30m kruhů uvnitř territory. Bez API klíče; fungování závisí na dostupnosti hostovaných zdrojů a CDN.
-- `pid-kobylisy.js`: skutečné auditní PID skupiny a nástupiště. `stop-map.js`: GeoJSON body, platformy, odvozené Polygon/MultiPolygon oblasti, vlastníci, shlukování. `app.js`: testovací herní stav a UI.
-- Zoom 14,3: názvy neclusterovaných území; 15,2: společné sjednocené oblasti; 16: nástupiště místo souhrnného bodu; 17,2: platformové popisky. GeoJSON clusterRadius 45 px, clusterMaxZoom 15; agreguje **herní území**, nikoli jednotlivé PID stop points.
-- Cluster se vykresluje barevným prstencem podle počtů jednotlivých vlastníků (plus neutrální šedá) s celkovým počtem území uprostřed. Dynamické ikony jsou Canvas ImageData s pixelRatio 2; při změně vlastníka se aktualizuje GeoJSON source přes setData.
-- Sloučené plochy z Turf union odstraňují vnitřní překryvné hranice okruhů v rámci stejného territory, ale vzdálené části zůstávají jako MultiPolygon. Barva vychází z vlastníka a opacity je slabší u neutrálních zastávek.
-- **Všech 51 bodů má `captureEnabled:false`**. Sloučené kruhy jsou pouze kandidátní **vizualizace**, nikoli schválené GPS herní okruhy. Hra v této verzi dovoluje jen simulační obsazování bez backendového ověření.
+- `pid-prague.js` je úplný statický export auditních CSV; původní `pid-kobylisy.js` zůstává jako archivní výřez. Export tvoří `zastavkobrani_territories.csv` a `zastavkobrani_stop_points.csv`; importní proces později musí být automatizovatelný a opakovatelný.
+- Výchozí kamera ukazuje celou Prahu (`center=[14.44,50.085]`, zoom `10.65`).
+- Zůstaly MapLibre GL JS 4.7.1 + OpenFreeMap Liberty (in-place černošedá úprava v `map-style.js`) + Turf 7.2.0.
+- `game-territories` má pouze 1 bod na každé území; clustery agregují počty vlastníků a neutrálních území. Číslo je počet herních území, nikoli nástupišť.
+- `game-platforms` má 3 659 georeferencovaných bodů, které se zobrazí od zoomu 16; popisky od 17,2.
+- `game-territory-areas` zobrazuje geometrické sjednocení kandidátních 30m kruhů od zoomu 15,2. **Optimalizace:** při oddálení nevypočítává žádné polygony. Při přiblížení počítá pouze geometrii aktuálního výřezu v menších dávkách, kešuje ji a nikdy automaticky nespojuje různé territories. Výřez se určuje podle rozsahu všech fyzických stanovišť území, nikoli jen jeho reprezentativního bodu.
+- Vlastnické barvy jsou vlastností jednotlivých GeoJSON features; změna vlastníka aktualizuje mapové zdroje `setData` a prstencové clustery. Není potřeba tisíce ID v jednom style výrazu.
+- Testovací tři hráči bez přihlášení: deterministicky předobsazeno **1 035 / 1 487 (69,6 %)**, z toho Hráč 1 = 330, Hráč 2 = 349, Hráč 3 = 356 a neutrální = 452. Nový localStorage klíč `zastavkobrani-alpha-prague-v1` nezasahuje do uložené kobyliské simulace. Reset vypne předobsazení v novém scénáři.
+- 21 skupin ve zdrojovém auditu nemá určený dopravní typ a 3 bodové záznamy leží těsně mimo polygon Prahy; převzato z auditu bez maskování či automatického schválení. Nejde o finální produkční konfiguraci.
 
-## Reprodukovatelné spuštění
+## Spuštění a ověření
 
-Otevřít repozitář z `main` (GitHub Pages: `Deploy from a branch → main / root`). Soubor `index.html` načítá knihovny v pořadí: MapLibre → map-style.js → pid-kobylisy.js → Turf → stop-map.js → app.js. Na `style.load` měnit podklad Liberty; na `map.load` přidat herní GeoJSON sources/layers. Po změně frontendového kódu zvýšit cache-busting parametry skriptů a viditelné označení verze.
+GitHub Pages: `Deploy from a branch → main / root`. `index.html` načítá MapLibre → map-style.js → pid-prague.js → Turf → stop-map.js → app.js. Po editaci frontendových souborů aktualizovat parametry `?v=alpha15-prague`. Statická data v `pid-prague.js` mají cca 360 kB před HTTP kompresí.
 
-Otestovat: `node --test tests/pid-map.test.cjs`, zkontrolovat platnost staršího `tests/map-style.test.cjs`; na mobilu vyzkoušet zoom, polohu značek, klikání, slévání polygonů, poměry barevných clusterů a přenos vlastnictví. Aktuální parametry jsou prototypové, škálování do celé Prahy a bezpečné GPS capture body nejsou dokončené.
+Lokální testy: `node --test tests/*.test.cjs`. Workflow `.github/workflows/verify-alpha.yml` je připraven pro automatické syntax a unit testy na `main`. Jde o testy dat a mapové logiky, ne o garantované vykreslení v mobilním prohlížeči. Ověřit ještě fyzické mobilní zoomování z celé Prahy, přechod do platforem, rychlost union oblastí, zbarvení všech clusterů, reakci na obsazení a dostupnost OpenFreeMap.
+
+**Bezpečnost:** žádný testovací polygon není schváleným GPS capture okruhem; skutečné obsazení nelze povolit bez administrátorského schválení bodu a serverové validace. Všechna tři demo uživatelská účta existují jen v lokálním prohlížeči.
 
 ---
 
