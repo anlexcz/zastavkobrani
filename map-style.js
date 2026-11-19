@@ -7,22 +7,17 @@ const MAP_COLORS = {
   tram:"#b58b69", railway:"#8d9bb1", text:"#abb7c0"
 };
 
-async function loadGameMapStyle() {
-  // OpenFreeMap používá volně přístupný styl bez API klíče.
-  // Převezmeme z něj pouze adresu vektorových dat a definice fontů;
-  // celá viditelná skladba mapy je řízena výhradně zde.
-  const origin = "https://tiles.openfreemap.org/styles/liberty/style.json";
-  const response = await fetch(origin);
-  if (!response.ok) throw new Error("OpenFreeMap HTTP " + response.status);
-  const base = await response.json();
+function buildGameMapStyle(base) {
+  // Vstupem je již úspěšně načtený oficiální styl OpenFreeMap.
+  // Neprovádíme žádné vlastní fetch požadavky na nezdokumentovanou adresu.
+  const origin = "https://tiles.openfreemap.org/styles/liberty";
   const entry = Object.entries(base.sources || {}).find(([,source]) => source.type === "vector");
-  if (!entry) throw new Error("OpenFreeMap nevrátil vektorový zdroj.");
+  if (!entry) throw new Error("Načtený styl nemá vektorový zdroj.");
   const [sourceId,source] = entry;
   const absolute = value => new URL(value,origin).href;
   const vectorSource = {...source};
   if (vectorSource.url) vectorSource.url = absolute(vectorSource.url);
   if (vectorSource.tiles) vectorSource.tiles = vectorSource.tiles.map(absolute);
-
   const layer = (id, sourceLayer, type, paint, filter, minzoom=0, layout={}) => ({
     id, type, source:sourceId, "source-layer":sourceLayer, minzoom,
     ...(filter ? {filter}:{}), layout, paint
@@ -37,7 +32,7 @@ async function loadGameMapStyle() {
   return {
     version:8,
     name:"Zastávkobraní – minimalistická Praha (pracovní)",
-    glyphs:absolute(base.glyphs),
+    ...(base.glyphs ? {glyphs:absolute(base.glyphs)} : {}),
     sources:{[sourceId]:vectorSource},
     layers:[
       {id:"background",type:"background",paint:{"background-color":MAP_COLORS.background}},
