@@ -1,0 +1,95 @@
+/* Zastávkobraní Alpha: jednoduchý mobile-first vzhled */
+:root {
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #e8edf4;
+  background: #0d1420;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+button, select { font: inherit; }
+button, select {
+  padding: 9px 12px;
+  color: inherit;
+  background: #253449;
+  border: 1px solid #405268;
+  border-radius: 10px;
+}
+button { cursor: pointer; }
+button:disabled { opacity: .45; cursor: default; }
+button.primary { background: #ed4b34; border-color: #ed4b34; color: white; }
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #131e2d;
+  border-bottom: 1px solid #304053;
+}
+header strong { font-size: 1.15rem; }
+header small { color: #96a9bc; font-size: .7em; }
+header label { margin-left: auto; }
+header select { min-width: 112px; max-width: 145px; }
+#reset { white-space: nowrap; }
+
+.banner {
+  padding: 8px 16px;
+  background: #503928;
+  color: #ffdcab;
+  font-size: .8rem;
+}
+
+main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; height: calc(100dvh - 118px); min-height: 450px; }
+#map { width: 100%; height: 100%; min-width: 0; min-height: 0; background: #182431; }
+aside { min-width: 0; overflow-y: auto; padding: 16px; background: #111c2a; border-left: 1px solid #334358; }
+.card { margin-bottom: 12px; padding: 14px; background: #1b2a3b; border: 1px solid #324559; border-radius: 12px; }
+.eyebrow { color: #91a7bc; font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; }
+h2 { margin: 4px 0 10px; font-size: 1.25rem; }
+.muted, .notice { color: #a9bbcc; }
+.notice { font-size: .88rem; }
+.stats { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; text-align: center; }
+.stat b { display: block; font-size: 1.5rem; }
+.stat span { color: #97acc0; font-size: .73rem; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+.pill { display: inline-block; padding: 3px 8px; border-radius: 20px; background: #344356; font-size: .78rem; }
+.listrow { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid #314255; }
+.listrow:last-child { border: 0; }
+.marker { width: 18px; height: 18px; border: 2px solid white; border-radius: 50%; box-shadow: 0 1px 8px #0009; }
+#message { min-height: 20px; color: #ffdcab; font-size: .88rem; }
+
+/* Základní ochrana proti rozpadnutí dlaždic, i když externí Leaflet CSS selže. */
+.leaflet-container { position: relative; overflow: hidden; outline: 0; }
+.leaflet-pane, .leaflet-tile, .leaflet-marker-icon, .leaflet-marker-shadow,
+.leaflet-tile-container, .leaflet-layer, .leaflet-control-container { position: absolute; top: 0; left: 0; }
+.leaflet-pane { z-index: 400; }
+.leaflet-tile-pane { z-index: 200; }
+.leaflet-overlay-pane { z-index: 400; }
+.leaflet-marker-pane { z-index: 600; }
+.leaflet-tooltip-pane { z-index: 650; }
+.leaflet-popup-pane { z-index: 700; }
+.leaflet-tile { visibility: hidden; }
+.leaflet-tile-loaded { visibility: inherit; }
+.leaflet-container img.leaflet-tile { max-width: none !important; max-height: none !important; }
+.leaflet-zoom-animated { transform-origin: 0 0; }
+.leaflet-control-container { position: static; }
+.leaflet-top, .leaflet-bottom { position: absolute; z-index: 1000; pointer-events: none; }
+.leaflet-top { top: 0; } .leaflet-bottom { bottom: 0; }
+.leaflet-left { left: 0; } .leaflet-right { right: 0; }
+.leaflet-control { position: relative; z-index: 800; pointer-events: auto; margin: 10px; }
+.leaflet-control-zoom a { display: block; width: 30px; height: 30px; text-align: center; line-height: 30px; color: #222; background: white; text-decoration: none; font-weight: bold; }
+.leaflet-control-attribution { padding: 2px 5px; background: #fffd; font-size: 10px; color: #222; }
+.leaflet-control-attribution a { color: #1762a2; }
+
+@media (max-width: 760px) {
+  header { padding: 10px 12px; flex-wrap: wrap; }
+  header strong { flex: 1 1 auto; }
+  header small { display: none; }
+  header label { margin-left: 0; }
+  header select { flex: 1; min-width: 95px; }
+  #reset { padding: 8px 10px; font-size: .83rem; }
+  .banner { padding: 7px 12px; }
+  main { display: flex; flex-direction: column; height: auto; min-height: 0; }
+  #map { flex: none; height: 42dvh; min-height: 260px; max-height: 420px; }
+  aside { overflow: visible; border: 0; padding: 12px; }
+  .card { margin-bottom: 10px; }
+}
