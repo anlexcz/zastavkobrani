@@ -55,3 +55,16 @@ button.danger {margin-top:22px;color:#ffc2bc}
   .leaflet-bottom {bottom:12px!important}
 }
 @media(max-width:360px) {.brand {font-size:1.35rem}.player-choice span {display:none}.test-label {font-size:.6rem}}
+
+/* GPS ovládání na mapě */
+.gps-toggle {position:fixed;z-index:1000;right:14px;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px);
+  display:flex;align-items:center;gap:8px;padding:11px 14px;border:1px solid var(--line);border-radius:30px;
+  color:var(--text);background:#16232cf2;box-shadow:0 4px 18px #0006}
+.gps-toggle[aria-pressed="true"] {border-color:#5badc8;background:#163744}
+.gps-status {position:fixed;z-index:1000;right:14px;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 70px);
+  max-width:min(270px,calc(100vw - 28px));padding:7px 10px;border-radius:10px;
+  background:#16232cf2;border:1px solid var(--line);font-size:.78rem;color:var(--text)}
+.gps-status[hidden] {display:none}
+.leaflet-tile-pane {filter:grayscale(.6) invert(.92) hue-rotate(180deg) brightness(.85) contrast(.92)}
+/* U tmavě tónované standardní OSM mapy se grafické herní značky nefiltrují. */
+@media(min-width:760px) {.gps-toggle {bottom:85px}.gps-status {bottom:140px}}
