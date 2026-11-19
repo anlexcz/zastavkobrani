@@ -62,3 +62,12 @@ function buildGameMapStyle(base) {
     ]
   };
 }
+
+// Veřejný TileJSON endpoint OpenFreeMap. Styl vzniká PŘED inicializací MapLibre,
+// takže není potřeba přepínat světlý Liberty styl za běhu.
+function createGameMapStyle() {
+  return buildGameMapStyle({
+    sources:{openmaptiles:{type:"vector",url:"https://tiles.openfreemap.org/planet"}},
+    glyphs:"https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf"
+  });
+}
