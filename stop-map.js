@@ -2,7 +2,7 @@
 // GeoJSON vrstvy pevně přivázané k souřadnicím. Žádné HTML markery,
 // které by zdědily CSS tlačítek a při zoomu se pohybovaly mimo geometrii.
 const PLATFORM_ZOOM = 16;
-const CAPTURE_PREVIEW_ZOOM = 17.5;
+const TERRITORY_AREA_ZOOM = 15.2;
 let stopMapInitialized = false;
 
 function geoPoint(lon, lat, properties) {
@@ -29,17 +29,26 @@ function installStopMap(map, territories, showTerritory) {
     territoryId:s.id,territoryName:s.name,pointId:p.id,
     platform:p.platform,metro:p.isMetro?1:0,review:p.review
   })));
-  const previewFeatures=territories.flatMap(s=>s.points.map(p=>({
-    type:"Feature",geometry:meterCircle(p.lon,p.lat,30),
-    properties:{territoryId:s.id,pointId:p.id,approved:false}
-  })));
+  // Každá herní zastávka má JEDNU sloučenou geometrii ze svých 30m okruhů.
+  // Turf.union odstraní vnitřní hranice překryvů; oddělené části ponechá
+  // jako MultiPolygon, aniž bychom propojovali vzdálená nástupiště.
+  const areas=territories.map(s=>{
+    const circles=s.points.map(p=>turf.circle([p.lon,p.lat],0.03,{
+      steps:48,units:"kilometers"
+    }));
+    const merged=circles.length===1?circles[0]:turf.union(turf.featureCollection(circles));
+    if(!merged)throw Error("Nelze sloučit GPS oblasti: "+s.name);
+    return {type:"Feature",geometry:merged.geometry,properties:{
+      territoryId:s.id,name:s.name,approved:false,platformCount:s.points.length
+    }};
+  });
 
   map.addSource("game-territories",{
     type:"geojson",data:geoCollection(territoryFeatures),cluster:true,
     clusterRadius:45,clusterMaxZoom:15
   });
   map.addSource("game-platforms",{type:"geojson",data:geoCollection(platformFeatures)});
-  map.addSource("game-capture-candidates",{type:"geojson",data:geoCollection(previewFeatures)});
+  map.addSource("game-territory-areas",{type:"geojson",data:geoCollection(areas)});
   map.addLayer({id:"game-cluster",type:"circle",source:"game-territories",
     filter:["has","point_count"],maxzoom:PLATFORM_ZOOM,
     paint:{"circle-color":"#3e4145","circle-radius":["step",["get","point_count"],14,5,18,10,23],
@@ -59,13 +68,14 @@ function installStopMap(map, territories, showTerritory) {
       "text-size":11,"text-offset":[0,1.5],"text-anchor":"top",
       "text-optional":true},
     paint:{"text-color":"#e3e3e3","text-halo-color":"#181a1c","text-halo-width":1.2}});
-  map.addLayer({id:"game-preview-fill",type:"fill",source:"game-capture-candidates",
-    minzoom:CAPTURE_PREVIEW_ZOOM,
-    paint:{"fill-color":"#9da9a1","fill-opacity":.07}});
-  map.addLayer({id:"game-preview-outline",type:"line",source:"game-capture-candidates",
-    minzoom:CAPTURE_PREVIEW_ZOOM,
-    paint:{"line-color":"#aab5ad","line-opacity":.48,"line-width":1.3,
-      "line-dasharray":[2,3]}});
+  // Oblast je viditelná už před rozpadem skupiny na stanoviště.
+  // Jde o pracovní náhled neověřených GPS bodů, ne povolení herní akce.
+  map.addLayer({id:"game-territory-area-fill",type:"fill",
+    source:"game-territory-areas",minzoom:TERRITORY_AREA_ZOOM,
+    paint:{"fill-color":"#929292","fill-opacity":.095}});
+  map.addLayer({id:"game-territory-area-outline",type:"line",
+    source:"game-territory-areas",minzoom:TERRITORY_AREA_ZOOM,
+    paint:{"line-color":"#a3a7a9","line-opacity":.38,"line-width":1.15}});
   map.addLayer({id:"game-platform",type:"circle",source:"game-platforms",
     filter:["==",["get","metro"],0],minzoom:PLATFORM_ZOOM,
     paint:{"circle-color":"#929292","circle-radius":["step",["zoom"],5,18,6],
@@ -114,6 +124,11 @@ function refreshStopMapColors(map,ownership,players,selectedId) {
   const paintColor=match.length===2 ? "#929292" : [...match,"#929292"];
   for(const id of ["game-territory","game-platform","game-platform-metro"])
     map.setPaintProperty(id,"circle-color",paintColor);
+  map.setPaintProperty("game-territory-area-fill","fill-color",paintColor);
+  map.setPaintProperty("game-territory-area-outline","line-color",paintColor);
+  // Při výběru zvýraznit obrys konkrétního herního území.
+  map.setPaintProperty("game-territory-area-outline","line-opacity",
+    ["case",["==",["get","territoryId"],selectedId||""],.75,.38]);
   for(const id of ["game-territory","game-platform","game-platform-metro"])
     map.setPaintProperty(id,"circle-stroke-width",
       ["case",["==",["get","territoryId"],selectedId||""],3,1.6]);
