@@ -36,3 +36,10 @@ test("Železnice a tramvaje mají jiné barvy",()=>{
   assert.notEqual(style.layers.find(x=>x.id==="railways").paint["line-color"],
                   style.layers.find(x=>x.id==="tramways").paint["line-color"]);
 });
+
+test("Mapa aplikuje vlastní styl při style.load a nemá Leaflet volání",()=>{
+  assert.ok(appSource.includes('map.on("style.load"'));
+  assert.ok(appSource.includes('buildGameMapStyle(map.getStyle())'));
+  assert.ok(!/\\bL\\./.test(appSource));
+  assert.ok(appSource.includes('getElement()'));
+});
