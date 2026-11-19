@@ -1,16 +1,61 @@
 <!doctype html>
-<html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101820">
 <title>Zastávkobraní Alpha</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyo3cL3i/a3kD3I=" crossorigin="">
-<link rel="stylesheet" href="style.css"></head><body>
-<header><strong>🚏 Zastávkobraní <small>ALPHA</small></strong><span style="flex:1"></span><label for="player">Hráč</label><select id="player"></select><button id="reset" title="Vymaže lokální testovací hru">Reset testu</button></header>
-<div class="banner">TESTOVACÍ VERZE · 3 hráči a společná lokální data. Ukázkové zastávky · simulace bez GPS.</div>
-<main><div id="map" role="region" aria-label="Mapa zastávek"></div><aside>
-<div class="card"><div class="eyebrow">Aktivní profil</div><h2 id="profile"></h2><div class="stats"><div class="stat"><b id="remaining">3/3</b><span>Obsazení zbývá</span></div><div class="stat"><b id="owned">0</b><span>Vlastní území</span></div><div class="stat"><b id="points">0</b><span>Body celkem</span></div></div><p class="notice" id="clock"></p></div>
-<div class="card"><div class="eyebrow">Vybraná zastávka</div><h2 id="stopname">Vyber zastávku na mapě</h2><div id="stopdetail" class="muted">Klikni na značku na mapě.</div><div class="actions"><button class="primary" id="capture" disabled>Obsadit / převzít</button><button id="maintain" disabled>Udržet</button></div><div id="message" aria-live="polite"></div></div>
-<div class="card"><div class="eyebrow">Zastávka dne</div><h2 id="challenge"></h2><div id="challengeinfo" class="notice"></div><button id="visit" disabled>Splnit návštěvu</button></div>
-<div class="card"><div class="eyebrow">Žebříček · 30 herních dní</div><div id="leaderboard"></div></div>
-<div class="card"><div class="eyebrow">Nedávné události</div><div id="events" class="notice"></div></div>
-</aside></main>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="map" role="region" aria-label="Mapa herních zastávek Prahy"></div>
+<header class="topbar">
+  <div class="brand">Zastávkobraní <small>ALPHA</small></div>
+  <label class="player-choice"><span>Hráč</span><select id="player" aria-label="Testovací hráč"></select></label>
+</header>
+<div class="test-label">SIMULACE · 12 ukázkových zastávek · bez GPS</div>
+<nav class="nav" aria-label="Herní nabídka">
+  <button type="button" data-screen="map" class="active">Mapa</button>
+  <button type="button" data-screen="daily">Zastávka dne</button>
+  <button type="button" data-screen="ranking">Pořadí</button>
+  <button type="button" data-screen="profile">Profil</button>
+</nav>
+<div class="scrim" id="scrim" hidden></div>
+<section class="sheet" id="sheet" hidden aria-label="Herní panel">
+  <div class="sheet-head"><span class="grabber"></span><button class="close" id="close" aria-label="Zavřít panel">×</button></div>
+  <div class="screen" id="screen-stop">
+    <div class="eyebrow">Herní zastávka</div>
+    <h1 id="stopname">Zastávka</h1>
+    <div id="stopdetail" class="details"></div>
+    <div class="actions"><button class="primary" id="capture" disabled>Obsadit</button><button id="maintain" disabled>Udržet</button></div>
+    <p id="message" class="message" aria-live="polite"></p>
+  </div>
+  <div class="screen" id="screen-daily" hidden>
+    <div class="eyebrow">Denní výzva</div><h1>Zastávka dne</h1>
+    <h2 id="challenge"></h2><p id="challengeinfo" class="muted"></p>
+    <button id="show-challenge" class="primary">Ukázat na mapě</button>
+    <button id="visit" disabled>Splnit návštěvu</button>
+  </div>
+  <div class="screen" id="screen-ranking" hidden>
+    <div class="eyebrow">Posledních 30 herních dní</div><h1>Pořadí hráčů</h1>
+    <div id="leaderboard"></div>
+  </div>
+  <div class="screen" id="screen-profile" hidden>
+    <div class="eyebrow">Testovací účet</div><h1 id="profile">Hráč</h1>
+    <div class="stats">
+      <div><strong id="remaining">3/3</strong><span>Obsazení zbývá</span></div>
+      <div><strong id="owned">0</strong><span>Moje zastávky</span></div>
+      <div><strong id="points">0</strong><span>Celkem bodů</span></div>
+    </div>
+    <p id="clock" class="muted"></p>
+    <div class="eyebrow">Nedávné události</div><div id="events" class="events"></div>
+    <button id="reset" class="danger">Resetovat testovací hru</button>
+  </div>
+</section>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js" defer></script></body></html>
+<script src="app.js" defer></script>
+</body></html>
