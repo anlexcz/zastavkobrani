@@ -39,7 +39,11 @@ const map = L.map("map").setView([50.081,14.43],11);
 // Překreslení mapy po změně rozměrů (zejména mobilní prohlížeče).
 new ResizeObserver(() => map.invalidateSize({pan:false})).observe($("map"));
 window.addEventListener("load", () => map.invalidateSize({pan:false}));
-L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',subdomains:"abcd",maxZoom:19}).addTo(map);
+// Pracovní bezklíčový podklad: běžné OSM tiles, tmavé tónování pouze přes CSS.
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{
+  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  maxZoom:19
+}).addTo(map);
 const pins={};for(const s of STOPS){const m=L.marker([s.lat,s.lon],{icon:L.divIcon({className:"",html:'<div class="marker"></div>',iconSize:[18,18]})}).addTo(map);m.on("click",()=>{selectedStop=s.id;openScreen("stop");render()});m.bindTooltip(s.name,{direction:"top",offset:[0,-6]});pins[s.id]=m}
 let activeScreen="map";
 function openScreen(name){
@@ -80,3 +84,55 @@ $("maintain").onclick=()=>{const s=STOPS.find(x=>x.id===selectedStop),rec=s&&sta
 $("visit").onclick=()=>{const s=challengeStop();if(selectedStop!==s.id||visitsFor(state.selected))return;state.visits[gameDay()]??={};state.visits[gameDay()][state.selected]=true;state.events.unshift({at:new Date().toISOString(),text:"Návštěva zastávky dne: "+s.name});persist();note("Výzva splněna. Bodová odměna zatím není schválena.");render()};
 $("reset").onclick=()=>{if(!confirm("Opravdu smazat všechna lokální testovací data všech tří hráčů?"))return;localStorage.removeItem(STORAGE);state=init();selectedStop=null;note("Test byl vynulován.");openScreen("profile")};
 window.addEventListener("storage",e=>{if(e.key===STORAGE){state=load();render()}});render();setInterval(()=>{render()},60000);
+
+// Poloha pouze pro orientaci na mapě: bez ukládání, bez ověření herních akcí.
+let gpsWatch = null;
+let gpsMarker = null;
+let gpsAccuracy = null;
+const gpsButton = $("gps-toggle");
+const gpsStatus = $("gps-status");
+function gpsMessage(message) { gpsStatus.hidden = !message; gpsStatus.textContent = message; }
+function disableGps() {
+  if (gpsWatch !== null) navigator.geolocation.clearWatch(gpsWatch);
+  gpsWatch = null;
+  if (gpsMarker) { map.removeLayer(gpsMarker); gpsMarker = null; }
+  if (gpsAccuracy) { map.removeLayer(gpsAccuracy); gpsAccuracy = null; }
+  gpsButton.setAttribute("aria-pressed","false");
+  gpsButton.querySelector("span").textContent = "Zapnout GPS";
+  gpsMessage("");
+}
+function gpsError(error) {
+  const messages = {1:"Přístup k poloze byl zamítnut. Povol GPS v nastavení prohlížeče.",
+    2:"Polohu se nepodařilo zjistit.",3:"Zjišťování polohy vypršelo."};
+  gpsMessage(messages[error.code] || "GPS není dostupná.");
+  if (error.code === 1) {
+    // Neopakovat požadavky po zamítnutí oprávnění.
+    if (gpsWatch !== null) navigator.geolocation.clearWatch(gpsWatch);
+    gpsWatch = null;
+    gpsButton.setAttribute("aria-pressed","false");
+    gpsButton.querySelector("span").textContent = "Zapnout GPS";
+  }
+}
+gpsButton.addEventListener("click", () => {
+  if (gpsWatch !== null) { disableGps(); return; }
+  if (!navigator.geolocation || !window.isSecureContext) {
+    gpsMessage("GPS vyžaduje HTTPS a prohlížeč s podporou geolokace.");
+    return;
+  }
+  gpsMessage("Zjišťuji polohu…");
+  gpsButton.setAttribute("aria-pressed","true");
+  gpsButton.querySelector("span").textContent = "Vypnout GPS";
+  gpsWatch = navigator.geolocation.watchPosition(position => {
+    const point = [position.coords.latitude, position.coords.longitude];
+    const accuracy = Math.max(1,position.coords.accuracy || 1);
+    if (!gpsMarker) {
+      gpsMarker = L.circleMarker(point,{radius:7,color:"#fff",weight:2,fillColor:"#36a7e2",fillOpacity:1}).addTo(map);
+      gpsAccuracy = L.circle(point,{radius:accuracy,color:"#36a7e2",weight:1,fillColor:"#36a7e2",fillOpacity:.12}).addTo(map);
+      map.setView(point,Math.max(map.getZoom(),15));
+    } else {
+      gpsMarker.setLatLng(point);
+      gpsAccuracy.setLatLng(point).setRadius(accuracy);
+    }
+    gpsMessage("Poloha zjištěna · přesnost ±"+Math.round(accuracy)+" m · pouze orientační");
+  }, gpsError, {enableHighAccuracy:true,maximumAge:5000,timeout:15000});
+});
