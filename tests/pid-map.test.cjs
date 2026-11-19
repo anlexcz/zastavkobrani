@@ -20,26 +20,50 @@ test("Území Kobylisy má skutečné směrové body, včetně dvou metra",()=>{
  assert.ok(g.points.every(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lon)));
  assert.ok(groups.flatMap(g=>g.points).every(p=>p.captureEnabled===false));
 });
-test("GeoJSON používá celé území, samostatné platformy a 30m preview",()=>{
- const layers=[],sources=[],events={};
+test("GPS oblasti se geometricky sjednotí podle území a zobrazí před platformami",()=>{
+ const sources={},layers=[],unions=[];
+ const mockTurf={
+  circle(center,radius,{units}){
+   assert.equal(radius,.03);assert.equal(units,"kilometers");
+   return {type:"Feature",geometry:{type:"Polygon",coordinates:[[
+     [center[0],center[1]],[center[0]+.0001,center[1]],
+     [center[0]+.0001,center[1]+.0001],[center[0],center[1]]
+   ]]}};
+  },
+  featureCollection(features){return {type:"FeatureCollection",features}},
+  union(collection){
+   unions.push(collection.features.length);
+   // Turf vrací jeden sloučený Polygon či MultiPolygon pro celé území.
+   return {type:"Feature",geometry:{type:"MultiPolygon",
+     coordinates:collection.features.map(f=>[f.geometry.coordinates[0]])}};
+  }
+ };
  const map={
-  addSource(id,definition){sources.push([id,definition])},
-  addLayer(definition){layers.push(definition)},
-  on(name,layer,fn){events[layer]=fn},
+  addSource(id,def){sources[id]=def},
+  addLayer(def){layers.push(def)},
+  on(){},
   getCanvas(){return {style:{}}},
   getSource(){return {getClusterExpansionZoom:async()=>15}},
   easeTo(){}
  };
- const scope={console};
- vm.runInNewContext(mapSource+"\nthis.installStopMap=installStopMap;",scope);
+ const scope={console,turf:mockTurf};
+ vm.runInNewContext(mapSource+"\\nthis.installStopMap=installStopMap;",scope);
  scope.installStopMap(map,groups,()=>{});
- const byId=Object.fromEntries(sources);
- assert.equal(byId["game-territories"].data.features.length,14);
- assert.equal(byId["game-platforms"].data.features.length,51);
- assert.equal(byId["game-capture-candidates"].data.features.length,51);
- assert.equal(byId["game-territories"].cluster,true);
- assert.ok(layers.find(l=>l.id==="game-platform").minzoom>=16);
- assert.ok(layers.find(l=>l.id==="game-preview-outline").minzoom>=17);
+ assert.equal(sources["game-territories"].data.features.length,14);
+ assert.equal(sources["game-platforms"].data.features.length,51);
+ assert.equal(sources["game-territory-areas"].data.features.length,14);
+ assert.equal(unions.length,14);
+ assert.equal(unions.reduce((n,v)=>n+v,0),51);
+ assert.equal(sources["game-territories"].cluster,true);
+ assert.ok(!sources["game-capture-candidates"]);
+ const area=layers.find(l=>l.id==="game-territory-area-fill");
+ const platform=layers.find(l=>l.id==="game-platform");
+ assert.ok(area.minzoom<platform.minzoom);
+ assert.ok(layers.findIndex(l=>l.id===area.id)<layers.findIndex(l=>l.id===platform.id));
+ assert.ok(layers.findIndex(l=>l.id===area.id)<layers.findIndex(l=>l.id==="game-territory"));
+ assert.equal(area.minzoom,15.2);
+ assert.equal(platform.minzoom,16);
+ assert.ok(sources["game-territory-areas"].data.features.every(f=>f.properties.approved===false));
 });
 test("Zastávky nejsou HTML markery závislé na CSS tlačítek",()=>{
  assert.ok(!appSource.includes('const pins = {}'));
