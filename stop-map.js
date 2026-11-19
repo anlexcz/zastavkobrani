@@ -14,6 +14,9 @@ let areaGeneration = 0;
 
 // Různé výřezy mapy sdílejí stejné agregace; ikony se generují jen na požádání.
 const CLUSTER_ICON_PREFIX = "owner-ring:";
+const STRATEGIC_MAX_ZOOM = 15.5;
+const CLUSTER_VISIBLE_ZOOM = 11.6;
+const STOPS_VISIBLE_ZOOM = 12.8;
 
 
 function geoPoint(lon, lat, properties) {
@@ -169,13 +172,26 @@ function installStopMap(map, territories, showTerritory, players=[], ownership={
   lastOwnershipSignature=JSON.stringify(territories.map(s=>ownership[s.id]?.owner||null));
   // Oblasti se tvoří pouze při detailním přiblížení, ne pro celou Prahu.
   const platformFeatures=platformGeoJSON(territories,ownership,players);
+  // Vizuální strategické oblasti: maximálně 390 m od reprezentativní PID group.
+  // NEJSOU to capture zones; jejich geometrie se při změně vlastníka nemění.
+  const strategicFeatures=PID_STRATEGIC_POLYGONS.features.map(f=>({
+    ...f,properties:{...f.properties,
+      color:ownerColor(f.properties.territoryId,ownership,players),
+      owned:players.some(p=>p.id===ownership[f.properties.territoryId]?.owner)?1:0}
+  }));
+  map.addSource("game-strategic",{type:"geojson",data:geoCollection(strategicFeatures)});
   map.addSource("game-territories",{
     type:"geojson",data:initialTerritories,cluster:true,
     attribution:'Zastávková data: <a href="https://pid.cz/o-systemu/opendata/" target="_blank" rel="noopener noreferrer">PID (CC BY)</a>',
-    clusterRadius:45,clusterMaxZoom:15,clusterProperties:clusterAggregates(players)
+    clusterRadius:45,clusterMaxZoom:12.9,clusterProperties:clusterAggregates(players)
   });
   map.addSource("game-platforms",{type:"geojson",data:geoCollection(platformFeatures)});
   map.addSource("game-territory-areas",{type:"geojson",data:geoCollection([])});
+  map.addLayer({id:"game-strategic-fill",type:"fill",source:"game-strategic",
+    maxzoom:STRATEGIC_MAX_ZOOM,
+    paint:{"fill-color":["get","color"],
+      "fill-opacity":["interpolate",["linear"],["zoom"],
+        10,.22,13,.20,15.5,.11]}});
   // Oblast je viditelná už před rozpadem skupiny na stanoviště.
   // Jde o pracovní náhled neověřených GPS bodů, ne povolení herní akce.
   map.addLayer({id:"game-territory-area-fill",type:"fill",
@@ -186,7 +202,7 @@ function installStopMap(map, territories, showTerritory, players=[], ownership={
     paint:{"line-color":["get","color"],"line-opacity":.38,"line-width":1.15}});
   map.on("styleimagemissing",event=>createRingIcon(event.id,map,players));
   map.addLayer({id:"game-cluster",type:"symbol",source:"game-territories",
-    filter:["has","point_count"],maxzoom:PLATFORM_ZOOM,
+    filter:["has","point_count"],minzoom:CLUSTER_VISIBLE_ZOOM,maxzoom:PLATFORM_ZOOM,
     layout:{"icon-image":ringIconExpression(players),
       "icon-size":1,"icon-allow-overlap":true,"icon-ignore-placement":true}});
   map.addLayer({id:"game-cluster-count",type:"symbol",source:"game-territories",
@@ -195,11 +211,11 @@ function installStopMap(map, territories, showTerritory, players=[], ownership={
       "text-font":["Noto Sans Regular"],"text-allow-overlap":true,"text-ignore-placement":true},
     paint:{"text-color":"#f6f6f6"}});
   map.addLayer({id:"game-territory",type:"circle",source:"game-territories",
-    filter:["!",["has","point_count"]],maxzoom:PLATFORM_ZOOM,
+    filter:["!",["has","point_count"]],minzoom:STOPS_VISIBLE_ZOOM,maxzoom:PLATFORM_ZOOM,
     paint:{"circle-color":["get","color"],"circle-radius":7,
       "circle-stroke-color":"#f2f2f2","circle-stroke-width":1.8}});
   map.addLayer({id:"game-territory-label",type:"symbol",source:"game-territories",
-    filter:["!",["has","point_count"]],minzoom:14.3,maxzoom:PLATFORM_ZOOM,
+    filter:["!",["has","point_count"]],minzoom:14.1,maxzoom:PLATFORM_ZOOM,
     layout:{"text-field":["get","name"],"text-font":["Noto Sans Regular"],
       "text-size":11,"text-offset":[0,1.5],"text-anchor":"top",
       "text-optional":true},
@@ -226,6 +242,7 @@ function installStopMap(map, territories, showTerritory, players=[], ownership={
     if(!p?.territoryId)return;
     showTerritory(p.territoryId,p.pointId||null);
   };
+  map.on("click","game-strategic-fill",selectFeature);
   map.on("click","game-territory",selectFeature);
   map.on("click","game-territory-area-fill",selectFeature);
   map.on("click","game-platform",selectFeature);
@@ -238,7 +255,7 @@ function installStopMap(map, territories, showTerritory, players=[], ownership={
       map.easeTo({center:f.geometry.coordinates,zoom:Math.max(zoom,map.getZoom()+1)});
     }).catch(error=>console.warn("Shluk nelze přiblížit:",error));
   });
-  for(const id of ["game-territory","game-territory-area-fill","game-platform","game-platform-metro","game-cluster"])
+  for(const id of ["game-strategic-fill","game-territory","game-territory-area-fill","game-platform","game-platform-metro","game-cluster"])
     map.on("mouseenter",id,()=>{map.getCanvas().style.cursor="pointer"});
   for(const id of ["game-territory","game-platform","game-platform-metro","game-cluster"])
     map.on("mouseleave",id,()=>{map.getCanvas().style.cursor=""});
@@ -252,6 +269,12 @@ function refreshStopMapColors(map,ownership,players,selectedId) {
     currentOwnership=ownership;
     map.getSource("game-territories").setData(territoryGeoJSON(territoryPoints,ownership,clusterPlayers));
     map.getSource("game-platforms").setData(platformGeoJSON(territoryPoints,ownership,clusterPlayers));
+    const strategic=map.getSource("game-strategic");
+    if(strategic)strategic.setData(geoCollection(PID_STRATEGIC_POLYGONS.features.map(f=>({
+      ...f,properties:{...f.properties,
+        color:ownerColor(f.properties.territoryId,ownership,players),
+        owned:players.some(p=>p.id===ownership[f.properties.territoryId]?.owner)?1:0}
+    }))));
     refreshVisibleAreas(map);
   }
   // Výplň čte flag owned přímo z GeoJSON – žádný 1000položkový match výraz.
