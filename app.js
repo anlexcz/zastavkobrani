@@ -1,24 +1,10 @@
 "use strict";
 // DEMO fixtures: orientační body pouze pro ověření UI a herní logiky.
-const STOPS = [
-  {id:"kobylisy",name:"Kobylisy",lat:50.124851,lon:14.456576,cats:["metro","tram","bus"],locationSource:"transitland"},
-  {id:"sluzska",name:"Služská",lat:50.124009,lon:14.450621,cats:["bus"],locationSource:"transitland"},
-  {id:"ke-stirce",name:"Ke Stírce",lat:50.122984,lon:14.456157,cats:["tram"],locationSource:"transitland"},
-  {id:"strelnicna",name:"Střelničná",lat:50.125774,lon:14.458657,cats:["tram","bus"],locationSource:"transitland"},
-  {id:"brezineveska",name:"Březiněveská",lat:50.12604,lon:14.45718,cats:["tram","bus"],locationSource:"osm"},
-  {id:"libeznicka",name:"Líbeznická",lat:50.1291,lon:14.455503,cats:["tram"],locationSource:"transitland"},
-  {id:"vozovna-kobylisy",name:"Vozovna Kobylisy",lat:50.131852,lon:14.453668,cats:["tram","bus"],locationSource:"transitland"},
-  {id:"mirovicka",name:"Mirovická",lat:50.13018,lon:14.44851,cats:["bus"],locationSource:"reference"},
-  {id:"sidliste-kobylisy",name:"Sídliště Kobylisy",lat:50.128952,lon:14.448339,cats:["bus"],locationSource:"reference"},
-  {id:"kyselova",name:"Kyselova",lat:50.126192,lon:14.463485,cats:["tram"],locationSource:"transitland"},
-  {id:"okrouhlicka",name:"Okrouhlická",lat:50.119771,lon:14.459912,cats:["tram"],locationSource:"transitland"},
-  {id:"vychovatelna",name:"Vychovatelna",lat:50.119047,lon:14.464633,cats:["tram","bus"],locationSource:"transitland"},
-  {id:"hercovka",name:"Hercovka",lat:50.122072,lon:14.451222,cats:["tram"],locationSource:"transitland"},
-  {id:"pisecna",name:"Písečná",lat:50.125586,lon:14.444248,cats:["bus"],locationSource:"transitland"}
-];
+// 14 skutečných PID skupin a jejich fyzické body.
+const STOPS = PID_KOBYLISY;
 const PLAYERS=[{id:"p1",name:"Hráč 1",color:"#ef4444"},{id:"p2",name:"Hráč 2",color:"#3b82f6"},{id:"p3",name:"Hráč 3",color:"#22c55e"}];
 const BASE={metro:16,train:14,funicular:12,tram:10,trolleybus:8,ferry:6,bus:4};
-const STORAGE="zastavkobrani-alpha-kobylisy-v1";
+const STORAGE="zastavkobrani-alpha-pid-v2";
 const $=id=>document.getElementById(id);
 const shortDay=d=>d.toISOString().slice(0,10);
 const addDays = (day,n) => shortDay(new Date(Date.parse(day+"T12:00:00Z") + n*86400000));
@@ -43,27 +29,13 @@ const map = new maplibregl.Map({
   center:[14.454,50.126],zoom:13.7,attributionControl:true
 });
 map.addControl(new maplibregl.NavigationControl({showCompass:false}),"top-left");
-const pins = {};
-for (const stop of STOPS) {
-  const element=document.createElement("button");
-  element.className="map-stop";
-  element.type="button";
-  element.setAttribute("aria-label","Zastávka "+stop.name);
-  element.addEventListener("click",event=>{
-    event.stopPropagation();
-    selectedStop=stop.id;
-    openScreen("stop");
+let selectedPlatform=null;
+map.on("load",()=>{
+  installStopMap(map,STOPS,(id,pointId)=>{
+    selectedStop=id;selectedPlatform=pointId;openScreen("stop");
   });
-  if(stop.locationSource==="reference") {
-    element.classList.add("provisional");
-    element.title="Orientační umístění v okolí zastávky, nikoli její ověřené stanoviště PID";
-  }
-  const marker=new maplibregl.Marker({element,anchor:"center"})
-    .setLngLat([stop.lon,stop.lat])
-    .setPopup(new maplibregl.Popup({offset:16,closeButton:false}).setText(stop.name))
-    .addTo(map);
-  pins[stop.id]=marker;
-}
+  render();
+});
 // Základem je funkční oficiální Liberty. Neztrácíme zdroje, glyphs ani sprite.
 const mapError=$("map-error");
 let baseStyleApplied=false;
@@ -99,7 +71,7 @@ function openScreen(name){
   $("scrim").hidden=!visible;
   for(const el of document.querySelectorAll(".screen")) el.hidden=el.id!=="screen-"+name;
   for(const el of document.querySelectorAll(".nav button")) el.classList.toggle("active",el.dataset.screen===name);
-  if(name==="map") selectedStop=null;
+  if(name==="map") {selectedStop=null;selectedPlatform=null;}
   render();
 }
 function note(t){$("message").textContent=t}
@@ -108,15 +80,33 @@ $("scrim").onclick=()=>openScreen("map");
 for(const b of document.querySelectorAll(".nav button")) b.onclick=()=>openScreen(b.dataset.screen);
 $("show-challenge").onclick=()=>{
   const s=challengeStop();
-  selectedStop=s.id;
+  selectedStop=s.id;selectedPlatform=null;
   map.flyTo({center:[s.lon,s.lat],zoom:15});
   openScreen("stop");
 };
-map.on("click",()=>{if(activeScreen==="stop")openScreen("map")});
+// Výběr GIS vrstvy neuzavírá detail.
 document.addEventListener("keydown",e=>{if(e.key==="Escape")openScreen("map")});
 function render(){closeDays();const p=PLAYERS.find(x=>x.id===state.selected);$("player").value=state.selected;$("profile").textContent=p.name;$("remaining").textContent=remaining()+"/3";$("owned").textContent=owned();$("points").textContent=total(p.id);$("clock").textContent="Herní den: "+gameDay()+" · uzávěrka ve 03:00 (Praha)";
-for(const s of STOPS){const owner=state.stops[s.id]?.owner;const color=PLAYERS.find(x=>x.id===owner)?.color||"#929292";const el=pins[s.id].getElement();el.style.setProperty("--stop-color",color);el.classList.toggle("selected",s.id===selectedStop)}
-const s=STOPS.find(x=>x.id===selectedStop),rec=s&&state.stops[s.id];$("stopname").textContent=s?.name||"Vyber zastávku na mapě";const owner=rec&&PLAYERS.find(p=>p.id===rec.owner);const provisional=s?.locationSource==="reference";const protectedNow=rec?.protectedUntil&&Date.now()<Date.parse(rec.protectedUntil);$("stopdetail").innerHTML=s?'<span class="pill">'+s.cats.join(" + ")+'</span><p>Vlastník: <b>'+(owner?.name||"Neutrální")+'</b></p>'+(provisional?'<p class="muted">Poloha pouze orientační; přesný bod zastávky ještě ověříme v PID.</p>':'')+'<p>Obsazení: '+captureScore(s)+' bodů · držení: '+holdingScore(s)+' bodů/den</p>'+(protectedNow?'<p>Ochrana do '+new Date(rec.protectedUntil).toLocaleString("cs-CZ")+'</p>':""):'Klikni na některou značku.';
+refreshStopMapColors(map,state.stops,PLAYERS,selectedStop);
+const s=STOPS.find(x=>x.id===selectedStop),rec=s&&state.stops[s.id];$("stopname").textContent=s?.name||"Vyber zastávku na mapě";const owner=rec&&PLAYERS.find(p=>p.id===rec.owner);const protectedNow=rec?.protectedUntil&&Date.now()<Date.parse(rec.protectedUntil);$("stopdetail").innerHTML=s
+ ? '<span class="pill">'+s.cats.join(" + ")+'</span>'+
+   '<p>Vlastník: <b>'+(owner?.name||"Neutrální")+'</b></p>'+
+   '<p>Obsazení: '+captureScore(s)+' bodů · držení: '+holdingScore(s)+' bodů/den</p>'+
+   '<p><b>'+s.points.length+' stanovišť PID</b> tvoří jedno herní území.</p>'+
+   (selectedPlatform?'<p>Vybrané nástupiště: <b>'+s.points.find(p=>p.id===selectedPlatform)?.platform+'</b> ('+selectedPlatform+')</p>':'')+
+   '<p class="notice">GPS okruhy 30 m jsou pouze náhled. Žádný bod není zatím schválen pro skutečné obsazení.</p>'+
+   '<div class="platform-list">'+s.points.map(p=>'<button type="button" data-platform="'+p.id+'">'+p.platform+(p.isMetro?' · metro':'')+'</button>').join("")+'</div>'+
+   (protectedNow?'<p>Ochrana do '+new Date(rec.protectedUntil).toLocaleString("cs-CZ")+'</p>':'')
+ : 'Klepni na bod zastávky.';
+for(const el of $("stopdetail").querySelectorAll("[data-platform]")){
+  el.onclick=()=>{
+    const point=s.points.find(p=>p.id===el.dataset.platform);
+    if(!point)return;
+    selectedPlatform=point.id;
+    map.flyTo({center:[point.lon,point.lat],zoom:18.2});
+    render();
+  };
+}
 $("capture").disabled=!s||!!(rec?.owner===state.selected)||!!protectedNow||remaining()===0;
 $("capture").textContent=rec?.owner?"Převzít":"Obsadit";
 $("maintain").disabled=!s||rec?.owner!==state.selected||diffDays(gameDay(),rec.anchor)<7;
