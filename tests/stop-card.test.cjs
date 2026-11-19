@@ -33,11 +33,11 @@ test("Ochrana má viditelný odpočet nahoře a na tlačítku převzetí",()=>{
  assert.match(app,/Převzetí za/);
  assert.match(app,/setInterval\(\(\)=>\{/);
 });
-test("Vlastní ochrana neblokuje údržbu a neutrál nemá timer",()=>{
+test("Vlastní ochrana se v kartě zobrazuje, neutrál časovač nemá",()=>{
  const mine=ctx.card({...args,record:{owner:"p1",anchor:"2026-11-19",
   protectedUntil:"2026-11-20T12:00:00Z"}});
  const neutral=ctx.card(args);
- assert.doesNotMatch(mine,/data-protection-countdown/);
+ assert.match(mine,/data-protection-countdown/);
  assert.doesNotMatch(neutral,/data-protection-countdown/);
 });
 test("Starší vlastnictví má nulový aktuální výnos",()=>{
