@@ -4,6 +4,13 @@
 const PLATFORM_ZOOM = 16;
 const TERRITORY_AREA_ZOOM = 15.2;
 let stopMapInitialized = false;
+let clusterPlayers = [];
+let territoryPoints = [];
+let lastOwnershipSignature = null;
+
+// Různé výřezy mapy sdílejí stejné agregace; ikony se generují jen na požádání.
+const CLUSTER_ICON_PREFIX = "owner-ring:";
+
 
 function geoPoint(lon, lat, properties) {
   return {type:"Feature",geometry:{type:"Point",coordinates:[lon,lat]},properties};
@@ -19,12 +26,78 @@ function meterCircle(lon,lat,meters) {
   return {type:"Polygon",coordinates:[coords]};
 }
 
-function installStopMap(map, territories, showTerritory) {
+// Clustering počítá herní zastávky, nikoliv jednotlivá PID stanoviště.
+function ownerProperties(territoryId, ownership, players) {
+  const owner=ownership[territoryId]?.owner;
+  const values={neutral:players.some(p=>p.id===owner)?0:1};
+  players.forEach((p,i)=>{values["owner"+i]=owner===p.id?1:0});
+  return values;
+}
+function clusterAggregates(players) {
+  const props={neutral_count:["+",["get","neutral"]]};
+  players.forEach((p,i)=>{props["owner"+i+"_count"]=["+",["get","owner"+i]]});
+  return props;
+}
+function territoryGeoJSON(territories, ownership, players) {
+  return geoCollection(territories.map(s=>geoPoint(s.lon,s.lat,{
+    territoryId:s.id,name:s.name,platforms:s.points.length,
+    ...ownerProperties(s.id,ownership,players)
+  })));
+}
+function ringIconExpression(players) {
+  return ["concat",CLUSTER_ICON_PREFIX,
+    ["to-string",["get","point_count"]],
+    ...players.map((p,i)=>[ "concat",":",["to-string",["get","owner"+i+"_count"]] ]),
+    ":",["to-string",["get","neutral_count"]]
+  ];
+}
+// Části prstence jsou úměrné počtu obsazených herních zastávek.
+function ringSegments(counts, playerColors) {
+  const total=counts.reduce((a,b)=>a+b,0);
+  if(!total)return [];
+  return counts.map((count,i)=>({count,
+    color:i<playerColors.length?playerColors[i]:"#929292",
+    fraction:count/total
+  })).filter(s=>s.count>0);
+}
+function createRingIcon(iconId, map, players) {
+  if(!iconId.startsWith(CLUSTER_ICON_PREFIX)||map.hasImage(iconId))return;
+  const parts=iconId.slice(CLUSTER_ICON_PREFIX.length).split(":").map(Number);
+  const count=parts.shift(), counts=parts;
+  if(!Number.isInteger(count)||count<2||counts.length!==players.length+1 ||
+     counts.some(n=>!Number.isInteger(n)||n<0) ||
+     counts.reduce((a,b)=>a+b,0)!==count)return;
+  const canvas=document.createElement("canvas");
+  // DPR 2 zaručuje ostrý prstenec i na mobilu; symbol má 52 px.
+  canvas.width=104;canvas.height=104;
+  const context=canvas.getContext("2d");
+  if(!context)return;
+  const segments=ringSegments(counts,players.map(p=>p.color));
+  context.fillStyle="#24272a";
+  context.beginPath();context.arc(52,52,34,0,Math.PI*2);context.fill();
+  const gap=segments.length>1?.023:0;
+  let angle=-Math.PI/2;
+  for(const segment of segments){
+    const sweep=segment.fraction*Math.PI*2;
+    context.beginPath();
+    context.arc(52,52,40,angle+gap,angle+sweep-gap);
+    context.strokeStyle=segment.color;
+    context.lineWidth=11;context.stroke();
+    angle+=sweep;
+  }
+  // Tenký neutrální rámeček jasně odděluje symbol od podkladu.
+  context.beginPath();context.arc(52,52,46,0,Math.PI*2);
+  context.strokeStyle="#d2d3d4";context.lineWidth=1.5;context.stroke();
+  map.addImage(iconId,context.getImageData(0,0,104,104),{pixelRatio:2});
+}
+
+function installStopMap(map, territories, showTerritory, players=[], ownership={}) {
   if(stopMapInitialized) return;
   stopMapInitialized=true;
-  const territoryFeatures=territories.map(s=>geoPoint(s.lon,s.lat,{
-    territoryId:s.id,name:s.name,platforms:s.points.length
-  }));
+  clusterPlayers=players;
+  territoryPoints=territories;
+  const initialTerritories=territoryGeoJSON(territories,ownership,players);
+  lastOwnershipSignature=JSON.stringify(territories.map(s=>ownership[s.id]?.owner||null));
   const platformFeatures=territories.flatMap(s=>s.points.map(p=>geoPoint(p.lon,p.lat,{
     territoryId:s.id,territoryName:s.name,pointId:p.id,
     platform:p.platform,metro:p.isMetro?1:0,review:p.review
@@ -44,8 +117,8 @@ function installStopMap(map, territories, showTerritory) {
   });
 
   map.addSource("game-territories",{
-    type:"geojson",data:geoCollection(territoryFeatures),cluster:true,
-    clusterRadius:45,clusterMaxZoom:15
+    type:"geojson",data:initialTerritories,cluster:true,
+    clusterRadius:45,clusterMaxZoom:15,clusterProperties:clusterAggregates(players)
   });
   map.addSource("game-platforms",{type:"geojson",data:geoCollection(platformFeatures)});
   map.addSource("game-territory-areas",{type:"geojson",data:geoCollection(areas)});
@@ -57,14 +130,15 @@ function installStopMap(map, territories, showTerritory) {
   map.addLayer({id:"game-territory-area-outline",type:"line",
     source:"game-territory-areas",minzoom:TERRITORY_AREA_ZOOM,
     paint:{"line-color":"#a3a7a9","line-opacity":.38,"line-width":1.15}});
-  map.addLayer({id:"game-cluster",type:"circle",source:"game-territories",
+  map.on("styleimagemissing",event=>createRingIcon(event.id,map,players));
+  map.addLayer({id:"game-cluster",type:"symbol",source:"game-territories",
     filter:["has","point_count"],maxzoom:PLATFORM_ZOOM,
-    paint:{"circle-color":"#3e4145","circle-radius":["step",["get","point_count"],14,5,18,10,23],
-      "circle-stroke-color":"#d3d6d8","circle-stroke-width":1.6}});
+    layout:{"icon-image":ringIconExpression(players),
+      "icon-size":1,"icon-allow-overlap":true,"icon-ignore-placement":true}});
   map.addLayer({id:"game-cluster-count",type:"symbol",source:"game-territories",
     filter:["has","point_count"],maxzoom:PLATFORM_ZOOM,
-    layout:{"text-field":["to-string",["get","point_count"]],"text-size":11,
-      "text-font":["Noto Sans Regular"]},
+    layout:{"text-field":["to-string",["get","point_count"]],"text-size":12,
+      "text-font":["Noto Sans Regular"],"text-allow-overlap":true,"text-ignore-placement":true},
     paint:{"text-color":"#f6f6f6"}});
   map.addLayer({id:"game-territory",type:"circle",source:"game-territories",
     filter:["!",["has","point_count"]],maxzoom:PLATFORM_ZOOM,
@@ -116,6 +190,11 @@ function installStopMap(map, territories, showTerritory) {
 
 function refreshStopMapColors(map,ownership,players,selectedId) {
   if(!stopMapInitialized || !map.getLayer("game-territory"))return;
+  const signature=JSON.stringify(territoryPoints.map(s=>ownership[s.id]?.owner||null));
+  if(signature!==lastOwnershipSignature){
+    lastOwnershipSignature=signature;
+    map.getSource("game-territories").setData(territoryGeoJSON(territoryPoints,ownership,clusterPlayers));
+  }
   const match=["match",["get","territoryId"]];
   for(const id of Object.keys(ownership)){
     const p=players.find(p=>p.id===ownership[id].owner);
