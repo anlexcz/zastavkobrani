@@ -96,3 +96,7 @@ button.danger {margin-top:22px;color:#ffc2bc}
 
 /* Neověřené souřadnice dvou testovacích bodů – jemný přerušovaný obrys. */
 .map-stop.provisional::after {border-style:dashed;opacity:.82}
+
+/* Výběr skutečných PID nástupišť v detailu jednoho herního území. */
+.platform-list {display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.platform-list button {padding:7px 11px;border-radius:20px;font-size:.85rem}
