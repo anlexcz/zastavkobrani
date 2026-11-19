@@ -258,6 +258,13 @@ function installStopMap(map, territories, showTerritory, players=[], ownership={
     source:"game-territory-areas",minzoom:TERRITORY_AREA_ZOOM,
     paint:{"line-color":["get","color"],"line-opacity":.38,"line-width":1.15}});
   map.on("styleimagemissing",event=>createRingIcon(event.id,map,players));
+  map.addLayer({id:"game-territory",type:"circle",source:"game-stop-points",
+    minzoom:STOP_DOTS_MIN_ZOOM,
+    paint:{"circle-color":["get","color"],
+      "circle-radius":["interpolate",["linear"],["zoom"],0,1.6,9.5,2,10.65,2.7,12,3.5,14,5,16,5.5,18,4],
+      "circle-opacity":.96,
+      "circle-stroke-color":"#e2e4e5",
+      "circle-stroke-width":["interpolate",["linear"],["zoom"],9,.35,12,.65,15,1.25,18,1.4]}});
   map.addLayer({id:"game-cluster",type:"symbol",source:"game-territories",
     filter:["has","point_count"],minzoom:CLUSTER_VISIBLE_ZOOM,maxzoom:PLATFORM_ZOOM,
     layout:{"icon-image":ringIconExpression(players),
@@ -267,13 +274,6 @@ function installStopMap(map, territories, showTerritory, players=[], ownership={
     layout:{"text-field":["to-string",["get","point_count"]],"text-size":12,
       "text-font":["Noto Sans Regular"],"text-allow-overlap":true,"text-ignore-placement":true},
     paint:{"text-color":"#f6f6f6"}});
-  map.addLayer({id:"game-territory",type:"circle",source:"game-stop-points",
-    minzoom:STOP_DOTS_MIN_ZOOM,
-    paint:{"circle-color":["get","color"],
-      "circle-radius":["interpolate",["linear"],["zoom"],0,1.6,9.5,2,10.65,2.7,12,3.5,14,5,16,5.5,18,4],
-      "circle-opacity":.96,
-      "circle-stroke-color":"#e2e4e5",
-      "circle-stroke-width":["interpolate",["linear"],["zoom"],9,.35,12,.65,15,1.25,18,1.4]}});
   map.addLayer({id:"game-territory-label",type:"symbol",source:"game-stop-points",
     minzoom:14.1,maxzoom:PLATFORM_ZOOM,
     layout:{"text-field":["get","name"],"text-font":["Noto Sans Regular"],
