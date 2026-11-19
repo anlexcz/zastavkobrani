@@ -109,7 +109,7 @@ $("show-challenge").onclick=()=>{
 map.on("click",()=>{if(activeScreen==="stop")openScreen("map")});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")openScreen("map")});
 function render(){closeDays();const p=PLAYERS.find(x=>x.id===state.selected);$("player").value=state.selected;$("profile").textContent=p.name;$("remaining").textContent=remaining()+"/3";$("owned").textContent=owned();$("points").textContent=total(p.id);$("clock").textContent="Herní den: "+gameDay()+" · uzávěrka ve 03:00 (Praha)";
-for(const s of STOPS){const owner=state.stops[s.id]?.owner;const color=PLAYERS.find(x=>x.id===owner)?.color||"#94a3b8";const el=pins[s.id].getElement();el.style.backgroundColor=color;el.classList.toggle("selected",s.id===selectedStop)}
+for(const s of STOPS){const owner=state.stops[s.id]?.owner;const color=PLAYERS.find(x=>x.id===owner)?.color||"#929292";const el=pins[s.id].getElement();el.style.setProperty("--stop-color",color);el.classList.toggle("selected",s.id===selectedStop)}
 const s=STOPS.find(x=>x.id===selectedStop),rec=s&&state.stops[s.id];$("stopname").textContent=s?.name||"Vyber zastávku na mapě";const owner=rec&&PLAYERS.find(p=>p.id===rec.owner);const protectedNow=rec?.protectedUntil&&Date.now()<Date.parse(rec.protectedUntil);$("stopdetail").innerHTML=s?'<span class="pill">'+s.cats.join(" + ")+'</span><p>Vlastník: <b>'+(owner?.name||"Neutrální")+'</b></p><p>Obsazení: '+captureScore(s)+' bodů · držení: '+holdingScore(s)+' bodů/den</p>'+(protectedNow?'<p>Ochrana do '+new Date(rec.protectedUntil).toLocaleString("cs-CZ")+'</p>':""):'Klikni na některou značku.';
 $("capture").disabled=!s||!!(rec?.owner===state.selected)||!!protectedNow||remaining()===0;
 $("capture").textContent=rec?.owner?"Převzít":"Obsadit";
