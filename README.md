@@ -1,28 +1,32 @@
-# Zastávkobraní — Alpha 1.5: celá Praha (testovací simulace)
+# Zastávkobraní — Alpha 1.6: strategická Praha a deset hráčů
 
-[Otevřít mapu](https://anlexcz.github.io/zastavkobrani/) · [Vizuální specifikace](https://docs.google.com/document/d/1aYjOdabqtIEnw13ROaFMkpbyH9MKoaK2uOY3l5AGMDE/edit)
+[Otevřít mapu](https://anlexcz.github.io/zastavkobrani/) · [Mapová specifikace](https://docs.google.com/document/d/1aYjOdabqtIEnw13ROaFMkpbyH9MKoaK2uOY3l5AGMDE/edit)
 
-Aktuální stav 19. 11. 2026: **1 487 kandidátních pražských herních území a 3 659 jednotlivých fyzických stanovišť PID**, převzatých z úplného archivovaného auditu Stop Listu (generatedAt 19. 11. 2026). Nejde o finálně schválený seznam hratelných území a všechna GPS stanoviště mají `captureEnabled:false`. Mapa slouží k mobilní simulaci, backend a skutečné GPS ověřování ještě neexistují.
+**Testovací hra, nikoliv produkce.** Úplný audit PID Stop Listu (snapshot 19. 11. 2026): 1 487 kandidátních herních území a 3 659 fyzických stop bodů. Všech 3 659 bodů má `captureEnabled:false`: žádná vykreslená oblast není schváleným místem GPS obsazení.
 
-## Co se změnilo oproti Kobylisím
+## Strategická vizualizace města
 
-- `pid-prague.js` je úplný statický export auditních CSV; původní `pid-kobylisy.js` zůstává jako archivní výřez. Export tvoří `zastavkobrani_territories.csv` a `zastavkobrani_stop_points.csv`; reprodukovatelný skript je `scripts/export_prague.py`, pro novou verzi jej spusť s oběma auditními CSV a výstupním `pid-prague.js`. Produkční importní proces je nadále samostatný úkol.
-- Výchozí kamera ukazuje celou Prahu (`center=[14.44,50.085]`, zoom `10.65`).
-- Zůstaly MapLibre GL JS 4.7.1 + OpenFreeMap Liberty (in-place černošedá úprava v `map-style.js`) + Turf 7.2.0.
-- `game-territories` má pouze 1 bod na každé území; clustery agregují počty vlastníků a neutrálních území. Číslo je počet herních území, nikoli nástupišť.
-- `game-platforms` má 3 659 georeferencovaných bodů, které se zobrazí od zoomu 16; popisky od 17,2.
-- `game-territory-areas` zobrazuje geometrické sjednocení kandidátních 30m kruhů od zoomu 15,2. **Optimalizace:** při oddálení nevypočítává žádné polygony. Při přiblížení počítá pouze geometrii aktuálního výřezu v menších dávkách, kešuje ji a nikdy automaticky nespojuje různé territories. Výřez se určuje podle rozsahu všech fyzických stanovišť území, nikoli jen jeho reprezentativního bodu.
-- Vlastnické barvy jsou vlastností jednotlivých GeoJSON features; změna vlastníka aktualizuje mapové zdroje `setData` a prstencové clustery. Není potřeba tisíce ID v jednom style výrazu.
-- Testovací tři hráči bez přihlášení: deterministicky předobsazeno **1 035 / 1 487 (69,6 %)**, z toho Hráč 1 = 330, Hráč 2 = 349, Hráč 3 = 356 a neutrální = 452. Nový localStorage klíč `zastavkobrani-alpha-prague-v1` nezasahuje do uložené kobyliské simulace. Reset vypne předobsazení v novém scénáři.
-- 21 skupin ve zdrojovém auditu nemá určený dopravní typ a 3 bodové záznamy leží těsně mimo polygon Prahy; převzato z auditu bez maskování či automatického schválení. Nejde o finální produkční konfiguraci.
+`pid-strategic.js` obsahuje 1 487 statických, jednotlivě adresovatelných Polygon features. Jde o omezené Voroného buňky nad reprezentativními body PID groups: oblast každé zastávky tvoří průnik nejbližší buňky s kruhem **390 metrů** kolem příslušné skupiny. Buňky se nepřekrývají; ve větší hustotě se dělí o souvislý prostor, v řidších částech Prahy zůstávají mezery. Nejde o oficiální hranice Prahy a geometrie se explicitně neořezává polygonem města. Nejde ani o dobývací dosah.
 
-## Spuštění a ověření
+Polygony jsou přidány jako `game-strategic` GeoJSON zdroj a `game-strategic-fill` vrstva; bez hranic mezi plochami (stejní vlastníci vizuálně splývají), barva podle `territoryId → owner → color`. Při změně vlastnictví se mění barva feature, nikoliv samotná geometrie. Polygony se zobrazují do zoomu 15,5, pak nastupují podrobné kandidátní GPS oblasti od zoomu 15,2 a PID nástupiště od zoomu 16.
 
-GitHub Pages: `Deploy from a branch → main / root`. `index.html` načítá MapLibre → map-style.js → pid-prague.js → Turf → stop-map.js → app.js. Po editaci frontendových souborů aktualizovat parametry `?v=alpha15-prague`. Statická data v `pid-prague.js` mají cca 360 kB před HTTP kompresí.
+Clustery (MapLibre `clusterRadius:45`, `clusterMaxZoom:12.9`) jsou skryté při zobrazení celé Prahy; barevné prstence jsou viditelné až od zoomu 11,6, souhrnné body zastávek od zoomu 12,8 a jejich popisky od zoomu 14,1. Podrobné platformy od zoomu 16, písmena platformy od 17,2. Clustery počítají *herní území*, nikoliv nástupiště. Prstenec rozděluje podíl barev podle vlastníků včetně neutrální části. Při změně vlastnictví se refreshují relevantní GeoJSON zdroje. Základní mapa je OpenFreeMap Liberty upravená v map-style.js, nikoliv vlastní nekompletní styl.
 
-Lokální testy: `node --test tests/*.test.cjs`. Workflow `.github/workflows/verify-alpha.yml` je připraven pro automatické syntax a unit testy na `main`. Jde o testy dat a mapové logiky, ne o garantované vykreslení v mobilním prohlížeči. Ověřit ještě fyzické mobilní zoomování z celé Prahy, přechod do platforem, rychlost union oblastí, zbarvení všech clusterů, reakci na obsazení a dostupnost OpenFreeMap.
+## Deset testovacích hráčů
 
-**Bezpečnost:** žádný testovací polygon není schváleným GPS capture okruhem; skutečné obsazení nelze povolit bez administrátorského schválení bodu a serverové validace. Všechna tři demo uživatelská účta existují jen v lokálním prohlížeči.
+`demo-world.js` definuje 10 jednoslovných hráčů: Rys, Sova, Jiskra, Fénix, Mlok, Kobra, Maya, Šíp, Kotva a Tulák. Každý má vlastní barvu, fiktivní domovskou oblast, prostorový dosah a preferované módy (tram/metro/bus). Jiskra/Fénix se překrývají ve východním širším centru; Rys/Sova severně od centra. Tulák hraje po celé Praze. Tato charakteristika je **vymyšlený simulační scénář**, nikoliv skutečná data o uživatelích či cestování. `demoOwner(stop)` používá stabilní hash identifikátoru, geografické váhy, preference dopravního módu a pseudonáhodné vážené losování.
+
+Z 1 487 území je testově obsazeno **1 076 (72,4 %)**, 411 neutrálních. Hráči drží: Rys 66, Sova 76, Jiskra 97, Fénix 97, Mlok 97, Kobra 122, Maya 142, Šíp 132, Kotva 138 a Tulák 109. Výsledek je zreprodukovatelný a nevyžaduje server. Tato simulace má vlastní lokální úložiště `zastavkobrani-alpha-prague-10players-v1`; dřívější testy se nemažou. Reset založí prázdný stav bez znovuvytvoření demo při dalším otevření.
+
+## Reprodukce
+
+Z dat auditu PID: `python scripts/export_prague.py zastavkobrani_territories.csv zastavkobrani_stop_points.csv pid-prague.js`. Strategické polygony: `pip install numpy scipy shapely` a `python scripts/export_strategic_areas.py zastavkobrani_territories.csv pid-strategic.js`.
+
+`index.html` načítá MapLibre, `map-style.js`, `pid-prague.js`, `pid-strategic.js`, `demo-world.js`, Turf, `stop-map.js` a `app.js`. Github Pages main/root. Statické soubory před kompresí: PID cca 360 kB a strategické buňky cca 555 kB. Při úpravách publikované Alphy zvyšovat asset query cache klíče.
+
+Kontrola: `node --test tests/*.test.cjs`; GitHub Actions `.github/workflows/verify-alpha.yml`. Reálné mobilní testování zůstává nutné, zejména čitelnost desetibarevných prstenců, výkon WebGL při celopražském zobrazení, první načtení polygonů, přechody zoomu a klikací priority vrstev.
+
+**Stav rozhodnutí:** vyvážená strategická mapa schválená jako směr; 390 m, průhlednosti, jednotlivé zoomy a konkrétní simulační osobnosti jsou pracovní testovací parametry. Schválené GPS hranice a backend herních akcí v této Alpha nejsou implementovány.
 
 ---
 
