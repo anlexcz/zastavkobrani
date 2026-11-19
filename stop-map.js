@@ -67,7 +67,7 @@ function installStopMap(map, territories, showTerritory) {
     paint:{"line-color":"#aab5ad","line-opacity":.48,"line-width":1.3,
       "line-dasharray":[2,3]}});
   map.addLayer({id:"game-platform",type:"circle",source:"game-platforms",
-    minzoom:PLATFORM_ZOOM,
+    filter:["==",["get","metro"],0],minzoom:PLATFORM_ZOOM,
     paint:{"circle-color":"#929292","circle-radius":["step",["zoom"],5,18,6],
       "circle-stroke-color":"#f2f2f2","circle-stroke-width":1.5}});
   map.addLayer({id:"game-platform-metro",type:"circle",source:"game-platforms",
@@ -111,8 +111,9 @@ function refreshStopMapColors(map,ownership,players,selectedId) {
     if(p){match.push(id,p.color)}
   }
   match.push("#929292");
-  for(const id of ["game-territory","game-platform"])
+  for(const id of ["game-territory","game-platform","game-platform-metro"])
     map.setPaintProperty(id,"circle-color",match);
-  map.setPaintProperty("game-territory","circle-stroke-width",
-    ["case",["==",["get","territoryId"],selectedId||""],3,1.8]);
+  for(const id of ["game-territory","game-platform","game-platform-metro"])
+    map.setPaintProperty(id,"circle-stroke-width",
+      ["case",["==",["get","territoryId"],selectedId||""],3,1.6]);
 }
