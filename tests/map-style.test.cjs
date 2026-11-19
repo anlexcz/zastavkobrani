@@ -40,6 +40,6 @@ test("Železnice a tramvaje mají jiné barvy",()=>{
 test("Mapa aplikuje vlastní styl při style.load a nemá Leaflet volání",()=>{
   assert.ok(appSource.includes('map.on("style.load"'));
   assert.ok(appSource.includes('buildGameMapStyle(map.getStyle())'));
-  assert.ok(!/\\bL\\./.test(appSource));
+  assert.ok(!appSource.includes("L.divIcon") && !appSource.includes(".setIcon(") && !appSource.includes(".setTooltipContent("));
   assert.ok(appSource.includes('getElement()'));
 });
