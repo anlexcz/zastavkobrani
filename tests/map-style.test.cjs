@@ -51,3 +51,16 @@ test("Ulice, voda a koleje dostanou odlišné barvy",()=>{
  assert.equal(paint("tram-line"),colors.tram);
  assert.equal(paint("rail-line"),colors.railway);
 });
+
+test("Šrafované vrstvy se skryjí, obyčejné ulice zůstávají",()=>{
+ const map=mockMap([
+  {id:"landuse-pattern",type:"fill",paint:{"fill-pattern":"some-hatch"}},
+  {id:"ordinary-road",type:"line","source-layer":"transportation"},
+  {id:"tram-line",type:"line","source-layer":"transportation"}
+ ]);
+ apply(map);
+ assert.ok(map.hidden.some(x=>x.id==="landuse-pattern"));
+ assert.ok(!map.hidden.some(x=>x.id==="ordinary-road"));
+ assert.equal(map.writes.find(x=>x.id==="ordinary-road"&&x.key==="line-color").value,colors.street);
+ assert.equal(map.writes.find(x=>x.id==="ordinary-road"&&x.key==="line-opacity").value,.72);
+});
