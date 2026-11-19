@@ -110,9 +110,10 @@ function refreshStopMapColors(map,ownership,players,selectedId) {
     const p=players.find(p=>p.id===ownership[id].owner);
     if(p){match.push(id,p.color)}
   }
-  match.push("#929292");
+  // Neobsazená mapa musí používat prostou barvu, nikoli neplatný match bez větví.
+  const paintColor=match.length===2 ? "#929292" : [...match,"#929292"];
   for(const id of ["game-territory","game-platform","game-platform-metro"])
-    map.setPaintProperty(id,"circle-color",match);
+    map.setPaintProperty(id,"circle-color",paintColor);
   for(const id of ["game-territory","game-platform","game-platform-metro"])
     map.setPaintProperty(id,"circle-stroke-width",
       ["case",["==",["get","territoryId"],selectedId||""],3,1.6]);
