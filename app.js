@@ -141,16 +141,10 @@ $("show-challenge").onclick=()=>{
 document.addEventListener("keydown",e=>{if(e.key==="Escape")openScreen("map")});
 function render(){closeDays();const p=PLAYERS.find(x=>x.id===state.selected);$("player").value=state.selected;$("profile").textContent=p.name;$("remaining").textContent=remaining()+"/3";$("owned").textContent=owned();$("points").textContent=total(p.id);$("clock").textContent="Herní den: "+gameDay()+" · uzávěrka ve 03:00 (Praha)";
 refreshStopMapColors(map,state.stops,PLAYERS,selectedStop);
-const s=STOPS.find(x=>x.id===selectedStop),rec=s&&state.stops[s.id];$("stopname").textContent=s?.name||"Vyber zastávku na mapě";const owner=rec&&PLAYERS.find(p=>p.id===rec.owner);const protectedNow=rec?.protectedUntil&&Date.now()<Date.parse(rec.protectedUntil);$("stopdetail").innerHTML=s
- ? '<span class="pill">'+s.cats.join(" + ")+'</span>'+
-   '<p>Vlastník: <b>'+(owner?.name||"Neutrální")+'</b></p>'+
-   '<p>Obsazení: '+captureScore(s)+' bodů · držení: '+holdingScore(s)+' bodů/den</p>'+
-   '<p><b>'+s.points.length+' stanovišť PID</b> tvoří jedno herní území.</p>'+
-   (selectedPlatform?'<p>Vybrané nástupiště: <b>'+s.points.find(p=>p.id===selectedPlatform)?.platform+'</b> ('+selectedPlatform+')</p>':'')+
-   '<p class="notice">GPS okruhy 30 m jsou pouze náhled. Žádný bod není zatím schválen pro skutečné obsazení.</p>'+
-   '<div class="platform-list">'+s.points.map(p=>'<button type="button" data-platform="'+p.id+'">'+p.platform+(p.isMetro?' · metro':'')+'</button>').join("")+'</div>'+
-   (protectedNow?'<p>Ochrana do '+new Date(rec.protectedUntil).toLocaleString("cs-CZ")+'</p>':'')
- : 'Klepni na bod zastávky.';
+const s=STOPS.find(x=>x.id===selectedStop),rec=s&&state.stops[s.id];$("stopname").textContent=s?.name||"Vyber zastávku na mapě";const owner=rec&&PLAYERS.find(p=>p.id===rec.owner);const protectedNow=rec?.protectedUntil&&Date.now()<Date.parse(rec.protectedUntil);$("stopdetail").innerHTML=s?stopCardHtml({
+  stop:s,record:rec,owner,selectedPlayer:state.selected,selectedPlatform,
+  gameDay:gameDay(),diffDays,captureScore,holdingScore,remaining:remaining()
+}):"";
 for(const el of $("stopdetail").querySelectorAll("[data-platform]")){
   el.onclick=()=>{
     const point=s.points.find(p=>p.id===el.dataset.platform);
@@ -161,8 +155,8 @@ for(const el of $("stopdetail").querySelectorAll("[data-platform]")){
   };
 }
 $("capture").disabled=!s||!!(rec?.owner===state.selected)||!!protectedNow||remaining()===0;
-$("capture").textContent=rec?.owner?"Převzít":"Obsadit";
-$("maintain").disabled=!s||rec?.owner!==state.selected||diffDays(gameDay(),rec.anchor)<7;
+$("capture").textContent=rec?.owner?"Simulovat převzetí":"Simulovat obsazení";
+$("maintain").disabled=!s||!rec||rec.owner!==state.selected||diffDays(gameDay(),rec.anchor)<7;
 const challenge=challengeStop();$("challenge").textContent=challenge.name;$("challengeinfo").textContent=visitsFor(state.selected)?"Dnešní výzva splněna.":"Jedna společná zastávka pro všechny hráče · demo návštěva.";$("visit").disabled=selectedStop!==challenge.id||visitsFor(state.selected);
 $("leaderboard").innerHTML=PLAYERS.slice().sort((a,b)=>total(b.id,30)-total(a.id,30)).map(p=>'<div class="listrow"><span><span style="color:'+p.color+'">●</span> '+p.name+'</span> <b>'+total(p.id,30)+' b.</b></div>').join("");
 $("events").innerHTML=state.events.slice(0,8).map(e=>'<div class="listrow">'+e.text+'</div>').join("")||"Zatím žádné události.";}
