@@ -83,7 +83,10 @@ map.addControl(new maplibregl.NavigationControl({showCompass:false}),"top-left")
 let selectedPlatform=null;
 map.on("load",()=>{
   installStopMap(map,STOPS,(id,pointId)=>{
-    selectedStop=id;selectedPlatform=pointId;openScreen("stop");
+    selectedStop=id;selectedPlatform=pointId;
+    note("");
+    $("sheet").scrollTop=0;
+    openScreen("stop");
   },PLAYERS,state.stops);
   mapStopLayersReady=true;
   setMapOverlayVisibility(map,layerPrefs);
