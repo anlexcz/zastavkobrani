@@ -144,22 +144,29 @@ $("show-challenge").onclick=()=>{
 document.addEventListener("keydown",e=>{if(e.key==="Escape")openScreen("map")});
 function render(){closeDays();const p=PLAYERS.find(x=>x.id===state.selected);$("player").value=state.selected;$("profile").textContent=p.name;$("remaining").textContent=remaining()+"/3";$("owned").textContent=owned();$("points").textContent=total(p.id);$("clock").textContent="Herní den: "+gameDay()+" · uzávěrka ve 03:00 (Praha)";
 refreshStopMapColors(map,state.stops,PLAYERS,selectedStop);
-const s=STOPS.find(x=>x.id===selectedStop),rec=s&&state.stops[s.id];$("stopname").textContent=s?.name||"Vyber zastávku na mapě";const owner=rec&&PLAYERS.find(p=>p.id===rec.owner);const protectedNow=rec?.protectedUntil&&Date.now()<Date.parse(rec.protectedUntil);$("stopdetail").innerHTML=s?stopCardHtml({
-  stop:s,record:rec,owner,selectedPlayer:state.selected,selectedPlatform,
-  gameDay:gameDay(),diffDays,captureScore,holdingScore,remaining:remaining()
+const s=STOPS.find(x=>x.id===selectedStop),rec=s&&state.stops[s.id];
+$("stopname").textContent=s?.name||"Vyber zastávku na mapě";
+const owner=rec&&PLAYERS.find(p=>p.id===rec.owner);
+const mine=!!rec?.owner&&rec.owner===state.selected;
+const protectionEnd=rec?.protectedUntil?Date.parse(rec.protectedUntil):0;
+const protectedNow=!!rec?.owner&&protectionEnd>Date.now();
+const protectionOther=protectedNow&&!mine;
+const maintenanceDays=mine&&rec?.anchor?Math.max(0,7-diffDays(gameDay(),rec.anchor)):null;
+$("sheet").classList.toggle("sheet-stop",activeScreen==="stop");
+$("sheet").style.setProperty("--sheet-owner-color",owner?.color||"#929292");
+$("stop-owner-heading").textContent=owner?"Vlastní "+owner.name:"Neutrální zastávka";
+$("stop-owner-heading").style.color=owner?.color||"#b1b3b5";
+$("stopdetail").innerHTML=s?stopCardHtml({
+  stop:s,record:rec,owner,selectedPlayer:state.selected,
+  gameDay:gameDay(),diffDays,captureScore,holdingScore
 }):"";
-for(const el of $("stopdetail").querySelectorAll("[data-platform]")){
-  el.onclick=()=>{
-    const point=s.points.find(p=>p.id===el.dataset.platform);
-    if(!point)return;
-    selectedPlatform=point.id;
-    map.flyTo({center:[point.lon,point.lat],zoom:18.2});
-    render();
-  };
-}
-$("capture").disabled=!s||!!(rec?.owner===state.selected)||!!protectedNow||remaining()===0;
-$("capture").textContent=rec?.owner?"Simulovat převzetí":"Simulovat obsazení";
-$("maintain").disabled=!s||!rec||rec.owner!==state.selected||diffDays(gameDay(),rec.anchor)<7;
+$("capture").disabled=!s||mine||protectedNow||remaining()===0;
+$("capture").textContent=mine?"Tvoje zastávka":protectionOther?
+  "Převzetí za "+stopCountdown(rec.protectedUntil):remaining()===0?
+  "Vyčerpány pokusy":rec?.owner?"Simulovat převzetí":"Simulovat obsazení";
+$("maintain").disabled=!s||!mine||maintenanceDays>0;
+$("maintain").textContent=!mine?"Údržba":maintenanceDays>0?
+  "Údržba za "+maintenanceDays+" dní":"Simulovat údržbu";
 const challenge=challengeStop();$("challenge").textContent=challenge.name;$("challengeinfo").textContent=visitsFor(state.selected)?"Dnešní výzva splněna.":"Jedna společná zastávka pro všechny hráče · demo návštěva.";$("visit").disabled=selectedStop!==challenge.id||visitsFor(state.selected);
 $("leaderboard").innerHTML=PLAYERS.slice().sort((a,b)=>total(b.id,30)-total(a.id,30)).map(p=>'<div class="listrow"><span><span style="color:'+p.color+'">●</span> '+p.name+'</span> <b>'+total(p.id,30)+' b.</b></div>').join("");
 $("events").innerHTML=state.events.slice(0,8).map(e=>'<div class="listrow">'+e.text+'</div>').join("")||"Zatím žádné události.";}
@@ -169,7 +176,21 @@ $("capture").onclick=()=>{const s=STOPS.find(x=>x.id===selectedStop);if(!s)retur
 $("maintain").onclick=()=>{const s=STOPS.find(x=>x.id===selectedStop),rec=s&&state.stops[s.id];if(!rec||rec.owner!==state.selected||diffDays(gameDay(),rec.anchor)<7)return;rec.anchor=gameDay();state.events.unshift({at:new Date().toISOString(),text:PLAYERS.find(p=>p.id===state.selected).name+" provedl/a údržbu: "+s.name});persist();note("Údržba provedena. Ochrana se neobnovila.");render()};
 $("visit").onclick=()=>{const s=challengeStop();if(selectedStop!==s.id||visitsFor(state.selected))return;state.visits[gameDay()]??={};state.visits[gameDay()][state.selected]=true;state.events.unshift({at:new Date().toISOString(),text:"Návštěva zastávky dne: "+s.name});persist();note("Výzva splněna. Bodová odměna zatím není schválena.");render()};
 $("reset").onclick=()=>{if(!confirm("Opravdu smazat lokální testovací stav všech deseti hráčů?"))return;localStorage.removeItem(STORAGE);state=init(false);persist();selectedStop=null;note("Test byl vynulován.");openScreen("profile")};
-window.addEventListener("storage",e=>{if(e.key===STORAGE){state=load();render()}});render();setInterval(()=>{render()},60000);
+window.addEventListener("storage",e=>{if(e.key===STORAGE){state=load();render()}});render();
+setInterval(()=>{
+  if(activeScreen==="stop"&&selectedStop){
+    const record=state.stops[selectedStop];
+    const remainingMs=record?.protectedUntil?Date.parse(record.protectedUntil)-Date.now():0;
+    const counter=$("stopdetail").querySelector("[data-protection-countdown]");
+    if(counter&&remainingMs>0)counter.textContent=stopCountdown(record.protectedUntil);
+    const other=record?.owner!==state.selected;
+    if(other&&remainingMs>0){
+      $("capture").disabled=true;
+      $("capture").textContent="Převzetí za "+stopCountdown(record.protectedUntil);
+    }else if(counter&&remainingMs<=0)render();
+  }
+},1000);
+setInterval(()=>{render()},60000);
 
 // GPS je pouze orientační, bez ukládání či serverového ověřování.
 let gpsWatch=null, gpsMarker=null, gpsPosition=null;
