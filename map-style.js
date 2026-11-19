@@ -5,7 +5,7 @@
 const MAP_COLORS = Object.freeze({
   background:"#181a1c",water:"#303a3e",park:"#252c29",
   street:"#41464b",mainRoad:"#51565a",path:"#303539",
-  railway:"#85898d",tram:"#a29a91",text:"#aeb0b2"
+  railway:"#85898d",tram:"#969a9c",text:"#aeb0b2"
 });
 
 function applyGameMapStyle(map) {
