@@ -17,14 +17,13 @@ function stopCardHtml({stop,record,owner,selectedPlayer,selectedPlatform,gameDay
   const protection=Number.isFinite(protectedUntil)&&protectedUntil>now;
   const isMine=!!record?.owner&&record.owner===selectedPlayer;
   const days=record?.anchor?Math.max(1,diffDays(gameDay,record.anchor)+1):0;
-  const inactive=record?.owner&&days>7;
-  const owned=!!record?.owner;
-  const score=captureScore(stop),holding=holdingScore(stop);
+    const owned=!!record?.owner;
+  const score=stop.cats.length?captureScore(stop):"—",holding=stop.cats.length?holdingScore(stop):"—";
   const accent=owner?.color||"#929292";
   const status=!owned?"Neutrální":isMine?"Tvoje zastávka":protection?"Chráněná zastávka":"Obsazená zastávka";
   const ageLabel=!owned?"Volná k obsazení":days<=7?"Plný denní výnos":days<=21?"Bez denního výnosu":"Vypršení vlastnictví";
   const protectionInfo=protection?
-    "Ochrana do "+new Date(protectedUntil).toLocaleString("cs-CZ",{day:"numeric",month:"numeric",hour:"2-digit",minute:"2-digit"}):
+    "Ochrana do "+new Date(protectedUntil).toLocaleString("cs-CZ",{timeZone:"Europe/Prague",day:"numeric",month:"numeric",hour:"2-digit",minute:"2-digit"}):
     owned?"Bez aktivní ochrany":"Žádná ochrana";
   const possibleMaintain=isMine&&record?.anchor&&diffDays(gameDay,record.anchor)>=7;
   const actionMessage=isMine
