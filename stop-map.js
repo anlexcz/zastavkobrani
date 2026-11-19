@@ -49,6 +49,14 @@ function installStopMap(map, territories, showTerritory) {
   });
   map.addSource("game-platforms",{type:"geojson",data:geoCollection(platformFeatures)});
   map.addSource("game-territory-areas",{type:"geojson",data:geoCollection(areas)});
+  // Oblast je viditelná už před rozpadem skupiny na stanoviště.
+  // Jde o pracovní náhled neověřených GPS bodů, ne povolení herní akce.
+  map.addLayer({id:"game-territory-area-fill",type:"fill",
+    source:"game-territory-areas",minzoom:TERRITORY_AREA_ZOOM,
+    paint:{"fill-color":"#929292","fill-opacity":.095}});
+  map.addLayer({id:"game-territory-area-outline",type:"line",
+    source:"game-territory-areas",minzoom:TERRITORY_AREA_ZOOM,
+    paint:{"line-color":"#a3a7a9","line-opacity":.38,"line-width":1.15}});
   map.addLayer({id:"game-cluster",type:"circle",source:"game-territories",
     filter:["has","point_count"],maxzoom:PLATFORM_ZOOM,
     paint:{"circle-color":"#3e4145","circle-radius":["step",["get","point_count"],14,5,18,10,23],
@@ -68,14 +76,6 @@ function installStopMap(map, territories, showTerritory) {
       "text-size":11,"text-offset":[0,1.5],"text-anchor":"top",
       "text-optional":true},
     paint:{"text-color":"#e3e3e3","text-halo-color":"#181a1c","text-halo-width":1.2}});
-  // Oblast je viditelná už před rozpadem skupiny na stanoviště.
-  // Jde o pracovní náhled neověřených GPS bodů, ne povolení herní akce.
-  map.addLayer({id:"game-territory-area-fill",type:"fill",
-    source:"game-territory-areas",minzoom:TERRITORY_AREA_ZOOM,
-    paint:{"fill-color":"#929292","fill-opacity":.095}});
-  map.addLayer({id:"game-territory-area-outline",type:"line",
-    source:"game-territory-areas",minzoom:TERRITORY_AREA_ZOOM,
-    paint:{"line-color":"#a3a7a9","line-opacity":.38,"line-width":1.15}});
   map.addLayer({id:"game-platform",type:"circle",source:"game-platforms",
     filter:["==",["get","metro"],0],minzoom:PLATFORM_ZOOM,
     paint:{"circle-color":"#929292","circle-radius":["step",["zoom"],5,18,6],
