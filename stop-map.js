@@ -21,7 +21,7 @@ const CLUSTER_VISIBLE_ZOOM = 11.6;
 const STOP_DOTS_MIN_ZOOM = 0;
 const MAP_OVERLAY_LAYER_IDS = Object.freeze({
   stops:["game-territory","game-cluster","game-cluster-count","game-territory-label","game-platform","game-platform-metro","game-platform-label"],
-  polygons:["game-strategic-fill","game-owner-border","game-territory-area-fill","game-territory-area-outline"]
+  polygons:["game-strategic-fill","game-owner-border-glow","game-owner-border","game-owner-border-highlight","game-territory-area-fill","game-territory-area-outline"]
 });
 let mapOverlayState = {stops:true,polygons:true};
 
@@ -244,11 +244,27 @@ function installStopMap(map, territories, showTerritory, players=[], ownership={
     paint:{"fill-color":["get","color"],
       "fill-opacity":["interpolate",["linear"],["zoom"],
         10,.22,13,.20,15.5,.11]}});
+  // Glow je pod tmavým obrysem: měkká hráčská barva, žádné neonové hrany.
+  // Společné hranice stejného vlastníka už filtruje ownerBoundaryGeoJSON.
+  map.addLayer({id:"game-owner-border-glow",type:"line",source:"game-owner-borders",
+    maxzoom:STRATEGIC_MAX_ZOOM,
+    filter:["==",["get","contested"],0],
+    layout:{"line-join":"round","line-cap":"round"},
+    paint:{"line-color":["get","color"],
+      "line-width":["interpolate",["linear"],["zoom"],9,5,11,7,14,9,15.5,10],
+      "line-opacity":.34,"line-blur":3.3}});
   map.addLayer({id:"game-owner-border",type:"line",source:"game-owner-borders",
     maxzoom:STRATEGIC_MAX_ZOOM,layout:{"line-join":"round","line-cap":"round"},
+    paint:{"line-color":"#111418",
+      "line-width":["interpolate",["linear"],["zoom"],9,1.3,11,1.8,14,2.2,15.5,2.6],
+      "line-opacity":.9,"line-blur":.25}});
+  map.addLayer({id:"game-owner-border-highlight",type:"line",source:"game-owner-borders",
+    maxzoom:STRATEGIC_MAX_ZOOM,
+    filter:["==",["get","contested"],0],
+    layout:{"line-join":"round","line-cap":"round"},
     paint:{"line-color":["get","color"],
-      "line-width":["interpolate",["linear"],["zoom"],9,1.3,11,2.2,14,3.0,15.5,3.3],
-      "line-opacity":.9,"line-blur":.15}});
+      "line-width":["interpolate",["linear"],["zoom"],9,.7,11,1,14,1.4,15.5,1.6],
+      "line-opacity":.65,"line-blur":1.2}});
   // Oblast je viditelná už před rozpadem skupiny na stanoviště.
   // Jde o pracovní náhled neověřených GPS bodů, ne povolení herní akce.
   map.addLayer({id:"game-territory-area-fill",type:"fill",
