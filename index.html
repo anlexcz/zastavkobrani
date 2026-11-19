@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<link rel="stylesheet" href="style.css?v=alpha16-balanced-final">
+<link rel="stylesheet" href="style.css?v=alpha17-layers">
 </head>
 <body>
 <div id="map" role="region" aria-label="Mapa herních zastávek Prahy"></div><div id="map-error" class="map-error" hidden></div>
@@ -19,7 +19,20 @@
 </header>
 <button id="gps-toggle" class="gps-toggle" type="button" aria-pressed="false" title="Zapnout GPS">◎ <span>Zapnout GPS</span></button>
 <div id="gps-status" class="gps-status" role="status" aria-live="polite" hidden></div>
-<div class="test-label">ALPHA 1.6 · Praha · 10 hráčů · strategické oblasti</div>
+<div class="map-layer-controls">
+  <button id="map-layers-toggle" class="map-layers-toggle" type="button" aria-expanded="false" aria-controls="map-layers-panel" aria-label="Nastavit vrstvy mapy" title="Vrstvy mapy">
+    <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/>
+    </svg>
+  </button>
+  <div id="map-layers-panel" class="map-layers-panel" hidden>
+    <strong>Vrstvy mapy</strong>
+    <label><input type="checkbox" id="layer-stops" checked><span>Zastávky</span></label>
+    <label><input type="checkbox" id="layer-polygons" checked><span>Barevná území</span></label>
+    <small>Území jsou pouze vizuální, ne GPS dosah.</small>
+  </div>
+</div>
+<div class="test-label">ALPHA 1.7 · Praha · přepínání vrstev</div>
 <nav class="nav" aria-label="Herní nabídka">
   <button type="button" data-screen="map" class="active">Mapa</button>
   <button type="button" data-screen="daily">Zastávka dne</button>
@@ -59,11 +72,11 @@
   </div>
 </section>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="map-style.js?v=alpha16-balanced-final"></script>
-<script src="pid-prague.js?v=alpha16-balanced-final"></script>
-<script src="pid-strategic.js?v=alpha16-balanced-final"></script>
-<script src="demo-world.js?v=alpha16-balanced-final"></script>
+<script src="map-style.js?v=alpha17-layers"></script>
+<script src="pid-prague.js?v=alpha17-layers"></script>
+<script src="pid-strategic.js?v=alpha17-layers"></script>
+<script src="demo-world.js?v=alpha17-layers"></script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7.2.0/turf.min.js"></script>
-<script src="stop-map.js?v=alpha16-balanced-final"></script>
-<script src="app.js?v=alpha16-balanced-final" defer></script>
+<script src="stop-map.js?v=alpha17-layers"></script>
+<script src="app.js?v=alpha17-layers" defer></script>
 </body></html>
