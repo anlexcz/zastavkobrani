@@ -9,6 +9,7 @@ let territoryPoints = [];
 let lastOwnershipSignature = null;
 let currentOwnership = {};
 const areaGeometryCache = new Map();
+const territoryBounds = new Map();
 let areaGeneration = 0;
 
 // Různé výřezy mapy sdílejí stejné agregace; ikony se generují jen na požádání.
@@ -51,8 +52,11 @@ function refreshVisibleAreas(map) {
     return;
   }
   const b=map.getBounds(),margin=.012;
-  const visible=territoryPoints.filter(s=>s.lon>=b.getWest()-margin && s.lon<=b.getEast()+margin &&
-    s.lat>=b.getSouth()-margin && s.lat<=b.getNorth()+margin);
+  const visible=territoryPoints.filter(s=>{
+    const box=territoryBounds.get(s.id);
+    return box.east>=b.getWest()-margin && box.west<=b.getEast()+margin &&
+      box.north>=b.getSouth()-margin && box.south<=b.getNorth()+margin;
+  });
   const result=[];
   const source=map.getSource("game-territory-areas");
   let next=0;
@@ -153,6 +157,14 @@ function installStopMap(map, territories, showTerritory, players=[], ownership={
   clusterPlayers=players;
   territoryPoints=territories;
   currentOwnership=ownership;
+  // Výřez podle rozsahu všech skutečných stanovišť, nikoli pouze group.avgLat/Lon.
+  for(const s of territories){
+    const lats=s.points.map(p=>p.lat),lons=s.points.map(p=>p.lon);
+    territoryBounds.set(s.id,{
+      west:Math.min(...lons),east:Math.max(...lons),
+      south:Math.min(...lats),north:Math.max(...lats)
+    });
+  }
   const initialTerritories=territoryGeoJSON(territories,ownership,players);
   lastOwnershipSignature=JSON.stringify(territories.map(s=>ownership[s.id]?.owner||null));
   // Oblasti se tvoří pouze při detailním přiblížení, ne pro celou Prahu.
