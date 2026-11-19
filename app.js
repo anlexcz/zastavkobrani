@@ -37,7 +37,7 @@ function challengeStop(){const d=gameDay().replaceAll("-","");let n=0;for(const 
 function visitsFor(id){return state.visits[gameDay()]?.[id]||false}
 // MapLibre + vlastní vektorový styl. Herní stav zůstává oddělený od podkladu.
 const map = new maplibregl.Map({
-  container:"map",style:{version:8,sources:{},layers:[{id:"bg",type:"background",paint:{"background-color":"#182129"}}]},
+  container:"map",style:"https://tiles.openfreemap.org/styles/liberty",
   center:[14.43,50.081],zoom:10.7,attributionControl:true
 });
 map.addControl(new maplibregl.NavigationControl({showCompass:false}),"top-left");
@@ -58,14 +58,20 @@ for (const stop of STOPS) {
     .addTo(map);
   pins[stop.id]=marker;
 }
+let customMapApplied=false;
 map.on("error",event=>{console.warn("MapLibre:",event.error?.message||event.error)});
-loadGameMapStyle()
-  .then(style=>map.setStyle(style))
-  .catch(error=>{
-    console.error("Nepodařilo se načíst vektorovou mapu:",error);
-    const el=document.getElementById("map-error");
-    if(el){el.hidden=false;el.textContent="Mapový podklad není dostupný. Zastávky a herní funkce zůstávají aktivní."}
-  });
+map.once("load",()=>{
+  // Oficiální styl musí napřed správně fungovat. Teprve poté jej zjednodušíme.
+  try {
+    const style=buildGameMapStyle(map.getStyle());
+    customMapApplied=true;
+    map.setStyle(style);
+  } catch(error) {
+    console.error("Vlastní styl nebylo možné vytvořit; zůstává původní podklad.",error);
+    const el=$("map-error");
+    if(el){el.hidden=false;el.textContent="Minimalistický styl se nepodařilo použít. Zobrazuje se základní mapa."}
+  }
+});
 let activeScreen="map";
 function openScreen(name){
   activeScreen=name;
