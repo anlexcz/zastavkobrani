@@ -1,73 +1,55 @@
 "use strict";
-// Vlastní styl Zastávkobraní nad vektorovými daty OpenFreeMap.
-// Žádné budovy, POI, domovní čísla; pouze orientační podklad.
-const MAP_COLORS = {
-  background:"#182129", water:"#204a60", park:"#263d35",
-  path:"#3d4a52", street:"#56636d", mainRoad:"#69737d",
-  tram:"#b58b69", railway:"#8d9bb1", text:"#abb7c0"
-};
 
-function buildGameMapStyle(base) {
-  // Vstupem je již úspěšně načtený oficiální styl OpenFreeMap.
-  // Neprovádíme žádné vlastní fetch požadavky na nezdokumentovanou adresu.
-  const origin = "https://tiles.openfreemap.org/styles/liberty";
-  const entry = Object.entries(base.sources || {}).find(([,source]) => source.type === "vector");
-  if (!entry) throw new Error("Načtený styl nemá vektorový zdroj.");
-  const [sourceId,source] = entry;
-  const absolute = value => new URL(value,origin).href;
-  const vectorSource = {...source};
-  if (vectorSource.url) vectorSource.url = absolute(vectorSource.url);
-  if (vectorSource.tiles) vectorSource.tiles = vectorSource.tiles.map(absolute);
-  const layer = (id, sourceLayer, type, paint, filter, minzoom=0, layout={}) => ({
-    id, type, source:sourceId, "source-layer":sourceLayer, minzoom,
-    ...(filter ? {filter}:{}), layout, paint
-  });
-  const value = key => ["get",key];
-  const eq = (key,v) => ["==",value(key),v];
-  const any = (...items) => ["any",...items];
-  const railway = any(eq("class","rail"),eq("subclass","rail"),eq("subclass","light_rail"),eq("subclass","tram"),eq("subclass","subway"),eq("subclass","narrow_gauge"));
-  const line = (id,filter,color,width,minzoom=0) => layer(id,"transportation","line",
-    {"line-color":color,"line-width":width,"line-opacity":.96},filter,minzoom,{"line-cap":"round","line-join":"round"});
+// Zastávkobraní: jen úprava vrstev oficiálního stylu Liberty.
+// Zdroj vektorových dat, fonty a ostatní technické parametry ponechává OpenFreeMap.
+const MAP_COLORS = Object.freeze({
+  background:"#182129",water:"#204a60",park:"#263d35",
+  street:"#56636d",mainRoad:"#69737d",path:"#3d4a52",
+  railway:"#8d9bb1",tram:"#b58b69",text:"#abb7c0"
+});
 
-  return {
-    version:8,
-    name:"Zastávkobraní – minimalistická Praha (pracovní)",
-    ...(base.glyphs ? {glyphs:absolute(base.glyphs)} : {}),
-    sources:{[sourceId]:vectorSource},
-    layers:[
-      {id:"background",type:"background",paint:{"background-color":MAP_COLORS.background}},
-      layer("water","water","fill",{"fill-color":MAP_COLORS.water}),
-      layer("forest","landcover","fill",{"fill-color":MAP_COLORS.park,"fill-opacity":.75},
-        any(eq("class","wood"),eq("class","grass"),eq("class","scrub"))),
-      layer("parks","landuse","fill",{"fill-color":MAP_COLORS.park,"fill-opacity":.9},
-        any(eq("class","park"),eq("class","cemetery"),eq("class","grass"),eq("class","recreation_ground"))),
-      layer("waterway","waterway","line",{"line-color":MAP_COLORS.water,"line-width":["interpolate",["linear"],["zoom"],10,.6,15,2]}),
-      line("paths",any(eq("class","path"),eq("class","track"),eq("class","service")) ,
-        MAP_COLORS.path,["interpolate",["linear"],["zoom"],12,.3,16,1.2],12),
-      line("streets",any(eq("class","minor"),eq("class","tertiary"),eq("class","residential"),eq("class","street")),
-        MAP_COLORS.street,["interpolate",["linear"],["zoom"],10,.45,16,2.3],10),
-      line("main-roads",any(eq("class","motorway"),eq("class","trunk"),eq("class","primary"),eq("class","secondary")),
-        MAP_COLORS.mainRoad,["interpolate",["linear"],["zoom"],10,1,16,3.4]),
-      line("railways",railway,MAP_COLORS.railway,
-        ["interpolate",["linear"],["zoom"],10,.8,16,2.3],10),
-      // Tramvaje mají přednostní odlišnou barvu; pokud jsou v OMT datech rozlišeny.
-      line("tramways",eq("subclass","tram"),MAP_COLORS.tram,
-        ["interpolate",["linear"],["zoom"],11,1.1,16,2.6],11),
-      // Pouze geografické a uliční orientační názvy, nikoliv běžné POI.
-      layer("place-labels","place","symbol",{"text-color":MAP_COLORS.text,"text-halo-color":MAP_COLORS.background,"text-halo-width":1.1},
-        any(eq("class","city"),eq("class","town"),eq("class","suburb"),eq("class","neighbourhood"),eq("class","village")),9,
-        {"text-field":["coalesce",["get","name:cs"],["get","name"],""],"text-font":["Noto Sans Regular"],"text-size":["interpolate",["linear"],["zoom"],9,10,15,13],"text-max-width":8}),
-      layer("street-labels","transportation_name","symbol",{"text-color":"#82919a","text-halo-color":MAP_COLORS.background,"text-halo-width":1},
-        undefined,14,{"symbol-placement":"line","text-field":["coalesce",["get","name:cs"],["get","name"],""],"text-font":["Noto Sans Regular"],"text-size":10})
-    ]
-  };
-}
-
-// Veřejný TileJSON endpoint OpenFreeMap. Styl vzniká PŘED inicializací MapLibre,
-// takže není potřeba přepínat světlý Liberty styl za běhu.
-function createGameMapStyle() {
-  return buildGameMapStyle({
-    sources:{openmaptiles:{type:"vector",url:"https://tiles.openfreemap.org/planet"}},
-    glyphs:"https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf"
-  });
+function applyGameMapStyle(map) {
+  const layers = map.getStyle()?.layers || [];
+  if (!layers.length) throw new Error("OpenFreeMap neobsahuje vrstvy.");
+  let modified = 0;
+  const set = (id, key, value) => map.setPaintProperty(id,key,value);
+  const hide = id => map.setLayoutProperty(id,"visibility","none");
+  for (const layer of layers) {
+    const id=layer.id;
+    const name=id.toLowerCase();
+    const source=(layer["source-layer"] || "").toLowerCase();
+    const category=name+" "+source;
+    if (/building|housenumber|poi|aeroway|airport|mountain_peak|transit_stop/.test(category)) {
+      hide(id); modified++; continue;
+    }
+    if (layer.type==="background") {
+      set(id,"background-color",MAP_COLORS.background);modified++;
+    } else if (layer.type==="fill") {
+      if (/water/.test(category)) set(id,"fill-color",MAP_COLORS.water);
+      else if (/park|landcover|landuse|wood|grass|forest|cemetery/.test(category)) set(id,"fill-color",MAP_COLORS.park);
+      else set(id,"fill-color",MAP_COLORS.background);
+      modified++;
+    } else if (layer.type==="line") {
+      const c=/tram/.test(name)?MAP_COLORS.tram
+        :/rail|subway|transit/.test(name)?MAP_COLORS.railway
+        :/water/.test(category)?MAP_COLORS.water
+        :/motorway|trunk|primary|secondary|highway/.test(name)?MAP_COLORS.mainRoad
+        :/path|foot|cycle|pedestrian|service/.test(name)?MAP_COLORS.path
+        :MAP_COLORS.street;
+      set(id,"line-color",c);
+      modified++;
+    } else if (layer.type==="symbol") {
+      if (/place|city|town|suburb|neighbourhood|street|road|transportation_name/.test(category)
+          && !/poi|stop|housenumber/.test(name)) {
+        if(layer.layout?.["icon-image"]) map.setLayoutProperty(id,"icon-image","");
+        if(layer.paint?.["text-color"]!==undefined) set(id,"text-color",MAP_COLORS.text);
+        if(layer.paint?.["text-halo-color"]!==undefined) set(id,"text-halo-color",MAP_COLORS.background);
+      } else hide(id);
+      modified++;
+    } else if(layer.type==="fill-extrusion") {
+      hide(id);modified++;
+    }
+  }
+  if (!modified) throw new Error("Žádná vrstva nebyla upravena.");
+  return {total:layers.length,modified};
 }
