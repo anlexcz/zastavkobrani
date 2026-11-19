@@ -64,3 +64,20 @@ test("Šrafované vrstvy se skryjí, obyčejné ulice zůstávají",()=>{
  assert.equal(map.writes.find(x=>x.id==="ordinary-road"&&x.key==="line-color").value,colors.street);
  assert.equal(map.writes.find(x=>x.id==="ordinary-road"&&x.key==="line-opacity").value,.72);
 });
+
+test("Tunely silnic a železnic jsou téměř neviditelné, metro zůstává čitelné",()=>{
+ const map=mockMap([
+  {id:"tunnel_motorway",type:"line","source-layer":"transportation"},
+  {id:"tunnel_major_rail",type:"line","source-layer":"transportation"},
+  {id:"tunnel_transit_rail",type:"line","source-layer":"transportation"},
+  {id:"tunnel_major_rail_hatching",type:"line","source-layer":"transportation"},
+  {id:"road_motorway",type:"line","source-layer":"transportation"}
+ ]);
+ apply(map);
+ const opacity=id=>map.writes.find(x=>x.id===id&&x.key==="line-opacity")?.value;
+ assert.equal(opacity("tunnel_motorway"),.09);
+ assert.equal(opacity("tunnel_major_rail"),.13);
+ assert.equal(opacity("tunnel_transit_rail"),.45);
+ assert.equal(opacity("road_motorway"),.72);
+ assert.ok(map.hidden.some(x=>x.id==="tunnel_major_rail_hatching"));
+});
