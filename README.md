@@ -6,7 +6,7 @@ Aktuální stav 19. 11. 2026: **1 487 kandidátních pražských herních územ�
 
 ## Co se změnilo oproti Kobylisím
 
-- `pid-prague.js` je úplný statický export auditních CSV; původní `pid-kobylisy.js` zůstává jako archivní výřez. Export tvoří `zastavkobrani_territories.csv` a `zastavkobrani_stop_points.csv`; importní proces později musí být automatizovatelný a opakovatelný.
+- `pid-prague.js` je úplný statický export auditních CSV; původní `pid-kobylisy.js` zůstává jako archivní výřez. Export tvoří `zastavkobrani_territories.csv` a `zastavkobrani_stop_points.csv`; reprodukovatelný skript je `scripts/export_prague.py`, pro novou verzi jej spusť s oběma auditními CSV a výstupním `pid-prague.js`. Produkční importní proces je nadále samostatný úkol.
 - Výchozí kamera ukazuje celou Prahu (`center=[14.44,50.085]`, zoom `10.65`).
 - Zůstaly MapLibre GL JS 4.7.1 + OpenFreeMap Liberty (in-place černošedá úprava v `map-style.js`) + Turf 7.2.0.
 - `game-territories` má pouze 1 bod na každé území; clustery agregují počty vlastníků a neutrálních území. Číslo je počet herních území, nikoli nástupišť.
