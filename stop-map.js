@@ -185,7 +185,7 @@ function installStopMap(map, territories, showTerritory, players=[], ownership={
     attribution:'Zastávková data: <a href="https://pid.cz/o-systemu/opendata/" target="_blank" rel="noopener noreferrer">PID (CC BY)</a>',
     clusterRadius:45,clusterMaxZoom:12.9,clusterProperties:clusterAggregates(players)
   });
-  map.addSource("game-platforms",{type:"geojson",data:geoCollection(platformFeatures)});
+  map.addSource("game-platforms",{type:"geojson",data:platformFeatures});
   map.addSource("game-territory-areas",{type:"geojson",data:geoCollection([])});
   map.addLayer({id:"game-strategic-fill",type:"fill",source:"game-strategic",
     maxzoom:STRATEGIC_MAX_ZOOM,
