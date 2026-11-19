@@ -1,3 +1,17 @@
+# Zastávkobraní — Alpha 1.8: trvalé tečky a hranice hráčských území
+
+[Otevřít mapu](https://anlexcz.github.io/zastavkobrani/) · [Mapová specifikace](https://docs.google.com/document/d/1aYjOdabqtIEnw13ROaFMkpbyH9MKoaK2uOY3l5AGMDE/edit)
+
+**Zastávkové body nezmizí při žádném zoomu.** Předchozí časné i pozdní body byly sjednoceny do jediné nativní vrstvy MapLibre `game-territory` nad neclusterovaným GeoJSON zdrojem `game-stop-points` se všemi 1 487 herními zastávkami. Vrstvě není nastaven `maxzoom` ani clusterový filtr; je dostupná od zoomu 0 až po detail fyzických stanovišť. Poloměr se mírně mění podle zoomu (např. 2,7 px při 10,65 a 5,5 px při 16), ale geografická poloha je pevná. Prstencové clustery jsou samostatná doplňková vrstva a při jejich výskytu zastávky nevypínají; kreslí se NAD tečkami kvůli čitelnému číslu. Od zoomu 16 se vedle nich zobrazují fyzická nástupiště; kandidátní GPS okruhy jsou samostatná vrstva.
+
+**Vnější hranice stejného hráče:** statická topologie `pid-owner-boundaries.js` mapuje 3 171 skupin vnějších a společných hran 1 487 Voroného buněk. Při výpočtu vizualizace `ownerBoundaryGeoJSON` vynechává všechny společné hrany, pokud obě sousední zastávky vlastní stejný hráč; neobkresluje ani sousedící neutrální plochy. Na rozhraní různých hráčů vykresluje kontrastní tmavý silnější obrys, u přechodu hráč/neutrální místo nebo okraj území používá hráčskou barvu. Výsledkem je výrazný vnější obvod souvislého území jednoho hráče, nikoliv síť hran každé jednotlivé zastávky. Vrstva `game-owner-border` je NAD strategickou výplní a POD body zastávek a je řízena stejným přepínačem „Barevná území“. Po převzetí zastávky se barvy/viditelnost hranic aktualizují z lokálního vlastnictví bez přepočítání polygonů.
+
+**Reprodukovatelná topologie:** `python scripts/export_owner_borders.py pid-strategic.js pid-owner-boundaries.js`, vyžaduje Shapely. Překreslení polygonů samotných nadále používá `scripts/export_strategic_areas.py`. Zdrojová data jsou pouze vizuální a nevymezují žádné schválené GPS území.
+
+**Ověření:** `node --test tests/pid-map.test.cjs` a `node --test tests/*.test.cjs`. Přepínání vrstev zůstává, stejně jako deset modelových hráčů a oddělený localStorage. Rozměry hranic a bodů jsou pracovní vizuální parametry pro mobilní ověření.
+
+---
+
 # Zastávkobraní — Alpha 1.7: vrstvy mapy a časné body zastávek
 
 [Otevřít aplikaci](https://anlexcz.github.io/zastavkobrani/) · [Specifikace mapy](https://docs.google.com/document/d/1aYjOdabqtIEnw13ROaFMkpbyH9MKoaK2uOY3l5AGMDE/edit)
