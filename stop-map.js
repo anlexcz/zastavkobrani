@@ -171,6 +171,7 @@ function installStopMap(map, territories, showTerritory, players=[], ownership={
   const platformFeatures=platformGeoJSON(territories,ownership,players);
   map.addSource("game-territories",{
     type:"geojson",data:initialTerritories,cluster:true,
+    attribution:'Zastávková data: <a href="https://pid.cz/o-systemu/opendata/" target="_blank" rel="noopener noreferrer">PID (CC BY)</a>',
     clusterRadius:45,clusterMaxZoom:15,clusterProperties:clusterAggregates(players)
   });
   map.addSource("game-platforms",{type:"geojson",data:geoCollection(platformFeatures)});
