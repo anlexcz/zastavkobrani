@@ -58,53 +58,61 @@ for (const stop of STOPS) {
     .addTo(map);
   pins[stop.id]=marker;
 }
-// Vektorová mapa je primární. Když veřejný zdroj nedostupný, zobrazíme
-// dočasné rastrové OSM místo prázdného pozadí. Žádná změna herních dat.
-let fallbackActive=false, customMapApplied=false, vectorReady=false;
-let lastMapIssue="";
+// Mapa: načtení oficiálních vektorových dat -> náš styl -> kontrola vrstev.
+// Event style.load nastává dříve než load (který čeká i na dlaždice).
+let mapPhase="liberty", mapLastError="", mapLoadTimer;
 const mapError=$("map-error");
-function mapNotice(text) {
-  mapError.hidden=!text;
-  mapError.textContent=text;
+function mapNotice(message){
+  mapError.hidden=!message;
+  mapError.textContent=message;
 }
-function useRasterFallback(reason) {
-  if(fallbackActive||vectorReady)return;
-  fallbackActive=true;
-  console.warn("OpenFreeMap nedostupná, přepínám na OSM:",reason);
+function applyMinimalStyle(){
+  if(mapPhase!=="liberty")return;
+  try{
+    const style=buildGameMapStyle(map.getStyle());
+    if(!style.layers.some(layer=>layer.id==="tramways")||style.layers.some(layer=>layer.id==="building"))throw Error("Neplatné vrstvy.");
+    mapPhase="custom-loading";
+    map.setStyle(style);
+  }catch(error){
+    mapPhase="liberty-fallback";
+    clearTimeout(mapLoadTimer);
+    console.error("Vlastní styl nebylo možné sestavit:",error);
+    mapNotice("Vlastní styl se nepodařilo sestavit; používá se základní mapa.");
+  }
+}
+function useRasterFallback(reason){
+  if(mapPhase!=="liberty")return;
+  mapPhase="raster-fallback";
+  clearTimeout(mapLoadTimer);
+  console.warn("Nouzová mapa OSM:",reason);
   map.setStyle({
     version:8,
     sources:{osm:{type:"raster",tiles:["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],tileSize:256,attribution:"© OpenStreetMap contributors"}},
     layers:[{id:"osm-fallback",type:"raster",source:"osm",paint:{"raster-saturation":-.65,"raster-brightness-max":.68}}]
   });
-  mapNotice("Vektorový podklad se nepodařilo načíst. Zobrazuje se náhradní mapa OpenStreetMap.");
+  mapNotice("Vektorový podklad není dostupný. Používá se náhradní mapa OSM.");
 }
-const mapLoadTimeout=setTimeout(()=>useRasterFallback(lastMapIssue||"Časový limit načítání (12 s)."),12000);
-map.on("error",event=>{
-  const message=String(event.error?.message||event.error||"Neznámá chyba");
-  console.warn("MapLibre:",message);
-  lastMapIssue=message;
-  if(!fallbackActive&&!vectorReady&&/fetch|network|failed|http|404|403|401|style/i.test(message)){
-    useRasterFallback(message);
-  }
-});
-map.once("load",()=>{
-  if(fallbackActive)return;
-  clearTimeout(mapLoadTimeout);
-  vectorReady=true;
-  // Nejprve musí fungovat oficiální Liberty. Na funkční podklad aplikujeme vlastní vrstvy.
-  try {
-    const style=buildGameMapStyle(map.getStyle());
-    customMapApplied=true;
-    map.setStyle(style);
-    mapNotice("");
-  } catch(error) {
-    console.error("Zjednodušení stylu selhalo, ponechávám Liberty:",error);
-    mapNotice("Vlastní minimalistický styl nelze použít; zůstává základní mapa.");
-  }
-});
 map.on("style.load",()=>{
-  if(customMapApplied&&!fallbackActive)mapNotice("");
+  if(mapPhase==="liberty"){applyMinimalStyle();return;}
+  if(mapPhase==="custom-loading"){
+    clearTimeout(mapLoadTimer);
+    const ids=map.getStyle().layers.map(layer=>layer.id);
+    if(ids.includes("tramways")&&ids.includes("background")&&!ids.includes("building")){
+      mapPhase="custom";
+      mapNotice("");
+      console.info("Zastávkobraní: aktivní minimalistický styl",ids);
+    }else{
+      mapNotice("Nepodařilo se ověřit minimalistické mapové vrstvy.");
+    }
+  }
 });
+map.on("error",event=>{
+  const error=String(event.error?.message||event.error||"Neznámá chyba");
+  mapLastError=error;
+  console.warn("MapLibre:",error);
+  // Nelze použít libovolnou chybu dlaždice jako důvod k přepnutí celé mapy.
+});
+mapLoadTimer=setTimeout(()=>useRasterFallback(mapLastError||"Timeout načítání stylu"),15000);
 let activeScreen="map";
 function openScreen(name){
   activeScreen=name;
@@ -129,7 +137,7 @@ $("show-challenge").onclick=()=>{
 map.on("click",()=>{if(activeScreen==="stop")openScreen("map")});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")openScreen("map")});
 function render(){closeDays();const p=PLAYERS.find(x=>x.id===state.selected);$("player").value=state.selected;$("profile").textContent=p.name;$("remaining").textContent=remaining()+"/3";$("owned").textContent=owned();$("points").textContent=total(p.id);$("clock").textContent="Herní den: "+gameDay()+" · uzávěrka ve 03:00 (Praha)";
-for(const s of STOPS){const owner=state.stops[s.id]?.owner;const color=PLAYERS.find(x=>x.id===owner)?.color||"#94a3b8";pins[s.id].setTooltipContent(s.name);pins[s.id].setIcon(L.divIcon({className:"",html:'<div class="marker" style="background:'+color+';'+(s.id===selectedStop?"outline:3px solid #ffdc87;outline-offset:2px":"")+'"></div>',iconSize:[18,18]}))}
+for(const s of STOPS){const owner=state.stops[s.id]?.owner;const color=PLAYERS.find(x=>x.id===owner)?.color||"#94a3b8";const el=pins[s.id].getElement();el.style.backgroundColor=color;el.classList.toggle("selected",s.id===selectedStop)}
 const s=STOPS.find(x=>x.id===selectedStop),rec=s&&state.stops[s.id];$("stopname").textContent=s?.name||"Vyber zastávku na mapě";const owner=rec&&PLAYERS.find(p=>p.id===rec.owner);const protectedNow=rec?.protectedUntil&&Date.now()<Date.parse(rec.protectedUntil);$("stopdetail").innerHTML=s?'<span class="pill">'+s.cats.join(" + ")+'</span><p>Vlastník: <b>'+(owner?.name||"Neutrální")+'</b></p><p>Obsazení: '+captureScore(s)+' bodů · držení: '+holdingScore(s)+' bodů/den</p>'+(protectedNow?'<p>Ochrana do '+new Date(rec.protectedUntil).toLocaleString("cs-CZ")+'</p>':""):'Klikni na některou značku.';
 $("capture").disabled=!s||!!(rec?.owner===state.selected)||!!protectedNow||remaining()===0;
 $("capture").textContent=rec?.owner?"Převzít":"Obsadit";
