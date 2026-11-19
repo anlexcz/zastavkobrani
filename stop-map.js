@@ -245,10 +245,10 @@ function installStopMap(map, territories, showTerritory, players=[], ownership={
       "fill-opacity":["interpolate",["linear"],["zoom"],
         10,.22,13,.20,15.5,.11]}});
   map.addLayer({id:"game-owner-border",type:"line",source:"game-owner-borders",
-    maxzoom:STRATEGIC_MAX_ZOOM,
+    maxzoom:STRATEGIC_MAX_ZOOM,layout:{"line-join":"round","line-cap":"round"},
     paint:{"line-color":["get","color"],
       "line-width":["interpolate",["linear"],["zoom"],9,1.3,11,2.2,14,3.0,15.5,3.3],
-      "line-opacity":.9,"line-join":"round","line-blur":.15}});
+      "line-opacity":.9,"line-blur":.15}});
   // Oblast je viditelná už před rozpadem skupiny na stanoviště.
   // Jde o pracovní náhled neověřených GPS bodů, ne povolení herní akce.
   map.addLayer({id:"game-territory-area-fill",type:"fill",
