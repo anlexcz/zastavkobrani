@@ -16,7 +16,31 @@ let areaGeneration = 0;
 const CLUSTER_ICON_PREFIX = "owner-ring:";
 const STRATEGIC_MAX_ZOOM = 15.5;
 const CLUSTER_VISIBLE_ZOOM = 11.6;
-const STOPS_VISIBLE_ZOOM = 12.8;
+const STOPS_VISIBLE_ZOOM = 11.6;
+const EARLY_STOPS_ZOOM = 9.5;
+const EARLY_STOPS_END_ZOOM = 11.6;
+const MAP_OVERLAY_LAYER_IDS = Object.freeze({
+  stops:["game-early-stops","game-cluster","game-cluster-count","game-territory","game-territory-label","game-platform","game-platform-metro","game-platform-label"],
+  polygons:["game-strategic-fill","game-territory-area-fill","game-territory-area-outline"]
+});
+let mapOverlayState = {stops:true,polygons:true};
+
+function setMapOverlayVisibility(map, next) {
+  mapOverlayState={...mapOverlayState,...next};
+  for(const [type,ids] of Object.entries(MAP_OVERLAY_LAYER_IDS)){
+    for(const id of ids){
+      if(map.getLayer(id))map.setLayoutProperty(id,"visibility",mapOverlayState[type]?"visible":"none");
+    }
+  }
+  if(mapOverlayState.polygons)refreshVisibleAreas(map);
+  else {
+    areaGeneration++;
+    // Vypnutí oblastí zároveň zastaví nákladné výpočty GPS náhledů.
+    const source=map.getSource("game-territory-areas");
+    if(source)source.setData(geoCollection([]));
+  }
+}
+
 
 
 function geoPoint(lon, lat, properties) {
@@ -48,7 +72,7 @@ function platformGeoJSON(territories, ownership, players) {
 // Počet nakreslených polygonů odpovídá pouze okolí aktuálního výřezu.
 // Unie se kešují; při oddálení Prahy nic nespočítáváme.
 function refreshVisibleAreas(map) {
-  if(!map.getZoom || !map.getBounds || !map.getSource("game-territory-areas"))return;
+  if(!mapOverlayState.polygons || !map.getZoom || !map.getBounds || !map.getSource("game-territory-areas"))return;
   const generation=++areaGeneration;
   if(map.getZoom()<TERRITORY_AREA_ZOOM) {
     map.getSource("game-territory-areas").setData(geoCollection([]));
@@ -180,6 +204,9 @@ function installStopMap(map, territories, showTerritory, players=[], ownership={
       owned:players.some(p=>p.id===ownership[f.properties.territoryId]?.owner)?1:0}
   }));
   map.addSource("game-strategic",{type:"geojson",data:geoCollection(strategicFeatures)});
+  // Samostatné neclusterované drobné body: viditelné hned při otevření Prahy.
+  // Nesmí nahrazovat herní clustery ani vytvářet vlastní herní identitu.
+  map.addSource("game-early-stop-points",{type:"geojson",data:initialTerritories});
   map.addSource("game-territories",{
     type:"geojson",data:initialTerritories,cluster:true,
     attribution:'Zastávková data: <a href="https://pid.cz/o-systemu/opendata/" target="_blank" rel="noopener noreferrer">PID (CC BY)</a>',
@@ -201,6 +228,12 @@ function installStopMap(map, territories, showTerritory, players=[], ownership={
     source:"game-territory-areas",minzoom:TERRITORY_AREA_ZOOM,
     paint:{"line-color":["get","color"],"line-opacity":.38,"line-width":1.15}});
   map.on("styleimagemissing",event=>createRingIcon(event.id,map,players));
+  map.addLayer({id:"game-early-stops",type:"circle",source:"game-early-stop-points",
+    minzoom:EARLY_STOPS_ZOOM,maxzoom:EARLY_STOPS_END_ZOOM,
+    paint:{"circle-color":["get","color"],
+      "circle-radius":["interpolate",["linear"],["zoom"],9.5,2.2,10.65,3.5,11.6,4],
+      "circle-opacity":["interpolate",["linear"],["zoom"],10,.92,11.2,.85,11.6,.15],
+      "circle-stroke-color":"#d8dadd","circle-stroke-width":.65}});
   map.addLayer({id:"game-cluster",type:"symbol",source:"game-territories",
     filter:["has","point_count"],minzoom:CLUSTER_VISIBLE_ZOOM,maxzoom:PLATFORM_ZOOM,
     layout:{"icon-image":ringIconExpression(players),
@@ -212,7 +245,7 @@ function installStopMap(map, territories, showTerritory, players=[], ownership={
     paint:{"text-color":"#f6f6f6"}});
   map.addLayer({id:"game-territory",type:"circle",source:"game-territories",
     filter:["!",["has","point_count"]],minzoom:STOPS_VISIBLE_ZOOM,maxzoom:PLATFORM_ZOOM,
-    paint:{"circle-color":["get","color"],"circle-radius":7,
+    paint:{"circle-color":["get","color"],"circle-radius":["interpolate",["linear"],["zoom"],11.6,4.5,13.5,6,15.5,7],
       "circle-stroke-color":"#f2f2f2","circle-stroke-width":1.8}});
   map.addLayer({id:"game-territory-label",type:"symbol",source:"game-territories",
     filter:["!",["has","point_count"]],minzoom:14.1,maxzoom:PLATFORM_ZOOM,
@@ -243,6 +276,7 @@ function installStopMap(map, territories, showTerritory, players=[], ownership={
     showTerritory(p.territoryId,p.pointId||null);
   };
   map.on("click","game-strategic-fill",selectFeature);
+  map.on("click","game-early-stops",selectFeature);
   map.on("click","game-territory",selectFeature);
   map.on("click","game-territory-area-fill",selectFeature);
   map.on("click","game-platform",selectFeature);
@@ -255,9 +289,9 @@ function installStopMap(map, territories, showTerritory, players=[], ownership={
       map.easeTo({center:f.geometry.coordinates,zoom:Math.max(zoom,map.getZoom()+1)});
     }).catch(error=>console.warn("Shluk nelze přiblížit:",error));
   });
-  for(const id of ["game-strategic-fill","game-territory","game-territory-area-fill","game-platform","game-platform-metro","game-cluster"])
+  for(const id of ["game-strategic-fill","game-early-stops","game-territory","game-territory-area-fill","game-platform","game-platform-metro","game-cluster"])
     map.on("mouseenter",id,()=>{map.getCanvas().style.cursor="pointer"});
-  for(const id of ["game-territory","game-platform","game-platform-metro","game-cluster"])
+  for(const id of ["game-early-stops","game-territory","game-platform","game-platform-metro","game-cluster"])
     map.on("mouseleave",id,()=>{map.getCanvas().style.cursor=""});
 }
 
@@ -267,7 +301,9 @@ function refreshStopMapColors(map,ownership,players,selectedId) {
   if(signature!==lastOwnershipSignature){
     lastOwnershipSignature=signature;
     currentOwnership=ownership;
-    map.getSource("game-territories").setData(territoryGeoJSON(territoryPoints,ownership,clusterPlayers));
+    const refreshedTerritories=territoryGeoJSON(territoryPoints,ownership,clusterPlayers);
+    map.getSource("game-territories").setData(refreshedTerritories);
+    map.getSource("game-early-stop-points").setData(refreshedTerritories);
     map.getSource("game-platforms").setData(platformGeoJSON(territoryPoints,ownership,clusterPlayers));
     const strategic=map.getSource("game-strategic");
     if(strategic)strategic.setData(geoCollection(PID_STRATEGIC_POLYGONS.features.map(f=>({
