@@ -47,7 +47,7 @@ test("GPS oblasti se geometricky sjednotí podle území a zobrazí před platfo
   easeTo(){}
  };
  const scope={console,turf:mockTurf};
- vm.runInNewContext(mapSource+"\\nthis.installStopMap=installStopMap;",scope);
+ vm.runInNewContext(mapSource+"\nthis.installStopMap=installStopMap;",scope);
  scope.installStopMap(map,groups,()=>{});
  assert.equal(sources["game-territories"].data.features.length,14);
  assert.equal(sources["game-platforms"].data.features.length,51);
