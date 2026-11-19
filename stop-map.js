@@ -127,9 +127,15 @@ function refreshStopMapColors(map,ownership,players,selectedId) {
     map.setPaintProperty(id,"circle-color",paintColor);
   map.setPaintProperty("game-territory-area-fill","fill-color",paintColor);
   map.setPaintProperty("game-territory-area-outline","line-color",paintColor);
+  const ownedIds=Object.keys(ownership).filter(id=>players.some(p=>p.id===ownership[id].owner));
+  const isOwned=ownedIds.length?["in",["get","territoryId"],["literal",ownedIds]]:false;
+  // Zachovat decentní černošedou mapu, ale zobrazit demo vlastnické barvy.
+  map.setPaintProperty("game-territory-area-fill","fill-opacity",
+    ownedIds.length?["case",isOwned,.23,.075]:.075);
   // Při výběru zvýraznit obrys konkrétního herního území.
   map.setPaintProperty("game-territory-area-outline","line-opacity",
-    ["case",["==",["get","territoryId"],selectedId||""],.75,.38]);
+    ["case",["==",["get","territoryId"],selectedId||""],.85,
+      ...(ownedIds.length?[isOwned,.68]:[]),.26]);
   for(const id of ["game-territory","game-platform","game-platform-metro"])
     map.setPaintProperty(id,"circle-stroke-width",
       ["case",["==",["get","territoryId"],selectedId||""],3,1.6]);
