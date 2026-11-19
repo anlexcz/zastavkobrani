@@ -4,32 +4,35 @@ const assert=require("node:assert/strict");
 const fs=require("node:fs");
 const vm=require("node:vm");
 const source=fs.readFileSync("map-style.js","utf8");
-async function getStyle() {
-  const context={
-    URL,
-    fetch:async()=>({ok:true,json:async()=>({
-      sources:{openmaptiles:{type:"vector",url:"https://tiles.openfreemap.org/planet"}},
-      glyphs:"https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf"
-    })})
+const appSource=fs.readFileSync("app.js","utf8");
+const documentedUrl="https://tiles.openfreemap.org/styles/liberty";
+function getStyle() {
+  const context={URL};
+  vm.runInNewContext(source+"\nthis.buildGameMapStyle=buildGameMapStyle;",context);
+  const base={
+    sources:{openmaptiles:{type:"vector",url:"https://tiles.openfreemap.org/planet"}},
+    glyphs:"https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf"
   };
-  vm.runInNewContext(source+"\nthis.loadGameMapStyle=loadGameMapStyle;",context);
-  return await context.loadGameMapStyle();
+  return context.buildGameMapStyle(base);
 }
-test("Minimální styl má bezklíčový vektorový zdroj",async()=>{
-  const style=await getStyle();
+test("Inicializace používá oficiální URL stylu OpenFreeMap",()=>{
+  assert.ok(appSource.includes('style:"'+documentedUrl+'"'));
+  assert.ok(!appSource.includes("styles/liberty/style.json"));
+  assert.ok(appSource.includes("buildGameMapStyle(map.getStyle())"));
+});
+test("Vlastní styl používá vektorový zdroj bez API klíče",()=>{
+  const style=getStyle();
   assert.equal(style.version,8);
   assert.ok(Object.values(style.sources).some(x=>x.type==="vector"));
   assert.ok(!JSON.stringify(style).includes("api_key"));
 });
-test("Mapa neobsahuje budovy ani POI",async()=>{
-  const style=await getStyle();
-  const names=style.layers.map(x=>x.id);
+test("Bez budov a běžných POI",()=>{
+  const names=getStyle().layers.map(x=>x.id);
   assert.ok(!names.some(x=>/building|poi|housenumber/i.test(x)));
   assert.ok(names.includes("parks")&&names.includes("water")&&names.includes("tramways")&&names.includes("railways"));
 });
-test("Železnice a tramvaje mají různé barvy",async()=>{
-  const style=await getStyle();
-  const rail=style.layers.find(x=>x.id==="railways");
-  const tram=style.layers.find(x=>x.id==="tramways");
-  assert.notEqual(rail.paint["line-color"],tram.paint["line-color"]);
+test("Železnice a tramvaje mají jiné barvy",()=>{
+  const style=getStyle();
+  assert.notEqual(style.layers.find(x=>x.id==="railways").paint["line-color"],
+                  style.layers.find(x=>x.id==="tramways").paint["line-color"]);
 });
