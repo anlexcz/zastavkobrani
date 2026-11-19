@@ -3,9 +3,9 @@
 // Zastávkobraní: jen úprava vrstev oficiálního stylu Liberty.
 // Zdroj vektorových dat, fonty a ostatní technické parametry ponechává OpenFreeMap.
 const MAP_COLORS = Object.freeze({
-  background:"#182129",water:"#204a60",park:"#22362f",
-  street:"#48545e",mainRoad:"#56616b",path:"#39454e",
-  railway:"#8d9bb1",tram:"#b58b69",text:"#abb7c0"
+  background:"#181a1c",water:"#303a3e",park:"#252c29",
+  street:"#41464b",mainRoad:"#51565a",path:"#303539",
+  railway:"#85898d",tram:"#a29a91",text:"#aeb0b2"
 });
 
 function applyGameMapStyle(map) {
