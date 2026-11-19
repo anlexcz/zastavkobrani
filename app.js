@@ -35,16 +35,37 @@ function owned(){return Object.values(state.stops).filter(v=>v.owner===state.sel
 function total(id,days){return state.ledger.filter(x=>x.player===id&&(!days||diffDays(gameDay(),x.day)>=0&&diffDays(gameDay(),x.day)<days)).reduce((a,b)=>a+b.amount,0)}
 function challengeStop(){const d=gameDay().replaceAll("-","");let n=0;for(const c of d)n=(n*31+c.charCodeAt(0))>>>0;return STOPS[n%STOPS.length]}
 function visitsFor(id){return state.visits[gameDay()]?.[id]||false}
-const map = L.map("map").setView([50.081,14.43],11);
-// Překreslení mapy po změně rozměrů (zejména mobilní prohlížeče).
-new ResizeObserver(() => map.invalidateSize({pan:false})).observe($("map"));
-window.addEventListener("load", () => map.invalidateSize({pan:false}));
-// Pracovní bezklíčový podklad: běžné OSM tiles, tmavé tónování pouze přes CSS.
-L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{
-  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-  maxZoom:19
-}).addTo(map);
-const pins={};for(const s of STOPS){const m=L.marker([s.lat,s.lon],{icon:L.divIcon({className:"",html:'<div class="marker"></div>',iconSize:[18,18]})}).addTo(map);m.on("click",()=>{selectedStop=s.id;openScreen("stop");render()});m.bindTooltip(s.name,{direction:"top",offset:[0,-6]});pins[s.id]=m}
+// MapLibre + vlastní vektorový styl. Herní stav zůstává oddělený od podkladu.
+const map = new maplibregl.Map({
+  container:"map",style:{version:8,sources:{},layers:[{id:"bg",type:"background",paint:{"background-color":"#182129"}}]},
+  center:[14.43,50.081],zoom:10.7,attributionControl:true
+});
+map.addControl(new maplibregl.NavigationControl({showCompass:false}),"top-left");
+const pins = {};
+for (const stop of STOPS) {
+  const element=document.createElement("button");
+  element.className="map-stop";
+  element.type="button";
+  element.setAttribute("aria-label","Zastávka "+stop.name);
+  element.addEventListener("click",event=>{
+    event.stopPropagation();
+    selectedStop=stop.id;
+    openScreen("stop");
+  });
+  const marker=new maplibregl.Marker({element,anchor:"center"})
+    .setLngLat([stop.lon,stop.lat])
+    .setPopup(new maplibregl.Popup({offset:16,closeButton:false}).setText(stop.name))
+    .addTo(map);
+  pins[stop.id]=marker;
+}
+map.on("error",event=>{console.warn("MapLibre:",event.error?.message||event.error)});
+loadGameMapStyle()
+  .then(style=>map.setStyle(style))
+  .catch(error=>{
+    console.error("Nepodařilo se načíst vektorovou mapu:",error);
+    const el=document.getElementById("map-error");
+    if(el){el.hidden=false;el.textContent="Mapový podklad není dostupný. Zastávky a herní funkce zůstávají aktivní."}
+  });
 let activeScreen="map";
 function openScreen(name){
   activeScreen=name;
@@ -63,7 +84,7 @@ for(const b of document.querySelectorAll(".nav button")) b.onclick=()=>openScree
 $("show-challenge").onclick=()=>{
   const s=challengeStop();
   selectedStop=s.id;
-  map.setView([s.lat,s.lon],15);
+  map.flyTo({center:[s.lon,s.lat],zoom:15});
   openScreen("stop");
 };
 map.on("click",()=>{if(activeScreen==="stop")openScreen("map")});
@@ -85,54 +106,66 @@ $("visit").onclick=()=>{const s=challengeStop();if(selectedStop!==s.id||visitsFo
 $("reset").onclick=()=>{if(!confirm("Opravdu smazat všechna lokální testovací data všech tří hráčů?"))return;localStorage.removeItem(STORAGE);state=init();selectedStop=null;note("Test byl vynulován.");openScreen("profile")};
 window.addEventListener("storage",e=>{if(e.key===STORAGE){state=load();render()}});render();setInterval(()=>{render()},60000);
 
-// Poloha pouze pro orientaci na mapě: bez ukládání, bez ověření herních akcí.
-let gpsWatch = null;
-let gpsMarker = null;
-let gpsAccuracy = null;
-const gpsButton = $("gps-toggle");
-const gpsStatus = $("gps-status");
-function gpsMessage(message) { gpsStatus.hidden = !message; gpsStatus.textContent = message; }
-function disableGps() {
-  if (gpsWatch !== null) navigator.geolocation.clearWatch(gpsWatch);
-  gpsWatch = null;
-  if (gpsMarker) { map.removeLayer(gpsMarker); gpsMarker = null; }
-  if (gpsAccuracy) { map.removeLayer(gpsAccuracy); gpsAccuracy = null; }
+// GPS je pouze orientační, bez ukládání či serverového ověřování.
+let gpsWatch=null, gpsMarker=null, gpsPosition=null;
+const gpsButton=$("gps-toggle"), gpsStatus=$("gps-status");
+function gpsMessage(text) {gpsStatus.hidden=!text;gpsStatus.textContent=text;}
+function accuracyPolygon(lng,lat,radius) {
+  const coords=[];
+  const latM=111320, lonM=111320*Math.cos(lat*Math.PI/180);
+  for(let i=0;i<=64;i++){
+    const angle=i*Math.PI/32;
+    coords.push([lng+Math.cos(angle)*radius/lonM,lat+Math.sin(angle)*radius/latM]);
+  }
+  return {type:"Feature",geometry:{type:"Polygon",coordinates:[coords]},properties:{}};
+}
+function drawAccuracy(){
+  if(!gpsPosition||!map.isStyleLoaded())return;
+  const point=accuracyPolygon(gpsPosition.lng,gpsPosition.lat,gpsPosition.accuracy);
+  if(!map.getSource("gps-accuracy")) {
+    map.addSource("gps-accuracy",{type:"geojson",data:point});
+    map.addLayer({id:"gps-area",type:"fill",source:"gps-accuracy",
+      paint:{"fill-color":"#36a7e2","fill-opacity":.12}});
+    map.addLayer({id:"gps-outline",type:"line",source:"gps-accuracy",
+      paint:{"line-color":"#36a7e2","line-width":1.5}});
+  } else map.getSource("gps-accuracy").setData(point);
+}
+map.on("style.load",drawAccuracy);
+function disableGps(){
+  if(gpsWatch!==null)navigator.geolocation.clearWatch(gpsWatch);
+  gpsWatch=null;gpsPosition=null;
+  if(gpsMarker){gpsMarker.remove();gpsMarker=null;}
+  if(map.getSource("gps-accuracy"))map.getSource("gps-accuracy").setData({
+    type:"FeatureCollection",features:[]});
   gpsButton.setAttribute("aria-pressed","false");
-  gpsButton.querySelector("span").textContent = "Zapnout GPS";
+  gpsButton.querySelector("span").textContent="Zapnout GPS";
   gpsMessage("");
 }
-function gpsError(error) {
-  const messages = {1:"Přístup k poloze byl zamítnut. Povol GPS v nastavení prohlížeče.",
-    2:"Polohu se nepodařilo zjistit.",3:"Zjišťování polohy vypršelo."};
-  gpsMessage(messages[error.code] || "GPS není dostupná.");
-  if (error.code === 1) {
-    // Neopakovat požadavky po zamítnutí oprávnění.
-    if (gpsWatch !== null) navigator.geolocation.clearWatch(gpsWatch);
-    gpsWatch = null;
+function gpsError(error){
+  gpsMessage(({1:"Přístup k GPS byl zamítnut.",2:"GPS polohu nelze určit.",3:"Časový limit GPS vypršel."})[error.code]||"GPS není dostupná.");
+  if(error.code===1) {
+    if(gpsWatch!==null)navigator.geolocation.clearWatch(gpsWatch);
+    gpsWatch=null;
     gpsButton.setAttribute("aria-pressed","false");
-    gpsButton.querySelector("span").textContent = "Zapnout GPS";
+    gpsButton.querySelector("span").textContent="Zapnout GPS";
   }
 }
-gpsButton.addEventListener("click", () => {
-  if (gpsWatch !== null) { disableGps(); return; }
-  if (!navigator.geolocation || !window.isSecureContext) {
-    gpsMessage("GPS vyžaduje HTTPS a prohlížeč s podporou geolokace.");
-    return;
+gpsButton.addEventListener("click",()=>{
+  if(gpsWatch!==null){disableGps();return;}
+  if(!navigator.geolocation||!window.isSecureContext){
+    gpsMessage("GPS vyžaduje HTTPS a podporu polohy v prohlížeči.");return;
   }
   gpsMessage("Zjišťuji polohu…");
   gpsButton.setAttribute("aria-pressed","true");
-  gpsButton.querySelector("span").textContent = "Vypnout GPS";
-  gpsWatch = navigator.geolocation.watchPosition(position => {
-    const point = [position.coords.latitude, position.coords.longitude];
-    const accuracy = Math.max(1,position.coords.accuracy || 1);
-    if (!gpsMarker) {
-      gpsMarker = L.circleMarker(point,{radius:7,color:"#fff",weight:2,fillColor:"#36a7e2",fillOpacity:1}).addTo(map);
-      gpsAccuracy = L.circle(point,{radius:accuracy,color:"#36a7e2",weight:1,fillColor:"#36a7e2",fillOpacity:.12}).addTo(map);
-      map.setView(point,Math.max(map.getZoom(),15));
-    } else {
-      gpsMarker.setLatLng(point);
-      gpsAccuracy.setLatLng(point).setRadius(accuracy);
-    }
-    gpsMessage("Poloha zjištěna · přesnost ±"+Math.round(accuracy)+" m · pouze orientační");
-  }, gpsError, {enableHighAccuracy:true,maximumAge:5000,timeout:15000});
+  gpsButton.querySelector("span").textContent="Vypnout GPS";
+  gpsWatch=navigator.geolocation.watchPosition(({coords})=>{
+    gpsPosition={lng:coords.longitude,lat:coords.latitude,accuracy:Math.max(1,coords.accuracy||1)};
+    if(!gpsMarker){
+      const el=document.createElement("div");el.className="gps-dot";
+      gpsMarker=new maplibregl.Marker({element:el,anchor:"center"}).setLngLat([gpsPosition.lng,gpsPosition.lat]).addTo(map);
+      map.flyTo({center:[gpsPosition.lng,gpsPosition.lat],zoom:Math.max(map.getZoom(),15)});
+    }else gpsMarker.setLngLat([gpsPosition.lng,gpsPosition.lat]);
+    drawAccuracy();
+    gpsMessage("GPS přesnost ±"+Math.round(gpsPosition.accuracy)+" m · pouze orientační");
+  },gpsError,{enableHighAccuracy:true,maximumAge:5000,timeout:15000});
 });
