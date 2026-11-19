@@ -7,9 +7,13 @@ const vm=require("node:vm");
 const dataSource=fs.readFileSync("pid-prague.js","utf8");
 const mapSource=fs.readFileSync("stop-map.js","utf8");
 const appSource=fs.readFileSync("app.js","utf8");
+const demoSource=fs.readFileSync("demo-world.js","utf8");
+const strategicSource=fs.readFileSync("pid-strategic.js","utf8");
 const ctx={};
 vm.runInNewContext(dataSource+"\nthis.groups=PID_PRAGUE;",ctx);
 const groups=ctx.groups;
+vm.runInNewContext(strategicSource+"\nthis.polygons=PID_STRATEGIC_POLYGONS;",ctx);
+vm.runInNewContext(demoSource+"\nthis.sim={DEMO_PLAYERS,demoOwner};",ctx);
 const players=[{id:"p1",color:"#ef4444"},{id:"p2",color:"#3b82f6"},{id:"p3",color:"#22c55e"}];
 
 function createMock(zoom=10){
@@ -45,7 +49,7 @@ function setup(zoom=10){
     type:"MultiPolygon",coordinates:fc.features.map(f=>[f.geometry.coordinates[0]])
    }};}
  };
- const scope={console,turf,requestAnimationFrame:fn=>fn()};
+ const scope={console,turf,PID_STRATEGIC_POLYGONS:ctx.polygons,requestAnimationFrame:fn=>fn()};
  vm.runInNewContext(mapSource+"\nthis.api={installStopMap,refreshVisibleAreas,refreshStopMapColors,ringSegments,territoryGeoJSON,clusterAggregates};",scope);
  const map=createMock(zoom);
  scope.api.installStopMap(map,groups,()=>{},players,{});
@@ -102,7 +106,32 @@ test("Mapové úrovně zachovávají 15.2 / 16 / 17.2",()=>{
 });
 test("Simulace používá Prahu a oddělené localStorage",()=>{
  assert.ok(appSource.includes("const STOPS = PID_PRAGUE;"));
- assert.ok(appSource.includes("zastavkobrani-alpha-prague-v1"));
+ assert.ok(appSource.includes("zastavkobrani-alpha-prague-10players-v1"));
  assert.ok(appSource.includes("demoOwner(stop)"));
  assert.ok(!appSource.includes("PID_KOBYLISY"));
+});
+
+test("Strategické Voroného oblasti pokrývají 1487 území bez překryvů herní identity",()=>{
+ assert.equal(ctx.polygons.features.length,1487);
+ assert.equal(new Set(ctx.polygons.features.map(f=>f.properties.territoryId)).size,1487);
+ assert.ok(ctx.polygons.features.every(f=>f.geometry.type==="Polygon"));
+ const {map}=setup();
+ assert.equal(map.sources["game-strategic"].data.features.length,1487);
+ assert.ok(map.layers.some(l=>l.id==="game-strategic-fill"&&l.type==="fill"));
+ assert.ok(map.layers.find(l=>l.id==="game-strategic-fill").maxzoom<16);
+ assert.ok(map.sources["game-territories"].clusterMaxZoom<15);
+});
+test("Deset pojmenovaných hráčů tvoří stabilní lokálně ovlivněnou simulaci",()=>{
+ const players=ctx.sim.DEMO_PLAYERS;
+ assert.equal(players.length,10);
+ assert.equal(new Set(players.map(p=>p.name)).size,10);
+ assert.ok(players.every(p=>!p.name.includes(" ")));
+ assert.equal(new Set(players.map(p=>p.color)).size,10);
+ const owners=groups.map(g=>ctx.sim.demoOwner(g));
+ const owned=owners.filter(Boolean).length;
+ assert.ok(owned>900&&owned<1220);
+ assert.ok(players.every(p=>owners.includes(p.id)));
+ assert.deepEqual(owners,groups.map(g=>ctx.sim.demoOwner(g)));
+ assert.ok(appSource.includes("const PLAYERS=DEMO_PLAYERS"));
+ assert.ok(appSource.includes("zastavkobrani-alpha-prague-10players-v1"));
 });
