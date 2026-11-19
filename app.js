@@ -4,13 +4,38 @@
 const STOPS = PID_KOBYLISY;
 const PLAYERS=[{id:"p1",name:"Hráč 1",color:"#ef4444"},{id:"p2",name:"Hráč 2",color:"#3b82f6"},{id:"p3",name:"Hráč 3",color:"#22c55e"}];
 const BASE={metro:16,train:14,funicular:12,tram:10,trolleybus:8,ferry:6,bus:4};
-const STORAGE="zastavkobrani-alpha-pid-v2";
+// Oddělený vizuální demo scénář, původní uložená Alpha 1.2 zůstává nedotčena.
+const STORAGE="zastavkobrani-alpha-owners-v1";
+// 10 ze 14 území (~71 %) je předem rozdělených mezi tři demo hráče.
+const DEMO_OWNER_NAMES={
+  "Kobylisy":"p1",
+  "Služská":"p2",
+  "Ke Stírce":"p3",
+  "Střelničná":"p2",
+  "Březiněveská":"p1",
+  "Líbeznická":"p3",
+  "Vozovna Kobylisy":"p1",
+  "Mirovická":"p2",
+  "Vychovatelna":"p3",
+  "Hercovka":"p1"
+};
 const $=id=>document.getElementById(id);
 const shortDay=d=>d.toISOString().slice(0,10);
 const addDays = (day,n) => shortDay(new Date(Date.parse(day+"T12:00:00Z") + n*86400000));
 const diffDays=(a,b)=>Math.round((Date.parse(a+"T12:00:00Z")-Date.parse(b+"T12:00:00Z"))/86400000);
 function gameDay(date=new Date()){const f=new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Prague",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",hourCycle:"h23"});const parts=Object.fromEntries(f.formatToParts(date).filter(p=>p.type!=="literal").map(p=>[p.type,p.value]));const d=parts.year+"-"+parts.month+"-"+parts.day;return Number(parts.hour)<3?addDays(d,-1):d;}
-function init(){return {version:1,selected:"p1",stops:{},ledger:[],events:[],visits:{},lastClosedDay:addDays(gameDay(),-1)}}
+function init(){
+  const day=gameDay(),now=new Date();
+  const stops={},ledger=[],events=[];
+  for(const stop of STOPS){
+    const owner=DEMO_OWNER_NAMES[stop.name];
+    if(!owner)continue;
+    stops[stop.id]={owner,anchor:day,capturedAt:now.toISOString(),protectedUntil:null};
+    ledger.push({player:owner,amount:captureScore(stop),type:"demo-seed",day,at:now.toISOString()});
+  }
+  return {version:1,selected:"p1",stops,ledger,events,visits:{},
+    lastClosedDay:addDays(day,-1)};
+}
 function load(){try{const x=JSON.parse(localStorage.getItem(STORAGE));if(x&&x.version===1&&x.stops&&Array.isArray(x.ledger))return x;}catch(e){}return init()}
 let state=load(),selectedStop=null;
 function persist(){localStorage.setItem(STORAGE,JSON.stringify(state))}
@@ -26,7 +51,7 @@ function visitsFor(id){return state.visits[gameDay()]?.[id]||false}
 // MapLibre + vlastní vektorový styl. Herní stav zůstává oddělený od podkladu.
 const map = new maplibregl.Map({
   container:"map",style:"https://tiles.openfreemap.org/styles/liberty",
-  center:[14.454,50.126],zoom:13.7,attributionControl:true
+  center:[14.454,50.126],zoom:15.5,attributionControl:true
 });
 map.addControl(new maplibregl.NavigationControl({showCompass:false}),"top-left");
 let selectedPlatform=null;
