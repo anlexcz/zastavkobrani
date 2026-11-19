@@ -58,19 +58,52 @@ for (const stop of STOPS) {
     .addTo(map);
   pins[stop.id]=marker;
 }
-let customMapApplied=false;
-map.on("error",event=>{console.warn("MapLibre:",event.error?.message||event.error)});
+// Vektorová mapa je primární. Když veřejný zdroj nedostupný, zobrazíme
+// dočasné rastrové OSM místo prázdného pozadí. Žádná změna herních dat.
+let fallbackActive=false, customMapApplied=false, vectorReady=false;
+let lastMapIssue="";
+const mapError=$("map-error");
+function mapNotice(text) {
+  mapError.hidden=!text;
+  mapError.textContent=text;
+}
+function useRasterFallback(reason) {
+  if(fallbackActive||vectorReady)return;
+  fallbackActive=true;
+  console.warn("OpenFreeMap nedostupná, přepínám na OSM:",reason);
+  map.setStyle({
+    version:8,
+    sources:{osm:{type:"raster",tiles:["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],tileSize:256,attribution:"© OpenStreetMap contributors"}},
+    layers:[{id:"osm-fallback",type:"raster",source:"osm",paint:{"raster-saturation":-.65,"raster-brightness-max":.68}}]
+  });
+  mapNotice("Vektorový podklad se nepodařilo načíst. Zobrazuje se náhradní mapa OpenStreetMap.");
+}
+const mapLoadTimeout=setTimeout(()=>useRasterFallback(lastMapIssue||"Časový limit načítání (12 s)."),12000);
+map.on("error",event=>{
+  const message=String(event.error?.message||event.error||"Neznámá chyba");
+  console.warn("MapLibre:",message);
+  lastMapIssue=message;
+  if(!fallbackActive&&!vectorReady&&/fetch|network|failed|http|404|403|401|style/i.test(message)){
+    useRasterFallback(message);
+  }
+});
 map.once("load",()=>{
-  // Oficiální styl musí napřed správně fungovat. Teprve poté jej zjednodušíme.
+  if(fallbackActive)return;
+  clearTimeout(mapLoadTimeout);
+  vectorReady=true;
+  // Nejprve musí fungovat oficiální Liberty. Na funkční podklad aplikujeme vlastní vrstvy.
   try {
     const style=buildGameMapStyle(map.getStyle());
     customMapApplied=true;
     map.setStyle(style);
+    mapNotice("");
   } catch(error) {
-    console.error("Vlastní styl nebylo možné vytvořit; zůstává původní podklad.",error);
-    const el=$("map-error");
-    if(el){el.hidden=false;el.textContent="Minimalistický styl se nepodařilo použít. Zobrazuje se základní mapa."}
+    console.error("Zjednodušení stylu selhalo, ponechávám Liberty:",error);
+    mapNotice("Vlastní minimalistický styl nelze použít; zůstává základní mapa.");
   }
+});
+map.on("style.load",()=>{
+  if(customMapApplied&&!fallbackActive)mapNotice("");
 });
 let activeScreen="map";
 function openScreen(name){
