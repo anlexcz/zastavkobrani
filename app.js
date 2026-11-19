@@ -155,7 +155,7 @@ const maintenanceDays=mine&&rec?.anchor?Math.max(0,7-diffDays(gameDay(),rec.anch
 $("sheet").classList.toggle("sheet-stop",activeScreen==="stop");
 $("sheet").style.setProperty("--sheet-owner-color",owner?.color||"#929292");
 $("stop-owner-heading").textContent=owner?"Vlastní "+owner.name:"Neutrální zastávka";
-$("stop-owner-heading").style.color=owner?.color||"#b1b3b5";
+$("stop-owner-heading").style.color="var(--muted)";
 $("stopdetail").innerHTML=s?stopCardHtml({
   stop:s,record:rec,owner,selectedPlayer:state.selected,
   gameDay:gameDay(),diffDays,captureScore,holdingScore
