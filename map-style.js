@@ -3,8 +3,8 @@
 // Zastávkobraní: jen úprava vrstev oficiálního stylu Liberty.
 // Zdroj vektorových dat, fonty a ostatní technické parametry ponechává OpenFreeMap.
 const MAP_COLORS = Object.freeze({
-  background:"#182129",water:"#204a60",park:"#263d35",
-  street:"#56636d",mainRoad:"#69737d",path:"#3d4a52",
+  background:"#182129",water:"#204a60",park:"#22362f",
+  street:"#48545e",mainRoad:"#56616b",path:"#39454e",
   railway:"#8d9bb1",tram:"#b58b69",text:"#abb7c0"
 });
 
@@ -19,6 +19,13 @@ function applyGameMapStyle(map) {
     const name=id.toLowerCase();
     const source=(layer["source-layer"] || "").toLowerCase();
     const category=name+" "+source;
+    const paint=layer.paint || {};
+    // Šrafování ve stylu Liberty bývá fill-pattern / line-pattern.
+    // Původní plochy schováme, ať nezakrývají vlastní herní mapu.
+    if (paint["fill-pattern"] !== undefined || paint["line-pattern"] !== undefined ||
+        paint["background-pattern"] !== undefined || /hatch|pattern/.test(name)) {
+      hide(id); modified++; continue;
+    }
     if (/building|housenumber|poi|aeroway|airport|mountain_peak|transit_stop/.test(category)) {
       hide(id); modified++; continue;
     }
@@ -37,6 +44,8 @@ function applyGameMapStyle(map) {
         :/path|foot|cycle|pedestrian|service/.test(name)?MAP_COLORS.path
         :MAP_COLORS.street;
       set(id,"line-color",c);
+      // Koleje zachovat čitelné, silnice a cesty posunout do pozadí.
+      set(id,"line-opacity", /tram/.test(name) ? .95 : /rail|subway|transit/.test(name) ? .88 : /path|foot|cycle|pedestrian|service/.test(name) ? .5 : .72);
       modified++;
     } else if (layer.type==="symbol") {
       if (/place|city|town|suburb|neighbourhood|street|road|transportation_name/.test(category)
