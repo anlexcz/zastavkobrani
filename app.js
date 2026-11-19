@@ -37,7 +37,7 @@ function challengeStop(){const d=gameDay().replaceAll("-","");let n=0;for(const 
 function visitsFor(id){return state.visits[gameDay()]?.[id]||false}
 // MapLibre + vlastní vektorový styl. Herní stav zůstává oddělený od podkladu.
 const map = new maplibregl.Map({
-  container:"map",style:"https://tiles.openfreemap.org/styles/liberty",
+  container:"map",style:createGameMapStyle(),
   center:[14.43,50.081],zoom:10.7,attributionControl:true
 });
 map.addControl(new maplibregl.NavigationControl({showCompass:false}),"top-left");
@@ -58,61 +58,47 @@ for (const stop of STOPS) {
     .addTo(map);
   pins[stop.id]=marker;
 }
-// Mapa: načtení oficiálních vektorových dat -> náš styl -> kontrola vrstev.
-// Event style.load nastává dříve než load (který čeká i na dlaždice).
-let mapPhase="liberty", mapLastError="", mapLoadTimer;
+// Vlastní minimalistický styl je použit přímo při inicializaci.
+// Žádné přepínání stylů během načítání; zachováváme vlastní body i GPS.
 const mapError=$("map-error");
+let fallbackActive=false, mapReady=false;
+let mapTimer=setTimeout(()=>{
+  if(!mapReady) useRasterFallback("Timeout načítání vektorové mapy");
+},15000);
 function mapNotice(message){
   mapError.hidden=!message;
   mapError.textContent=message;
 }
-function applyMinimalStyle(){
-  if(mapPhase!=="liberty")return;
-  try{
-    const style=buildGameMapStyle(map.getStyle());
-    if(!style.layers.some(layer=>layer.id==="tramways")||style.layers.some(layer=>layer.id==="building"))throw Error("Neplatné vrstvy.");
-    mapPhase="custom-loading";
-    map.setStyle(style);
-  }catch(error){
-    mapPhase="liberty-fallback";
-    clearTimeout(mapLoadTimer);
-    console.error("Vlastní styl nebylo možné sestavit:",error);
-    mapNotice("Vlastní styl se nepodařilo sestavit; používá se základní mapa.");
-  }
-}
 function useRasterFallback(reason){
-  if(mapPhase!=="liberty")return;
-  mapPhase="raster-fallback";
-  clearTimeout(mapLoadTimer);
-  console.warn("Nouzová mapa OSM:",reason);
+  if(fallbackActive||mapReady)return;
+  fallbackActive=true;
+  clearTimeout(mapTimer);
+  console.warn("Náhradní mapa OSM:",reason);
   map.setStyle({
     version:8,
     sources:{osm:{type:"raster",tiles:["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],tileSize:256,attribution:"© OpenStreetMap contributors"}},
     layers:[{id:"osm-fallback",type:"raster",source:"osm",paint:{"raster-saturation":-.65,"raster-brightness-max":.68}}]
   });
-  mapNotice("Vektorový podklad není dostupný. Používá se náhradní mapa OSM.");
+  mapNotice("Vektorová mapa se nenačetla. Zobrazuje se náhradní OpenStreetMap.");
 }
-map.on("style.load",()=>{
-  if(mapPhase==="liberty"){applyMinimalStyle();return;}
-  if(mapPhase==="custom-loading"){
-    clearTimeout(mapLoadTimer);
-    const ids=map.getStyle().layers.map(layer=>layer.id);
-    if(ids.includes("tramways")&&ids.includes("background")&&!ids.includes("building")){
-      mapPhase="custom";
-      mapNotice("");
-      console.info("Zastávkobraní: aktivní minimalistický styl",ids);
-    }else{
-      mapNotice("Nepodařilo se ověřit minimalistické mapové vrstvy.");
-    }
+map.on("load",()=>{
+  if(fallbackActive)return;
+  mapReady=true;
+  clearTimeout(mapTimer);
+  const actual=map.getStyle().layers.map(layer=>layer.id);
+  if(actual.includes("background")&&actual.includes("tramways")&&!actual.some(id=>/building|poi/i.test(id))){
+    mapNotice("");
+    console.info("Aktivní minimalistický podklad Zastávkobraní.");
+  }else{
+    mapNotice("Nepodařilo se ověřit vlastní mapové vrstvy.");
   }
 });
 map.on("error",event=>{
-  const error=String(event.error?.message||event.error||"Neznámá chyba");
-  mapLastError=error;
-  console.warn("MapLibre:",error);
-  // Nelze použít libovolnou chybu dlaždice jako důvod k přepnutí celé mapy.
+  const message=String(event.error?.message||event.error||"Neznámá chyba");
+  console.warn("MapLibre:",message);
+  if(!mapReady&&!fallbackActive&&/failed to fetch|network error|403|404|401|tilejson/i.test(message))
+    useRasterFallback(message);
 });
-mapLoadTimer=setTimeout(()=>useRasterFallback(mapLastError||"Timeout načítání stylu"),15000);
 let activeScreen="map";
 function openScreen(name){
   activeScreen=name;
