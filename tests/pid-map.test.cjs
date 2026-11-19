@@ -17,15 +17,16 @@ vm.runInNewContext(demoSource+"\nthis.sim={DEMO_PLAYERS,demoOwner};",ctx);
 const players=[{id:"p1",color:"#ef4444"},{id:"p2",color:"#3b82f6"},{id:"p3",color:"#22c55e"}];
 
 function createMock(zoom=10){
- const sources={},layers=[],events={},paint={};
+ const sources={},layers=[],events={},paint={},layoutVisibility={};
  const map={
-  sources,layers,events,paint,
+  sources,layers,events,paint,layoutVisibility,
   addSource(id,source){sources[id]={...source,setData(d){this.data=d}}},
   getSource(id){return sources[id]},
   addLayer(layer){layers.push(layer)},
   getLayer(id){return layers.find(l=>l.id===id)},
   on(name,layer,handler){(events[name]||=[]).push(typeof handler==="function"?{handler}:{layer,handler})},
   setPaintProperty(id,key,value){paint[id+"."+key]=value},
+  setLayoutProperty(id,key,value){if(key==="visibility")layoutVisibility[id]=value},
   getCanvas(){return {style:{}}},
   getZoom(){return zoom},
   getBounds(){return {getWest:()=>14.43,getEast:()=>14.47,
@@ -50,7 +51,7 @@ function setup(zoom=10){
    }};}
  };
  const scope={console,turf,PID_STRATEGIC_POLYGONS:ctx.polygons,requestAnimationFrame:fn=>fn()};
- vm.runInNewContext(mapSource+"\nthis.api={installStopMap,refreshVisibleAreas,refreshStopMapColors,ringSegments,territoryGeoJSON,clusterAggregates};",scope);
+ vm.runInNewContext(mapSource+"\nthis.api={installStopMap,refreshVisibleAreas,refreshStopMapColors,ringSegments,territoryGeoJSON,clusterAggregates,setMapOverlayVisibility};",scope);
  const map=createMock(zoom);
  scope.api.installStopMap(map,groups,()=>{},players,{});
  return {map,trace,api:scope.api};
@@ -134,4 +135,28 @@ test("Deset pojmenovaných hráčů tvoří stabilní lokálně ovlivněnou simu
  assert.deepEqual(owners,groups.map(g=>ctx.sim.demoOwner(g)));
  assert.ok(appSource.includes("const PLAYERS=DEMO_PLAYERS"));
  assert.ok(appSource.includes("zastavkobrani-alpha-prague-10players-v1"));
+});
+
+test("Zastávky se ukazují už na výchozím zoomu Prahy",()=>{
+ const {map}=setup(10.65);
+ assert.equal(map.sources["game-early-stop-points"].data.features.length,1487);
+ const early=map.layers.find(l=>l.id==="game-early-stops");
+ assert.ok(early.minzoom<=10.65 && early.maxzoom>10.65);
+ assert.ok(map.layers.find(l=>l.id==="game-territory").minzoom<12);
+});
+test("Přepínání vrstev skryje body a polygony nezávisle a lze je obnovit",()=>{
+ const {map,api}=setup();
+ const controls=api.setMapOverlayVisibility;
+ controls(map,{stops:false,polygons:true});
+ const hiddenStops=["game-early-stops","game-cluster","game-cluster-count",
+   "game-territory","game-territory-label","game-platform","game-platform-metro","game-platform-label"];
+ for(const id of hiddenStops)assert.equal(map.layoutVisibility[id],"none",id);
+ assert.equal(map.layoutVisibility["game-strategic-fill"],"visible");
+ controls(map,{stops:true,polygons:false});
+ assert.equal(map.layoutVisibility["game-early-stops"],"visible");
+ assert.equal(map.layoutVisibility["game-strategic-fill"],"none");
+ assert.equal(map.layoutVisibility["game-territory-area-fill"],"none");
+ assert.equal(map.sources["game-territory-areas"].data.features.length,0);
+ controls(map,{stops:true,polygons:true});
+ assert.ok(Object.values(map.layoutVisibility).every(v=>v==="visible"));
 });
