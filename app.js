@@ -58,7 +58,7 @@ let selectedPlatform=null;
 map.on("load",()=>{
   installStopMap(map,STOPS,(id,pointId)=>{
     selectedStop=id;selectedPlatform=pointId;openScreen("stop");
-  });
+  },PLAYERS,state.stops);
   render();
 });
 // Základem je funkční oficiální Liberty. Neztrácíme zdroje, glyphs ani sprite.
