@@ -97,6 +97,7 @@ function installStopMap(map, territories, showTerritory) {
     showTerritory(p.territoryId,p.pointId||null);
   };
   map.on("click","game-territory",selectFeature);
+  map.on("click","game-territory-area-fill",selectFeature);
   map.on("click","game-platform",selectFeature);
   map.on("click","game-platform-metro",selectFeature);
   map.on("click","game-cluster",e=>{
@@ -107,7 +108,7 @@ function installStopMap(map, territories, showTerritory) {
       map.easeTo({center:f.geometry.coordinates,zoom:Math.max(zoom,map.getZoom()+1)});
     }).catch(error=>console.warn("Shluk nelze přiblížit:",error));
   });
-  for(const id of ["game-territory","game-platform","game-platform-metro","game-cluster"])
+  for(const id of ["game-territory","game-territory-area-fill","game-platform","game-platform-metro","game-cluster"])
     map.on("mouseenter",id,()=>{map.getCanvas().style.cursor="pointer"});
   for(const id of ["game-territory","game-platform","game-platform-metro","game-cluster"])
     map.on("mouseleave",id,()=>{map.getCanvas().style.cursor=""});
