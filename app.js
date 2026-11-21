@@ -290,22 +290,22 @@ $("stopdetail").innerHTML=s?stopCardHtml({
 renderStopHistory(s);
 const capture=$("capture"),maintain=$("maintain");
 capture.hidden=mine;maintain.hidden=!mine;
-capture.disabled=!s||captureTimeBlocked||!locationState.ok||gpsBusy;
+capture.disabled=!s||captureTimeBlocked||!locationState.ok||gameActions?.isBusy();
 capture.dataset.block=captureTimeBlocked?"time":locationState.ok?"":"location";
 capture.textContent=mine?"Tvoje zastávka":protectionOther?
   "Převzetí za "+stopCountdown(rec.protectedUntil):remaining()<cost?
   "Nedostatek AP (potřeba "+cost+")":(rec?.owner?"Převzít · ":"Obsadit · ")+cost+" AP";
-maintain.disabled=!s||maintainTimeBlocked||!locationState.ok||gpsBusy;
+maintain.disabled=!s||maintainTimeBlocked||!locationState.ok||gameActions?.isBusy();
 maintain.dataset.block=maintainTimeBlocked?"time":locationState.ok?"":"location";
 maintain.textContent=protectedNow?"Údržba za "+stopCountdown(rec.protectedUntil):remaining()<maintainCost?"Nedostatek AP (potřeba "+maintainCost+")":"Udržet · "+maintainCost+" AP";
 $("stop-location-status").textContent=locationState.status;
 $("stop-distance").textContent=locationState.distance===null?"—":formatStopDistance(locationState.distance);
-$("stop-request-location").hidden=!!gpsWatch&&!!gpsPosition;
-$("stop-request-location").textContent=gpsPermissionDenied?"Povolení GPS":"Povolit polohu";
+$("stop-request-location").hidden=!!gpsController?.snapshot().watch&&!!gpsController?.snapshot().position;
+$("stop-request-location").textContent=gpsController?.snapshot().permissionDenied?"Povolení GPS":"Povolit polohu";
 $("stop-confirm").hidden=!confirmingCapture||!s||mine;
 $("capture").hidden=mine||confirmingCapture;
 $("actions").classList.toggle("is-confirming",confirmingCapture&&!mine);
-$("confirm-yes").disabled=captureTimeBlocked||!locationState.ok||gpsBusy;
+$("confirm-yes").disabled=captureTimeBlocked||!locationState.ok||gameActions?.isBusy();
 $("stop-location").hidden=activeScreen!=="stop";
 const challenge=challengeStop(),done=visitsFor(state.selected);
 $("challenge").textContent=challenge?.name||"Není dostupná";
@@ -315,7 +315,7 @@ $("challenge-countdown").textContent=stopCountdown(nextGameBoundary());
 $("show-challenge").disabled=!challenge;
 const isDailyStop=!!s&&s.id===challenge?.id;
 $("daily-stop-action").hidden=!isDailyStop;
-$("daily-visit").disabled=!isDailyStop||done||!locationState.ok||gpsBusy;
+$("daily-visit").disabled=!isDailyStop||done||!locationState.ok||gameActions?.isBusy();
 $("daily-visit").textContent=done?"Dnes splněno":"Splnit zastávku dne";
 $("daily-stop-hint").textContent=done?"Návštěva byla zaznamenána.":"Samostatná GPS návštěva · 0 AP";
 if(activeScreen==="daily")renderDailyHistory();
@@ -323,11 +323,12 @@ renderRanking();
 if(activeScreen==="profile"){renderOwnedStops();renderProfileEvents();}}
 $("player").innerHTML=PLAYERS.map(p=>'<option value="'+p.id+'">'+p.name+'</option>').join("");
 $("player").addEventListener("change",e=>{state.selected=e.target.value;confirmingCapture=false;profileEventsExpanded=false;persist();note("");render()});
-const {doGpsAction}=createGameActions({
+const gameActions=createGameActions({
   getState:()=>state,getSelectedStop:()=>selectedStop,STOP_BY_ID,PLAYERS,
   remaining,actionCost,captureScore,award,challengeStop,visitsFor,
   stopLocationState,persist,note,render,$
 });
+const {doGpsAction}=gameActions;
 $("profile-edit").onclick=()=>openScreen("profile-settings");
 $("settings-back").onclick=()=>openScreen("profile");
 $("events-expand").onclick=()=>{profileEventsExpanded=!profileEventsExpanded;renderProfileEvents()};
