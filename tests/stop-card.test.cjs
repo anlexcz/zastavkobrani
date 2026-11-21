@@ -125,3 +125,11 @@ test("Pražské uzávěrky respektují zimní i letní čas",()=>{
  assert.equal(context.boundary("2026-03-29"),"2026-03-29T01:00:00.000Z");
  assert.equal(context.boundary("2026-10-25"),"2026-10-25T02:00:00.000Z");
 });
+
+test("Odpočet zániku používá dny, ochrana hodiny",()=>{
+ const scope={};
+ vm.runInNewContext(source+"\nthis.formatExpiry=stopExpiryCountdown",scope);
+ const now=Date.parse("2026-11-10T12:00:00Z");
+ assert.equal(scope.formatExpiry("2026-11-12T13:02:03Z",now),"2 dny 01:02:03");
+ assert.equal(scope.formatExpiry("2026-11-10T13:00:00Z",now),"01:00:00");
+});
