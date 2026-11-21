@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<link rel="stylesheet" href="style.css?v=ui-v1">
+<link rel="stylesheet" href="style.css?v=ui-v2">
 </head>
 <body>
 <div id="map" role="region" aria-label="Mapa herních zastávek Prahy"></div><div id="map-error" class="map-error" hidden></div>
@@ -34,10 +34,10 @@
 </div>
 <div class="test-label">TESTOVACÍ DATA LINKY 22 · LOKÁLNÍ DEMO</div>
 <nav class="nav" aria-label="Herní nabídka">
-  <button type="button" data-screen="map" class="active">Mapa</button>
-  <button type="button" data-screen="daily">Zastávka dne</button>
-  <button type="button" data-screen="ranking">Pořadí</button>
-  <button type="button" data-screen="profile">Profil</button>
+  <button type="button" data-screen="map" aria-label="Mapa" title="Mapa" class="active" aria-current="page"><svg viewBox="0 0 24 24" width="25" height="25" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg><span class="sr-only">Mapa</span></button>
+  <button type="button" data-screen="daily" aria-label="Zastávka dne" title="Zastávka dne"><svg viewBox="0 0 24 24" width="25" height="25" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="m9 15 2 2 4-4"/></svg><span class="sr-only">Zastávka dne</span></button>
+  <button type="button" data-screen="ranking" aria-label="Žebříček" title="Žebříček"><svg viewBox="0 0 24 24" width="25" height="25" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v7a5 5 0 0 1-10 0V4z"/><path d="M7 7H4v2a4 4 0 0 0 3 4M17 7h3v2a4 4 0 0 1-3 4"/></svg><span class="sr-only">Žebříček</span></button>
+  <button type="button" data-screen="profile" aria-label="Profil" title="Profil"><svg viewBox="0 0 24 24" width="25" height="25" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg><span class="sr-only">Profil</span></button>
 </nav>
 <div class="scrim" id="scrim" hidden></div>
 <section class="sheet" id="sheet" hidden aria-label="Herní panel">
@@ -73,16 +73,47 @@
     <div class="ranking-table-wrap"><table class="ranking-table"><thead><tr><th scope="col">#</th><th scope="col">Hráč</th><th scope="col">Body</th><th scope="col"><abbr title="Aktuálně vlastněné zastávky">Zast.</abbr></th></tr></thead><tbody id="leaderboard"></tbody></table></div>
   </div>
   <div class="screen" id="screen-profile" hidden>
-    <div class="eyebrow">Profil a nastavení</div><h1 id="profile">Hráč</h1>
+    <div class="profile-intro">
+      <div class="profile-avatar" id="profile-avatar" aria-hidden="true">?</div>
+      <div class="profile-identity"><div class="eyebrow">Můj profil</div><h1 id="profile">Hráč</h1><span class="profile-handle" id="profile-handle"></span></div>
+      <button type="button" class="profile-edit-button" id="profile-edit" aria-label="Upravit profil" title="Upravit profil"><svg viewBox="0 0 24 24" width="25" height="25" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8 15 7-7 2 2-7 7-3 1z"/></svg></button>
+    </div>
     <div class="stats">
-      <div><strong id="remaining">10/10</strong><span>Akční body dnes</span></div>
+      <div><strong id="remaining">10/10</strong><span>AP dnes</span></div>
+      <div><strong id="points">0</strong><span>Bodů za 30 dní</span></div>
       <div><strong id="owned">0</strong><span>Moje zastávky</span></div>
-      <div><strong id="points">0</strong><span>Celkem bodů</span></div>
     </div>
     <p id="clock" class="muted"></p>
-    <div class="profile-settings"><h2>Nastavení testu</h2><label for="player">Testovací hráč</label><select id="player" aria-label="Testovací hráč"></select><p class="muted">Údaje jsou uložené pouze v tomto prohlížeči.</p></div>
-    <div class="eyebrow">Nedávné události</div><div id="events" class="events"></div>
-    <button id="reset" class="danger">Resetovat testovací hru</button>
+    <section class="profile-section" aria-labelledby="owned-title">
+      <div class="profile-section-heading"><h2 id="owned-title">Moje zastávky</h2><span class="section-count" id="owned-count">0</span></div>
+      <div class="owned-list" id="owned-list"></div>
+    </section>
+    <section class="profile-section" aria-labelledby="player-events-title">
+      <div class="profile-section-heading"><h2 id="player-events-title">Moje události</h2><span class="section-count" id="events-count"></span></div>
+      <div id="events" class="events"></div>
+      <button type="button" id="events-expand" class="history-expand" aria-expanded="false">Zobrazit další události</button>
+    </section>
+    <section class="profile-section profile-settings" aria-label="Testovací režim">
+      <h2>Testovací režim</h2><label for="player">Testovací hráč</label><select id="player" aria-label="Testovací hráč"></select>
+      <p class="muted">Testovací účty sdílejí stav jen v tomto prohlížeči.</p>
+      <button id="reset" class="danger">Resetovat testovací hru</button>
+    </section>
+  </div>
+  <div class="screen" id="screen-profile-settings" hidden>
+    <button type="button" id="settings-back" class="settings-back"><svg viewBox="0 0 24 24" width="25" height="25" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg> Zpět na profil</button>
+    <div class="eyebrow">Účet</div><h1>Nastavení profilu</h1>
+    <form id="profile-form" class="account-form">
+      <label>Profilový obrázek</label>
+      <div class="account-avatar-row"><div class="profile-avatar" id="settings-avatar" aria-hidden="true">?</div>
+        <div><label class="avatar-upload" for="profile-image">Vybrat obrázek</label><input id="profile-image" type="file" accept="image/png,image/jpeg,image/webp"><small>Čtvercový výřez, uložený jen v tomto zařízení</small></div>
+      </div>
+      <label for="profile-username">Uživatelské jméno</label><input id="profile-username" type="text" readonly aria-readonly="true">
+      <label for="profile-display-name">Zobrazované jméno</label><input id="profile-display-name" type="text" maxlength="36" autocomplete="nickname" placeholder="Zobrazované jméno">
+      <label for="profile-discord">Discord nick</label><input id="profile-discord" type="text" maxlength="40" placeholder="Volitelné" autocomplete="off">
+      <button class="primary" type="submit">Uložit profil</button>
+      <p id="profile-form-status" class="account-form-status" role="status"></p>
+    </form>
+    <div class="account-security"><h2>Zabezpečení</h2><button type="button" disabled>Změnit heslo</button><p class="muted">Změna hesla bude dostupná po připojení skutečných účtů k serveru. Testovací alfa žádné heslo neukládá.</p></div>
   </div>
 </section>
 <div class="score-dialog-overlay" id="score-dialog-overlay" hidden>
@@ -98,14 +129,14 @@
  </section>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="map-style.js?v=ui-v1"></script>
-<script src="pid-prague.js?v=ui-v1"></script>
-<script src="pid-strategic.js?v=ui-v1"></script>
-<script src="pid-owner-boundaries.js?v=ui-v1"></script>
-<script src="demo-world.js?v=ui-v1"></script>
+<script src="map-style.js?v=ui-v2"></script>
+<script src="pid-prague.js?v=ui-v2"></script>
+<script src="pid-strategic.js?v=ui-v2"></script>
+<script src="pid-owner-boundaries.js?v=ui-v2"></script>
+<script src="demo-world.js?v=ui-v2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7.2.0/turf.min.js"></script>
-<script src="stop-map.js?v=ui-v1"></script>
-<script src="scoring.js?v=ui-v1"></script>
-<script src="stop-card.js?v=ui-v1"></script>
-<script src="app.js?v=ui-v1" defer></script>
+<script src="stop-map.js?v=ui-v2"></script>
+<script src="scoring.js?v=ui-v2"></script>
+<script src="stop-card.js?v=ui-v2"></script>
+<script src="app.js?v=ui-v2" defer></script>
 </body></html>
