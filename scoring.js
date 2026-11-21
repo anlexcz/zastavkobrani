@@ -1,8 +1,8 @@
 "use strict";
-const RULES=Object.freeze({version:"2026-11-21-demo",dailyAP:10,significantCategories:3,neutralBonus:8,
- captureRates:{metro:16,train:16,funicular:12,tram:12,trolleybus:12,ferry:12,bus:8},
- holdingByCategories:[0,1,2,2,3],declining:[6/7,5/7,4/7,3/7,2/7,1/7,0]});
-const SCORING_BASE=Object.freeze({...RULES.captureRates,urban_bus:8,regional_bus:8});
+const RULES=Object.freeze({version:"2026-11-21-economy-v2",dailyAP:10,significantCategories:3,neutralBonus:24,
+ captureRates:{metro:48,train:48,funicular:36,tram:36,trolleybus:36,ferry:36,bus:24},
+ holdingByCategories:[0,6,12,12,18],declining:[6,5,4,3,2,1,0]});
+const SCORING_BASE=Object.freeze({...RULES.captureRates,urban_bus:24,regional_bus:24});
 const SCORING_LABELS=Object.freeze({metro:"Metro",train:"Vlak",funicular:"Lanovka",tram:"Tramvaj",trolleybus:"Trolejbus",ferry:"Přívoz",bus:"Autobus",urban_bus:"Městský autobus",regional_bus:"Regionální autobus"});
 const ACTIVE_SCORE_BONUSES=Object.freeze([]);
 function scoringCategories(stop,kind){
@@ -18,7 +18,7 @@ function holdingIncome(stop,record,day,diffDays){
  const age=diffDays(day,record.anchor);
  if(age<=0||age>=15)return 0;
  if(age<=7)return full;
- return Math.round(full*RULES.declining[age-8]);
+ return (full/6)*RULES.declining[age-8];
 }
 function scoringBreakdown(stop,kind,{ownerRecord=null,gameDay=null,diffDays=null,bonuses=[],neutral=false}={}){
  if(!["capture","holding"].includes(kind))throw Error("Neznámý druh výpočtu");
