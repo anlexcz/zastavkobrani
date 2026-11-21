@@ -1,6 +1,8 @@
 "use strict";
 // Celopražský statický výřez auditu PID 19. 11. 2026, bez odhadovaných bodů.
 const STOPS = PID_PRAGUE;
+// Index pro opakované přístupy k herním územím bez lineárního procházení celé Prahy.
+const STOP_BY_ID = new Map(STOPS.map(stop => [stop.id, stop]));
 // Dva testovací profily, sdílející stav pouze v tomto prohlížeči.
 const PLAYERS=DEMO_PLAYERS;
 // Všechny hodnoty a rozpisy jsou v samostatném scoring.js.
@@ -220,7 +222,7 @@ function scoreDetailRow(label,value,extraClass=""){
     escapeStopText(label)+'</span><strong>'+escapeStopText(value)+'</strong></div>';
 }
 function showScoreDetail(kind){
-  const stop=STOPS.find(s=>s.id===selectedStop);
+  const stop=STOP_BY_ID.get(selectedStop);
   if(!stop)return;
   const record=state.stops[stop.id];
   const context={ownerRecord:record,gameDay:gameDay(),diffDays,
@@ -297,7 +299,7 @@ function renderStopHistory(stop){
  count.textContent=n===1?"1 událost":n>=2&&n<=4?n+" události":n+" událostí";
 }
 function showHistoryDetail(){
- const stop=STOPS.find(s=>s.id===selectedStop);if(!stop)return;
+ const stop=STOP_BY_ID.get(selectedStop);if(!stop)return;
  if(!$("score-dialog-overlay").hidden)closeScoreDetail();
  const entries=stopHistoryEntries(stop);
  historyReturnFocus=document.activeElement;
@@ -408,7 +410,7 @@ function renderProfileEvents(){
  $("events").innerHTML=shown.length?shown.map(e=>{
   const d=new Intl.DateTimeFormat("cs-CZ",{timeZone:"Europe/Prague",day:"numeric",month:"numeric",hour:"2-digit",minute:"2-digit"}).format(new Date(e.at));
   const action=e.action==="capture"?(e.previousOwner?"Převzetí":"Obsazení"):e.action==="maintain"?"Údržba":e.action==="visit"?"Zastávka dne":"Událost";
-  const stop=STOPS.find(s=>s.id===e.stopId);
+  const stop=STOP_BY_ID.get(e.stopId);
   return '<div class="player-event"><div><strong>'+escapeStopText(action)+(stop?" · "+escapeStopText(stop.name):"")+'</strong><small>'+d+'</small></div><span>'+ (Number.isFinite(e.points)?"+"+e.points+" b.":"") +'</span></div>';
  }).join(""):'<p class="empty-state">Zatím žádné zaznamenané události.</p>';
  $("events-expand").hidden=entries.length<=5;
@@ -417,7 +419,7 @@ function renderProfileEvents(){
 }
 function render(){closeDays();const p=PLAYERS.find(x=>x.id===state.selected);$("player").value=state.selected;$("profile").textContent=playerLabel(p.id);$("remaining").textContent=remaining()+"/"+RULES.dailyAP;$("ap-map").textContent=remaining()+" / "+RULES.dailyAP;$("owned").textContent=owned();$("points").textContent=total(p.id,30);$("clock").textContent="Herní den "+gameDay()+" · uzávěrka 03:00";$("profile-handle").textContent="Testovací účet · "+p.name;paintAvatar($("profile-avatar"),p.id);
 refreshStopMapColors(map,state.stops,PLAYERS,selectedStop);
-const s=STOPS.find(x=>x.id===selectedStop),rec=s&&state.stops[s.id];
+const s=STOP_BY_ID.get(selectedStop),rec=s&&state.stops[s.id];
 $("stopname").textContent=s?.name||"Vyber zastávku na mapě";
 const owner=rec&&PLAYERS.find(p=>p.id===rec.owner);
 const mine=!!rec?.owner&&rec.owner===state.selected;
@@ -524,7 +526,7 @@ function verifyGps(stop){
   });
 }
 async function doGpsAction(action){
-  const stop=STOPS.find(s=>s.id===selectedStop);
+  const stop=STOP_BY_ID.get(selectedStop);
   if(!stop||gpsBusy)return;
   if(!stopLocationState(stop).ok){note("Nejsi v ověřeném 30m dosahu zastávky.");render();return;}
   const startingPlayer=state.selected, startingStop=selectedStop;
@@ -548,12 +550,12 @@ async function doGpsAction(action){
     const now=new Date(),day=gameDay(),player=PLAYERS.find(p=>p.id===startingPlayer);
     if(action==="capture"){
       const previous=state.stops[stop.id]?.owner||null;
-      state.stops[stop.id]={owner:startingPlayer,anchor:day,capturedAt:now.toISOString(),protectedUntil:new Date(now.getTime()+86400000).toISOString()};
+      state.stops[stop.id]={owner:startingPlayer,anchor:day,capturedAt:now.toISOString(),protectedUntil:new Date(now.getTime()+RULES.protectionHours*60*60*1000).toISOString()};
       const points=captureScore(stop,!previous),apCost=actionCost(stop,"capture",!!previous);award(startingPlayer,points,"capture");
       state.events.unshift({action:"capture",stopId:stop.id,player:startingPlayer,day,at:now.toISOString(),previousOwner:previous,apCost,points,text:player.name+(previous?" převzal/a ":" obsadil/a ")+stop.name+" (+"+points+" b., −"+apCost+" AP)"});
     }else if(action==="maintain"){
       state.stops[stop.id].anchor=day;
-      state.stops[stop.id].protectedUntil=new Date(now.getTime()+86400000).toISOString();
+      state.stops[stop.id].protectedUntil=new Date(now.getTime()+RULES.protectionHours*60*60*1000).toISOString();
       const apCost=actionCost(stop,"maintain");
       state.events.unshift({action:"maintain",stopId:stop.id,player:startingPlayer,day,at:now.toISOString(),apCost,text:player.name+" udržel/a "+stop.name+" (−"+apCost+" AP)"});
     }else{
@@ -571,7 +573,7 @@ $("events-expand").onclick=()=>{profileEventsExpanded=!profileEventsExpanded;ren
 $("owned-list").addEventListener("click",event=>{
  const btn=event.target.closest("[data-owned-stop]");
  if(!btn)return;
- const stop=STOPS.find(s=>s.id===btn.dataset.ownedStop);
+ const stop=STOP_BY_ID.get(btn.dataset.ownedStop);
  if(!stop)return;
  selectedStop=stop.id;selectedPlatform=null;confirmingCapture=false;
  map.flyTo({center:[stop.lon,stop.lat],zoom:15.4,essential:true});
@@ -612,7 +614,7 @@ $("profile-image").addEventListener("change",event=>{
  reader.readAsDataURL(file);
 });
 $("capture").onclick=()=>{
-  const stop=STOPS.find(s=>s.id===selectedStop);
+  const stop=STOP_BY_ID.get(selectedStop);
   if(!stop||!stopLocationState(stop).ok||$("capture").disabled)return;
   confirmingCapture=true;render();
 };
