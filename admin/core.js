@@ -76,6 +76,14 @@ export function filterStops(stops,query,{eligibleOnly=false,limit=40}={}){
  }
  return result;
 }
+export function enforcePublishedDates(original,next,today){
+ const dates=new Set([...Object.keys(original.dates),...Object.keys(next.dates)]);
+ for(const day of dates){
+   if(day<=today&&JSON.stringify(original.dates[day]||null)!==JSON.stringify(next.dates[day]||null))
+     throw new Error("Nelze změnit dnešní nebo historickou výjimku: "+day);
+ }
+ return next;
+}
 export function exportOverrides(input,stops){
  return JSON.stringify(cloneOverrides(input,stops),null,2)+"\n";
 }
