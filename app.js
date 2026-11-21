@@ -347,12 +347,12 @@ function disableGps(){
 function gpsError(error){
   gpsPermissionDenied=error.code===1;
   gpsPosition=null;
-  render();
   gpsMessage(({1:"Přístup k GPS byl zamítnut.",2:"GPS polohu nelze určit.",3:"Časový limit GPS vypršel."})[error.code]||"GPS není dostupná.");
   if(gpsWatch!==null)navigator.geolocation.clearWatch(gpsWatch);
   gpsWatch=null;
   gpsButton.setAttribute("aria-pressed","false");
   gpsButton.querySelector("span").textContent="Zapnout GPS";
+  render();
 }
 function requestGps(){
   gpsPermissionDenied=false;
