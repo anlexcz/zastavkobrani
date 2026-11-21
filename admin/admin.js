@@ -34,6 +34,7 @@ function renderNavigation(){
  $("admin-menu").querySelectorAll("[data-view]").forEach(button=>{
   button.addEventListener("click",()=>{location.hash=button.dataset.view});
  });
+ $("admin-menu").querySelector('[aria-current="page"]')?.scrollIntoView({block:"nearest",inline:"nearest"});
 }
 function render(){
  clearAlert();
