@@ -36,8 +36,10 @@ function stopCardHtml({stop,record,owner,selectedPlayer,gameDay,diffDays,capture
   const locked=hasOwner&&record.protectedUntil&&Date.parse(record.protectedUntil)>now;
   const age=record?.anchor?Math.max(1,diffDays(gameDay,record.anchor)+1):0;
   const fullYield=hasOwner&&age<=7;
-  const modes=(stop.cats.length?stop.cats:["unknown"]).map(code=>
-    '<span class="stop-mode">'+stopModeIcon(code)+'<span>'+escapeStopText(STOP_MODE_LABELS[code]||(code==="unknown"?"Druh dopravy neurčen":code))+'</span></span>').join("");
+  const modes=(stop.cats.length?stop.cats:["unknown"]).map(code=>{
+    const label=escapeStopText(STOP_MODE_LABELS[code]||(code==="unknown"?"Druh dopravy neurčen":code));
+    return '<span class="stop-mode" title="'+label+'" aria-label="'+label+'">'+stopModeIcon(code)+'</span>';
+  }).join("");
   const points=stop.cats.length?captureScore(stop):"—";
   const yieldPoints=stop.cats.length?holdingScore(stop):"—";
   return '<div class="stop-card">'+
