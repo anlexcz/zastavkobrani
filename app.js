@@ -198,20 +198,20 @@ function showScoreDetail(kind){
   $("score-dialog-title").textContent=kind==="capture"?"Body za obsazení":"Body denně";
   $("score-dialog-stop").textContent=stop.name;
   const body=detail.lines.map(line=>scoreDetailRow(
-    line.label+(kind==="capture"&&line.multiplier!==1?" ("+Math.round(line.multiplier*100)+" %)":""),
+    line.label+(kind==="capture"?" ("+Math.round(line.multiplier*100)+" %)":""),
     line.amount+" b."
   )).join("");
   const adjustment=detail.holdingAdjustment
-    ?scoreDetailRow("Vliv životního cyklu (testovací výpočet)",
+    ?scoreDetailRow("Vliv stáří zastávky",
         (detail.holdingAdjustment>0?"+":"")+detail.holdingAdjustment+" b.","score-detail-adjustment"):"";
   const bonuses=detail.bonusLines.length
     ?detail.bonusLines.map(b=>scoreDetailRow(b.label,"+"+b.amount+" b.")).join("")
     :'<p class="score-detail-empty">Žádné aktuálně platné bonusy</p>';
   const explanation=kind==="holding"?
     '<p class="score-detail-explanation">'+(record?.owner
-      ?'Den akce bez výnosu, poté 7 dní plného výnosu a 7 dní sestupné fáze. Přesné celočíselné částky poklesu jsou zatím pracovní nastavení.'
-      :'Zobrazený denní základ odpovídá počtu dopravních druhů. Výnos začne vznikat až po obsazení a nevzniká v den akce.')+'</p>':
-    '<p class="score-detail-explanation">První druh dopravy se počítá celý, druhý z poloviny a další ze čtvrtiny. Bonus za neutralitu se přičítá pouze při obsazení neobsazené zastávky.</p>';
+      ?'Den akce bez výnosu, poté 7 dní plného výnosu a 7 dní sestupné fáze. Sestupná fáze vyplácí postupně 6/6, 5/6, 4/6, 3/6, 2/6, 1/6 a 0 plného výnosu.'
+      :'Plný denní výnos podle modelu C ×6 činí 6, 12 nebo 18 bodů podle počtu druhů dopravy. Výnos začne vznikat až po obsazení a nevzniká v den akce.')+'</p>':
+    '<p class="score-detail-explanation">První druh dopravy se počítá celý, druhý z poloviny a další ze čtvrtiny. Bonus +24 bodů za neutralitu se přičítá pouze při obsazení neobsazené zastávky.</p>';
   $("score-dialog-lines").innerHTML=body+adjustment+
     '<div class="score-detail-subtitle">Bonusy</div>'+bonuses+
     scoreDetailRow("Celkem",detail.total+" b.","score-detail-total")+explanation;
