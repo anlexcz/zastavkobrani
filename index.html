@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<link rel="stylesheet" href="style.css?v=gps23areas">
+<link rel="stylesheet" href="style.css?v=gps24action">
 </head>
 <body>
 <div id="map" role="region" aria-label="Mapa herních zastávek Prahy"></div><div id="map-error" class="map-error" hidden></div>
@@ -46,7 +46,9 @@
     <div id="stop-owner-heading" class="stop-owner-heading"></div>
     <h1 id="stopname">Zastávka</h1>
     <div id="stopdetail" class="details"></div>
-    <div class="actions"><button class="primary" id="capture" disabled>Obsadit zastávku</button><button id="maintain" disabled>Provést údržbu</button></div>
+    <div class="actions"><button class="primary" id="capture" disabled>Obsadit zastávku</button><button class="primary" id="maintain" disabled hidden>Udržet zastávku</button></div>
+    <div class="stop-confirm" id="stop-confirm" hidden><p>Opravdu chceš obsadit tuto zastávku?</p><div class="stop-confirm-buttons"><button class="primary" id="confirm-yes">Ano</button><button id="confirm-no">Ne</button></div></div>
+    <div class="stop-location" id="stop-location" aria-live="polite"><span id="stop-location-status">Poloha nedostupná</span><strong id="stop-distance">—</strong><button type="button" id="stop-request-location">Povolit polohu</button></div>
     <p id="message" class="message" aria-live="polite"></p>
   </div>
   <div class="screen" id="screen-daily" hidden>
@@ -72,13 +74,13 @@
   </div>
 </section>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="map-style.js?v=gps23areas"></script>
-<script src="pid-prague.js?v=gps23areas"></script>
-<script src="pid-strategic.js?v=gps23areas"></script>
-<script src="pid-owner-boundaries.js?v=gps23areas"></script>
-<script src="demo-world.js?v=gps23areas"></script>
+<script src="map-style.js?v=gps24action"></script>
+<script src="pid-prague.js?v=gps24action"></script>
+<script src="pid-strategic.js?v=gps24action"></script>
+<script src="pid-owner-boundaries.js?v=gps24action"></script>
+<script src="demo-world.js?v=gps24action"></script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7.2.0/turf.min.js"></script>
-<script src="stop-map.js?v=gps23areas"></script>
-<script src="stop-card.js?v=gps23areas"></script>
-<script src="app.js?v=gps23areas" defer></script>
+<script src="stop-map.js?v=gps24action"></script>
+<script src="stop-card.js?v=gps24action"></script>
+<script src="app.js?v=gps24action" defer></script>
 </body></html>
