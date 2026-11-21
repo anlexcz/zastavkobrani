@@ -27,14 +27,68 @@ function heading(kicker,title,description){
  return '<div class="admin-topline">'+escapeHtml(kicker)+'</div><h1 class="admin-title">'+escapeHtml(title)+'</h1>'+
  '<p class="admin-lead">'+escapeHtml(description)+'</p>';
 }
+// Navigace: na mobilu přístupný boční panel; od 760px trvale viditelný sidebar.
+const desktopMedia=window.matchMedia("(min-width:760px)");
+let menuOpen=false;
+let returnFocus=null;
+function setMenuOpen(open,{restoreFocus=true}={}){
+ const mobile=!desktopMedia.matches;
+ const next=!!open&&mobile;
+ if(next===menuOpen){
+   $("admin-sidebar").inert=!mobile?false:!next;
+   return;
+ }
+ if(next)returnFocus=document.activeElement;
+ menuOpen=next;
+ const sidebar=$("admin-sidebar"),toggle=$("admin-menu-toggle");
+ sidebar.classList.toggle("is-open",next);
+ sidebar.inert=mobile&&!next;
+ if(next){sidebar.setAttribute("role","dialog");sidebar.setAttribute("aria-modal","true");}
+ else{sidebar.removeAttribute("role");sidebar.removeAttribute("aria-modal");}
+ $("admin-menu-scrim").hidden=!next;
+ document.body.classList.toggle("is-menu-open",next);
+ toggle.setAttribute("aria-expanded",String(next));
+ toggle.setAttribute("aria-label",next?"Zavřít nabídku administrace":"Otevřít nabídku administrace");
+ if(next){
+   sidebar.querySelector('[aria-current="page"]')?.focus()||$("admin-sidebar-close").focus();
+ }else if(restoreFocus&&mobile&&returnFocus?.isConnected){
+   returnFocus.focus();
+ }
+}
+function initializeMenu(){
+ $("admin-menu-toggle").addEventListener("click",()=>setMenuOpen(!menuOpen));
+ $("admin-sidebar-close").addEventListener("click",()=>setMenuOpen(false));
+ $("admin-menu-scrim").addEventListener("click",()=>setMenuOpen(false));
+ desktopMedia.addEventListener("change",()=>{
+   setMenuOpen(false,{restoreFocus:false});
+   $("admin-sidebar").inert=!desktopMedia.matches;
+ });
+ $("admin-sidebar").inert=!desktopMedia.matches;
+ document.addEventListener("keydown",event=>{
+   if(!menuOpen)return;
+   if(event.key==="Escape"){event.preventDefault();setMenuOpen(false);return}
+   if(event.key!=="Tab")return;
+   const focusable=[...$("admin-sidebar").querySelectorAll('button:not([disabled]),a[href]')];
+   const first=focusable[0],last=focusable.at(-1);
+   if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus()}
+   else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus()}
+ });
+}
 function renderNavigation(){
  $("admin-menu").innerHTML=ADMIN_SECTIONS.map(section=>
    '<button type="button" data-view="'+section.id+'" aria-current="'+(state.view===section.id?"page":"false")+'">'+
    escapeHtml(section.title)+'</button>').join("");
  $("admin-menu").querySelectorAll("[data-view]").forEach(button=>{
-  button.addEventListener("click",()=>{location.hash=button.dataset.view});
+  button.addEventListener("click",()=>{
+    setMenuOpen(false,{restoreFocus:false});
+    location.hash=button.dataset.view;
+    // Při kliknutí na již aktivní sekci nedojde k hashchange.
+    render();
+    $("admin-menu-toggle").focus({preventScroll:true});
+  });
  });
- $("admin-menu").querySelector('[aria-current="page"]')?.scrollIntoView({block:"nearest",inline:"nearest"});
+ const current=ADMIN_SECTIONS.find(section=>section.id===state.view);
+ $("admin-menu-current").textContent=current?.title||"Nabídka";
 }
 function render(){
  clearAlert();
@@ -295,8 +349,9 @@ async function initialize(){
  }catch(error){console.error("Administrace:",error);state.error=error.message}
  render();
 }
-window.addEventListener("hashchange",render);
+window.addEventListener("hashchange",()=>{setMenuOpen(false,{restoreFocus:false});render()});
 window.addEventListener("beforeunload",event=>{
  if(state.dirty){event.preventDefault();event.returnValue=""}
 });
+initializeMenu();
 initialize();
