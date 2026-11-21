@@ -65,7 +65,7 @@ export function effectiveDaily(day,calendar,overrides,stops){
  };
 }
 export function filterStops(stops,query,{eligibleOnly=false,limit=40}={}){
- const normalize=value=>String(value??"").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLocaleLowerCase("cs");
+ const normalize=value=>String(value??"").normalize("NFD").replace(/\p{M}/gu,"").toLocaleLowerCase("cs");
  const normalized=normalize(String(query||"").trim());
  const result=[];
  for(const stop of stops){
