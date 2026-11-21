@@ -146,6 +146,7 @@ button.danger {margin-top:22px;color:#ffc2bc}
 /* Jediné akční tlačítko: prostorová blokace zachová barvu, ale skutečně zakáže kliknutí. */
 #screen-stop .actions {display:block;position:static;padding:0;background:none;margin-top:12px}
 #screen-stop .actions button {width:100%;min-height:50px;display:block;font-size:.9rem}
+#screen-stop .actions button[hidden],#stop-request-location[hidden] {display:none!important}
 #screen-stop .actions button.primary:disabled:not([data-block="time"]) {
   opacity:.46;background:var(--accent);border-color:var(--accent);color:white;
   cursor:not-allowed;filter:saturate(.75)
