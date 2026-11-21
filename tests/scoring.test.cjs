@@ -29,6 +29,13 @@ test("AP rozpočet, drahé území a příplatek za převzetí",()=>{
  assert.equal(actionCost(stop(["tram"]),"capture",true),2);
  assert.equal(actionCost(stop(["metro","tram","bus"]),"capture",true),3);
  assert.equal(actionCost(stop(["metro","tram","bus"]),"maintain"),2);
+ assert.equal(RULES.significantCategories,2);
+ assert.equal(actionCost(stop(["tram","bus"]),"capture",false),2);
+ assert.equal(actionCost(stop(["tram","bus"]),"capture",true),3);
+ assert.equal(actionCost(stop(["tram","bus"]),"maintain"),2);
+ assert.equal(actionCost(stop(["bus"]),"maintain"),1);
+ assert.equal(actionCost(stop(["urban_bus","regional_bus"]),"capture",false),1);
+ assert.equal(actionCost(stop(["tram","urban_bus","regional_bus"]),"capture",false),2);
 });
 test("Den akce nula, sedm plných dnů a pokles do nuly",()=>{
  const s=stop(["tram","bus"]),rec={anchor:"2026-11-01"};
