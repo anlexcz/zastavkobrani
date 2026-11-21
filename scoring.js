@@ -1,7 +1,7 @@
 "use strict";
 const RULES=Object.freeze({version:"2026-11-21-demo",dailyAP:10,significantCategories:3,neutralBonus:8,
  captureRates:{metro:16,train:16,funicular:12,tram:12,trolleybus:12,ferry:12,bus:8},
- holdingByCategories:[0,1,2,2,3],declining:[1,1,1,.75,.5,.25,0]});
+ holdingByCategories:[0,1,2,2,3],declining:[6/7,5/7,4/7,3/7,2/7,1/7,0]});
 const SCORING_BASE=Object.freeze({...RULES.captureRates,urban_bus:8,regional_bus:8});
 const SCORING_LABELS=Object.freeze({metro:"Metro",train:"Vlak",funicular:"Lanovka",tram:"Tramvaj",trolleybus:"Trolejbus",ferry:"Přívoz",bus:"Autobus",urban_bus:"Městský autobus",regional_bus:"Regionální autobus"});
 const ACTIVE_SCORE_BONUSES=Object.freeze([]);
