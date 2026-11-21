@@ -30,6 +30,24 @@ AP: 10 denně; běžné území 1 AP, významné (v aktuálním kódu od 2 hern�
 - Lokální testovací hra a původní klíč localStorage zůstávají beze změny. Serverové transakce a produkční zabezpečení dosud neexistují.
 - Jednotkové testy včetně `tests/modules.test.cjs` a kontrola syntaxe všech JS modulů jsou součástí GitHub Actions. Vizuální regresní testy napříč mobilními prohlížeči nejsou dosud automatizovány.
 
+
+### Zastávka dne: publikovaný kalendář a budoucí administrace (21. 11. 2026)
+
+**Platný princip hry:** Jedna společná pražská zastávka za herní den (03:00–02:59 Europe/Prague), bez ohledu na vlastnictví a polohu hráčů. Výběr jen ze způsobilých území, kde existuje alespoň jeden nemetro povrchový PID bod v Praze. Tato alpha podmínka ještě není produkční administrátorské schválení bezpečného GPS bodu. Los se provádí rovnoměrně přes `crypto.randomInt`, nezohledňuje osobní polohu, počet druhů dopravy ani popularitu. Opakování zastávky v sousedních dnech je možné; zákaz opakování nebyl schválen.
+
+**Zdroje pravdy:**
+- `data/daily-stops.generated.json` – trvale uložený náhodný rozpis (`game_day -> territory_id`), dnes a 14 budoucích herních dní; již vybraná data se při dalších bězích nepřelosovávají. Historie zůstává zachována bez časového mazání.
+- `data/daily-stops.overrides.json` – ruční administrátorské výjimky podle konkrétního data ve tvaru `{"version":1,"dates":{"2027-11-17":{"stopId":"pidg_d99633220c6ee5e5","note":"Národní třída"}}}`. Příklad je skutečně aktivní na **17. 11. 2027** (nikoliv automaticky každoročně). Stabilní stopId je podstatné, název slouží pouze pro lidskou orientaci.
+- `js/daily-stops.generated.js` – automaticky odvozená čtecí kopie rozpisu a výjimek pro web; nikdy ji ručně neupravovat.
+- `js/daily-stops.js` – sdílený resolver pro aktuální výzvu, GPS splnění i historii. Priorita: výjimka > vylosovaný den > deterministická nouzová volba, chybí-li publikované datum. Chybné publikované ID se záměrně nevybírá náhodně znovu.
+- `scripts/generate-daily-stops.cjs` – validační a generační nástroj; `tests/daily-stops.test.cjs` ověřuje stabilitu losů, způsobilost zastávek, administrátorské výjimky, přelom dne a DST.
+
+**Provoz:** `.github/workflows/generate-daily-stops.yml` běží denně v 04:17 UTC, podporuje ruční spuštění a změny výjimek. Doplňuje 14 dní dopředu a v prvním běhu zpětně převádí 30 dní včetně aktivního dne podle původního alpha výpočtu, aby se nepřepsala již zobrazená historie. Další dny losuje náhodně a uložená přiřazení nemění. Změněné výsledky commitne do main; následně explicitně požádá GitHub Pages o rebuild, protože commit přes GITHUB_TOKEN sám nový Pages build nezaručuje. V době výpadku workflow aplikace používá publikovaný předem připravený rozpis, teprve mimo něj nouzovou volbu. Při změně PID je nutné opravit případná neplatná territory_id, ne je tiše přelosovat.
+
+**Kontrakt pro budoucí administraci:** Rozhraní nabídne kalendář po dnech, předvybranou zastávku, konkrétní `territory_id`, ruční přepsání, návrat k náhodnému výběru, poznámku/důvod, audit autora a času změny. Změny pouze pro následující herní dny; aktuální nebo historický den nelze přepisovat. Produkční databázová tabulka `daily_challenges` z dokumentu 05 bude autoritativní, rozpis se bude generovat na serveru a budou se ukládat původní los, výsledná zastávka, případný override a audit. Administrace ani produkční server zatím implementované nejsou.
+
+**Bezpečnostní omezení alpha:** GitHub Pages a veřejný repozitář zpřístupňují i připravené budoucí výzvy – hráč si je může předem vyčíst. Pro ostrou hru musí být neveřejný budoucí rozpis na serveru a klient smí dostat jen právě platný den. Nejde o ochranu před manipulací v produkci; veškeré herní operace i splnění výzvy musí server ověřit.
+
 ---
 
 # HISTORICKÉ POZNÁMKY – test AP, historie a dat linky 22 (21. 11. 2026; staré sazby nejsou aktuální)
