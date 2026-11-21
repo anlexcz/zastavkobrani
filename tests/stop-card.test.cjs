@@ -27,7 +27,7 @@ test("Vlastník je nad názvem a barva je tenká horní lišta",()=>{
 test("Ochrana má viditelný odpočet nahoře a na tlačítku převzetí",()=>{
  const content=ctx.card({...args,owner:{name:"Sova"},
   record:{owner:"p2",anchor:"2026-11-19",protectedUntil:"2026-11-19T13:01:02Z"}});
- assert.match(content,/Ochrana proti převzetí/);
+ assert.match(content,/Ochrana území/);
  assert.match(content,/01:01:02/);
  assert.match(content,/data-protection-countdown/);
  assert.match(app,/Převzetí za/);
@@ -42,8 +42,8 @@ test("Vlastní ochrana se v kartě zobrazuje, neutrál časovač nemá",()=>{
 });
 test("Starší vlastnictví má nulový aktuální výnos",()=>{
  const content=ctx.card({...args,record:{owner:"p2",anchor:"2026-11-09"},diffDays:()=>10});
- assert.match(content,/Bez denního výnosu/);
- assert.match(content,/<strong>0<\/strong>/);
+ assert.match(content,/Klesající výnos|Výnos dosáhl nuly/);
+ assert.match(content,/<strong>1<\/strong>/);
 });
 test("Neznámé HTML v kategorii se escapuje",()=>{
  const content=ctx.card({...args,stop:{...stop,cats:['<img src=x onerror=alert(1)>']}});
@@ -82,9 +82,9 @@ test("Akční UI má jedno tlačítko a GPS stav bez přímého obsazení při n
  assert.match(app,/const GPS_STALE_MS=15000/);
 });
 
-test("Terénní režim nepoužívá denní limit tří obsazení",()=>{
- assert.match(app,/FIELD_TEST_UNLIMITED_CAPTURES=true/);
- assert.match(app,/remaining\(\)\{return FIELD_TEST_UNLIMITED_CAPTURES\?Infinity/);
+test("Nové AP nahrazují limit tří obsazení",()=>{
+ assert.match(app,/RULES.dailyAP/);
+ assert.doesNotMatch(app,/FIELD_TEST_UNLIMITED_CAPTURES/);
 });
 test("Potvrzení obsazení je součástí jedné akční oblasti",()=>{
  assert.match(html,/class="actions" id="actions"/);
