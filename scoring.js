@@ -10,6 +10,7 @@ function scoringCategories(stop,kind){
  return [...new Set((stop.cats||[]).map(c=>["urban_bus","regional_bus"].includes(c)?"bus":c))];
 }
 function actionCost(stop,kind,hasOpponent=false){
+ if(kind==="maintain")return 1;
  return (scoringCategories(stop,"holding").length>=RULES.significantCategories?2:1)+(kind==="capture"&&hasOpponent?1:0);
 }
 function holdingIncome(stop,record,day,diffDays){
