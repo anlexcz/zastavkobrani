@@ -25,7 +25,10 @@ AP: 10 denně; běžné území 1 AP, významné (v aktuálním kódu od 2 hern�
 - `app.js` používá index `STOP_BY_ID` pro vyhledávání zastávek podle ID.
 - `style.css` konsoliduje vybrané opakované komponenty a obsahuje sémantické tokeny. Zachovaný je mobilní základ a responzivní úpravy.
 - `tests/refactor.test.cjs` hlídá klíčové invarianty; GitHub Actions ověřují syntax i testy.
-- Další možné rozdělení `app.js` do samostatných modulů (GPS, stav hry, obrazovky) zůstává navazující prací. Žádná serverová herní logika nebyla tímto refaktoringem přidána.
+- **Modulární frontend:** hlavní `app.js` je nativní ES modul; `js/game.js` drží lokální herní model, `js/game-actions.js` provádí GPS ověřované operace, `js/game-time.js` řeší herní den, `js/storage.js` zachovává lokální schema v3, `js/gps.js` provádí měření a výpočty polohy, `js/gps-controller.js` ovládá GPS na mapě a `js/ui.js` spravuje mapové vrstvy. V `js/screens/` jsou moduly stop, daily, ranking a profile.
+- Původní globální knihovny a data (`scoring.js`, MapLibre, PID) jsou pro kompatibilitu nadále načítány klasickými skripty. Přechod na build systém nebo framework nebyl nutný.
+- Lokální testovací hra a původní klíč localStorage zůstávají beze změny. Serverové transakce a produkční zabezpečení dosud neexistují.
+- Jednotkové testy včetně `tests/modules.test.cjs` a kontrola syntaxe všech JS modulů jsou součástí GitHub Actions. Vizuální regresní testy napříč mobilními prohlížeči nejsou dosud automatizovány.
 
 ---
 
