@@ -9,18 +9,18 @@ const ctx={};
 vm.runInNewContext(src+"\nthis.api={captureBreakdown,holdingBreakdown,actionCost,holdingIncome,RULES};",ctx);
 const {captureBreakdown,holdingBreakdown,actionCost,holdingIncome,RULES}=ctx.api;
 const stop=cats=>({id:"x",name:"Test",cats});
-test("Schválené sazby 24/36/48 a váhy 100/50/25",()=>{
+test("Schválené sazby 16/24/32 a váhy 100/50/25",()=>{
  const b=captureBreakdown(stop(["metro","tram","bus"]));
- assert.deepEqual(Array.from(b.lines,x=>x.amount),[48,18,6]);
- assert.equal(b.total,72);
+ assert.deepEqual(Array.from(b.lines,x=>x.amount),[32,12,4]);
+ assert.equal(b.total,48);
 });
-test("Neutrální bonus +24 neplatí na převzetí",()=>{
- assert.equal(captureBreakdown(stop(["tram"]),{neutral:true}).total,60);
- assert.equal(captureBreakdown(stop(["tram"])).total,36);
+test("Neutrální bonus +16 neplatí na převzetí",()=>{
+ assert.equal(captureBreakdown(stop(["tram"]),{neutral:true}).total,40);
+ assert.equal(captureBreakdown(stop(["tram"])).total,24);
 });
 test("Autobusové kategorie se pro obsazení sloučí",()=>{
  const s=stop(["tram","urban_bus","regional_bus"]);
- assert.equal(captureBreakdown(s).total,48);
+ assert.equal(captureBreakdown(s).total,32);
  assert.equal(holdingBreakdown(s).total,12);
 });
 test("AP rozpočet, drahé území a příplatek za převzetí",()=>{
@@ -59,9 +59,22 @@ test("Celý nepřerušený výnosový cyklus dává 63 × váha modelu C",()=>{
  }
 });
 test("Nový neutrální bonus a obsazení pražských kombinací",()=>{
- assert.equal(captureBreakdown(stop(["bus"]),{neutral:true}).total,48);
- assert.equal(captureBreakdown(stop(["tram","bus"]),{neutral:true}).total,72);
- assert.equal(captureBreakdown(stop(["metro","tram","bus"]),{neutral:true}).total,96);
- assert.equal(captureBreakdown(stop(["metro","tram","bus"])).total,72);
- assert.equal(RULES.version,"2026-11-21-economy-v2");
+ assert.equal(captureBreakdown(stop(["bus"]),{neutral:true}).total,32);
+ assert.equal(captureBreakdown(stop(["tram","bus"]),{neutral:true}).total,48);
+ assert.equal(captureBreakdown(stop(["metro","tram","bus"]),{neutral:true}).total,64);
+ assert.equal(captureBreakdown(stop(["metro","tram","bus"])).total,48);
+ assert.equal(RULES.version,"2026-11-21-economy-v3");
+});
+
+test("Obsazovací základ ×2, schválený bonus neutrality a nulová změna denního základu",()=>{
+ assert.equal(RULES.neutralBonus,16);
+ assert.equal(captureBreakdown(stop(["metro"])).total,32);
+ assert.equal(captureBreakdown(stop(["train"])).total,32);
+ assert.equal(captureBreakdown(stop(["ferry"])).total,24);
+ assert.equal(captureBreakdown(stop(["trolleybus"])).total,24);
+ assert.equal(captureBreakdown(stop(["urban_bus","regional_bus"]),{neutral:true}).total,32);
+ assert.equal(captureBreakdown(stop(["metro","tram","bus","trolleybus"])).total,54);
+ assert.equal(holdingBreakdown(stop(["bus"])).total,6);
+ assert.equal(holdingBreakdown(stop(["tram","bus"])).total,12);
+ assert.deepEqual(Array.from(RULES.declining),[6,5,4,3,2,1,0]);
 });
