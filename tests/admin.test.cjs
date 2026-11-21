@@ -55,6 +55,7 @@ test("Vyhledávání vrací filtrované zastávky bez závislosti na DOM",()=>{
  const {filterStops}=core;
  assert.deepEqual(filterStops(demo,"c",{eligibleOnly:true}).map(x=>x.id),["c"]);
  assert.deepEqual(filterStops(demo,"",{eligibleOnly:true}).map(x=>x.id),["a","c"]);
+ assert.deepEqual(filterStops([{...demo[0],name:"Národní třída"}],"narodni").map(x=>x.id),["a"]);
 });
 test("Admin stránka je nezávislá na běžném mobilním navigátoru hry",()=>{
  const html=fs.readFileSync(path.join(ROOT,"admin/index.html"),"utf8");
