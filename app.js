@@ -8,6 +8,7 @@ import {createGpsController} from "./js/gps-controller.js";
 import {createDailyScreen} from "./js/screens/daily.js";
 import {createRankingScreen} from "./js/screens/ranking.js";
 import {createProfileScreen} from "./js/screens/profile.js";
+import {createStopScreen} from "./js/screens/stop.js";
 // Celopražský statický výřez auditu PID 19. 11. 2026, bez odhadovaných bodů.
 const STOPS = PID_PRAGUE;
 // Index pro opakované přístupy k herním územím bez lineárního procházení celé Prahy.
@@ -264,49 +265,16 @@ document.addEventListener("keydown",event=>{
 },true);
 for(const b of document.querySelectorAll("[data-ranking-period]"))b.onclick=()=>{rankingPeriod=b.dataset.rankingPeriod;renderRanking()};
 $("daily-history-expand").onclick=()=>{dailyHistoryExpanded=!dailyHistoryExpanded;renderDailyHistory()};
+const {renderStop}=createStopScreen({
+  getState:()=>state,getSelectedStop:()=>selectedStop,getActiveScreen:()=>activeScreen,
+  getConfirmingCapture:()=>confirmingCapture,getGpsSnapshot:()=>gpsController?.snapshot(),
+  isActionBusy:()=>gameActions?.isBusy(),STOP_BY_ID,PLAYERS,actionCost,remaining,
+  playerLabel:(id)=>playerLabel(id),stopLocationState,stopCardHtml,stopCountdown,
+  captureScore,holdingScore,renderStopHistory,$
+});
 function render(){closeDays();const p=PLAYERS.find(x=>x.id===state.selected);$("player").value=state.selected;$("profile").textContent=playerLabel(p.id);$("remaining").textContent=remaining()+"/"+RULES.dailyAP;$("ap-map").textContent=remaining()+" / "+RULES.dailyAP;$("owned").textContent=owned();$("points").textContent=total(p.id,30);$("clock").textContent="Herní den "+gameDay()+" · uzávěrka 03:00";$("profile-handle").textContent="Testovací účet · "+p.name;paintAvatar($("profile-avatar"),p.id);
 refreshStopMapColors(map,state.stops,PLAYERS,selectedStop);
-const s=STOP_BY_ID.get(selectedStop),rec=s&&state.stops[s.id];
-$("stopname").textContent=s?.name||"Vyber zastávku na mapě";
-const owner=rec&&PLAYERS.find(p=>p.id===rec.owner);
-const mine=!!rec?.owner&&rec.owner===state.selected;
-const protectionEnd=rec?.protectedUntil?Date.parse(rec.protectedUntil):0;
-const protectedNow=!!rec?.owner&&protectionEnd>Date.now();
-const protectionOther=protectedNow&&!mine;
-const cost=s?actionCost(s,"capture",!!rec?.owner):Infinity;
-const maintainCost=s?actionCost(s,"maintain"):Infinity;
-const selfCooldown=false; // Jediný cooldown je ochrana území po akci.
-const locationState=s?stopLocationState(s):{ok:false,status:"Poloha nedostupná",distance:null};
-const captureTimeBlocked=mine||protectionOther||remaining()<cost;
-const maintainTimeBlocked=!mine||protectedNow||remaining()<maintainCost;
-$("sheet").classList.toggle("sheet-stop",activeScreen==="stop");
-$("sheet").style.setProperty("--sheet-owner-color",owner?.color||"#929292");
-$("stop-owner-heading").textContent=owner?"Vlastní "+playerLabel(owner.id):"Neobsazená zastávka";
-$("stop-owner-heading").style.color="var(--muted)";
-$("stopdetail").innerHTML=s?stopCardHtml({
-  stop:s,record:rec,owner,selectedPlayer:state.selected,
-  gameDay:gameDay(),diffDays,captureScore:(stop)=>captureScore(stop,!rec?.owner),holdingScore:(stop)=>holdingScore(stop,rec),expiresAt:rec?.anchor?pragueBoundaryUtc(addDays(rec.anchor,15)):null
-}):"";
-renderStopHistory(s);
-const capture=$("capture"),maintain=$("maintain");
-capture.hidden=mine;maintain.hidden=!mine;
-capture.disabled=!s||captureTimeBlocked||!locationState.ok||gameActions?.isBusy();
-capture.dataset.block=captureTimeBlocked?"time":locationState.ok?"":"location";
-capture.textContent=mine?"Tvoje zastávka":protectionOther?
-  "Převzetí za "+stopCountdown(rec.protectedUntil):remaining()<cost?
-  "Nedostatek AP (potřeba "+cost+")":(rec?.owner?"Převzít · ":"Obsadit · ")+cost+" AP";
-maintain.disabled=!s||maintainTimeBlocked||!locationState.ok||gameActions?.isBusy();
-maintain.dataset.block=maintainTimeBlocked?"time":locationState.ok?"":"location";
-maintain.textContent=protectedNow?"Údržba za "+stopCountdown(rec.protectedUntil):remaining()<maintainCost?"Nedostatek AP (potřeba "+maintainCost+")":"Udržet · "+maintainCost+" AP";
-$("stop-location-status").textContent=locationState.status;
-$("stop-distance").textContent=locationState.distance===null?"—":formatStopDistance(locationState.distance);
-$("stop-request-location").hidden=!!gpsController?.snapshot().watch&&!!gpsController?.snapshot().position;
-$("stop-request-location").textContent=gpsController?.snapshot().permissionDenied?"Povolení GPS":"Povolit polohu";
-$("stop-confirm").hidden=!confirmingCapture||!s||mine;
-$("capture").hidden=mine||confirmingCapture;
-$("actions").classList.toggle("is-confirming",confirmingCapture&&!mine);
-$("confirm-yes").disabled=captureTimeBlocked||!locationState.ok||gameActions?.isBusy();
-$("stop-location").hidden=activeScreen!=="stop";
+const {stop:s,locationState}=renderStop();
 const challenge=challengeStop(),done=visitsFor(state.selected);
 $("challenge").textContent=challenge?.name||"Není dostupná";
 $("challengeinfo").textContent=done?"Dnes splněno":"Zatím nesplněno";
