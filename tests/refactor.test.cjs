@@ -3,7 +3,7 @@ const test=require("node:test");
 const assert=require("node:assert/strict");
 const fs=require("node:fs");
 const css=fs.readFileSync("style.css","utf8");
-const app=["app.js","js/game.js","js/game-actions.js","js/gps.js","js/storage.js","js/screens/daily.js","js/screens/ranking.js","js/screens/profile.js"].map(p=>fs.readFileSync(p,"utf8")).join("\n");
+const app=["app.js","js/game.js","js/game-actions.js","js/gps.js","js/storage.js","js/screens/daily.js","js/screens/ranking.js","js/screens/profile.js","js/screens/stop.js","js/ui.js"].map(p=>fs.readFileSync(p,"utf8")).join("\n");
 const scoring=fs.readFileSync("scoring.js","utf8");
 
 test("Základní mobile-first rozvržení sdílí tokeny",()=>{
