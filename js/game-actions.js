@@ -47,5 +47,5 @@ async function doGpsAction(action){
 }
 
 
-return {doGpsAction};
+return {doGpsAction,isBusy:()=>gpsBusy};
 }
