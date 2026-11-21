@@ -1,3 +1,16 @@
+# Terénní test – upravené obsazování a mapový detail (21. 11. 2026)
+
+[Spustit verzi gps25field](https://anlexcz.github.io/zastavkobrani/?v=gps25field)
+
+- **Pouze testovací režim** `FIELD_TEST_UNLIMITED_CAPTURES=true`: odstraňuje denní limit tří obsazení, profil zobrazuje ∞. Produkční limit tří obsazení v herní dokumentaci **zůstává schválený**; při ukončení testu se režim musí vypnout. Pravidla ochrany, cooldownu a sedmidenní údržby jsou nadále aktivní.
+- Jediný hlavní ovladač: u cizí/neobsazené zastávky obsazení, u vlastní údržba. Opačná akce je skrytá. Při potvrzení se přímo ve stejné pevně vysoké oblasti vymění obsazovací tlačítko za dotaz a **Ano vlevo / Ne vpravo**, s krátkou animací a respektováním `prefers-reduced-motion`.
+- Kontrola dostupné GPS polohy nadále průběžně mění stav tlačítka (GPS watch a pravidelné přepočítání po 5 s); mimo poloměr 30 m je v akční barvě utlumené a deaktivované. Vzdálenost k nejbližšímu povrchovému kandidátnímu bodu se zobrazuje pod akcí; samotná akce ověřuje nové měření. Bez souhlasu uživatele se průběžné sledování nespouští.
+- Kandidátní sloučené 30m oblasti se na mapě zobrazují již od zoomu **14,5** místo 15,2. Skutečný radius zůstává 30 m.
+- Lokální stav dosavadních dvou hráčů zůstává zachovaný (beze změny storage klíče). Toto není produkční serverové GPS ověření ani schválení veřejné přístupnosti PID bodů.
+- Ověřená syntaxe všech změněných JS souborů a statická kontrola návaznosti HTML/JS. Kompletní Node testy ani vizuální mobilní vykreslení nelze v aktuálním prostředí potvrdit.
+
+---
+
 # GPS akční tlačítko a dopravní piktogramy (21. 11. 2026)
 
 [Otevřít aktuální test na telefonu](https://anlexcz.github.io/zastavkobrani/?v=gps24action)
