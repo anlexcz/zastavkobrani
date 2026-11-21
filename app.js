@@ -519,7 +519,7 @@ setInterval(()=>{
 },1000);
 setInterval(()=>{
  if(activeScreen==="daily")$("challenge-countdown").textContent=stopCountdown(nextGameBoundary());
- if(activeScreen==="stop"&&selectedStop){const e=$("stopdetail").querySelector("[data-expiry-countdown]");if(e)e.textContent=stopCountdown(e.dataset.expiryCountdown);}
+ if(activeScreen==="stop"&&selectedStop){const e=$("stopdetail").querySelector("[data-expiry-countdown]");if(e)e.textContent=stopExpiryCountdown(e.dataset.expiryCountdown);}
 },1000);
 setInterval(()=>{render()},5000);
 
