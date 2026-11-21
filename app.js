@@ -9,6 +9,7 @@ import {createDailyScreen} from "./js/screens/daily.js";
 import {createRankingScreen} from "./js/screens/ranking.js";
 import {createProfileScreen} from "./js/screens/profile.js";
 import {createStopScreen} from "./js/screens/stop.js";
+import {createMapLayerControls} from "./js/ui.js";
 // Celopražský statický výřez auditu PID 19. 11. 2026, bez odhadovaných bodů.
 const STOPS = PID_PRAGUE;
 // Index pro opakované přístupy k herním územím bez lineárního procházení celé Prahy.
@@ -19,45 +20,7 @@ const PLAYERS=DEMO_PLAYERS;
 // Oddělený scénář s deseti hráči a strategickými polygony.
 const STORAGE=STORAGE_KEY;
 const $=id=>document.getElementById(id);
-const LAYER_PREFS_KEY="zastavkobrani-map-layers-v1";
-function loadLayerPrefs(){
-  try {
-    const stored=JSON.parse(localStorage.getItem(LAYER_PREFS_KEY));
-    if(stored&&typeof stored==="object")return {
-      stops:stored.stops!==false,polygons:stored.polygons!==false
-    };
-  } catch(error){console.warn("Nastavení vrstev nelze načíst:",error)}
-  return {stops:true,polygons:true};
-}
-let layerPrefs=loadLayerPrefs();
-let mapStopLayersReady=false;
-function setLayerPrefs(type,enabled){
-  layerPrefs[type]=!!enabled;
-  try{localStorage.setItem(LAYER_PREFS_KEY,JSON.stringify(layerPrefs))}
-  catch(error){console.warn("Nastavení vrstev nelze uložit:",error)}
-  if(mapStopLayersReady)setMapOverlayVisibility(map,layerPrefs);
-}
-function setupMapLayerControls(){
-  const button=$("map-layers-toggle"),panel=$("map-layers-panel");
-  const checkStops=$("layer-stops"),checkPolygons=$("layer-polygons");
-  checkStops.checked=layerPrefs.stops;
-  checkPolygons.checked=layerPrefs.polygons;
-  button.addEventListener("click",()=>{
-    const open=panel.hidden;
-    panel.hidden=!open;
-    button.setAttribute("aria-expanded",String(open));
-  });
-  checkStops.addEventListener("change",()=>setLayerPrefs("stops",checkStops.checked));
-  checkPolygons.addEventListener("change",()=>setLayerPrefs("polygons",checkPolygons.checked));
-  document.addEventListener("pointerdown",event=>{
-    if(!panel.hidden&&!event.target.closest(".map-layer-controls")){
-      panel.hidden=true;
-      button.setAttribute("aria-expanded","false");
-    }
-  });
-}
-setupMapLayerControls();
-
+const mapLayers=createMapLayerControls({$,getMap:()=>map,setMapOverlayVisibility});
 // Herní stav má jednoho vlastníka; obrazovky čtou aktuální stav přes rozhraní.
 const gameModel=createGameModel({STOPS,PLAYERS,ROUTE_22_SEED,RULES,captureBreakdown,holdingBreakdown,ACTIVE_SCORE_BONUSES,getState:()=>state,persist:()=>persist()});
 const {challengeStopForDay,init,award,captureScore,holdingScore,closeDays,spentAP,remaining,owned,total,challengeStop,visitsFor}=gameModel;
@@ -81,8 +44,8 @@ map.on("load",()=>{
     $("sheet").scrollTop=0;
     openScreen("stop");
   },PLAYERS,state.stops);
-  mapStopLayersReady=true;
-  setMapOverlayVisibility(map,layerPrefs);
+  mapLayers.setReady(true);
+  setMapOverlayVisibility(map,mapLayers.prefs());
   render();
 });
 // Základem je funkční oficiální Liberty. Neztrácíme zdroje, glyphs ani sprite.
