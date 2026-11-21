@@ -280,3 +280,87 @@ button.danger {margin-top:22px;color:#ffc2bc}
 .profile-settings select{background:var(--panel-2);border:1px solid var(--line);padding:10px;border-radius:8px;max-width:100%}
 .profile-settings p{font-size:.74rem;margin:2px 0}
 @media(max-width:360px){.topbar .ap-panel{padding:5px 7px}.topbar .ap-panel strong{font-size:.88rem}}
+
+/* Alpha UI 2: plnohodnotné obrazovky, pouze zastávka jako spodní karta. */
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.nav{z-index:1010;background:#151719;align-items:stretch}
+.nav button{display:flex;align-items:center;justify-content:center;padding:4px;min-height:47px}
+.nav button svg{display:block;flex:none}
+.nav button.active{color:var(--accent);background:#ffffff0b}
+.nav button:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
+.sheet.is-page{position:fixed;inset:0 0 calc(var(--nav-h) + env(safe-area-inset-bottom)) 0;
+ width:100%;max-width:none;max-height:none;height:auto;padding:24px max(18px,env(safe-area-inset-left)) 32px;
+ overflow-y:auto;overscroll-behavior:contain;border:0;border-radius:0;box-shadow:none;
+ background:var(--panel)}
+.sheet.is-page .sheet-head{display:none}
+.sheet.is-page .screen{max-width:760px;margin:0 auto;padding:0}
+.sheet.is-page h1{margin:7px 0 19px}
+.sheet.is-page .eyebrow{letter-spacing:.09em}
+.sheet.is-page .stats{margin:18px 0}
+.sheet.is-page .nav{z-index:1000}
+.sheet.is-page #screen-profile h1{margin:0}
+.sheet.is-page #screen-profile h2,.sheet.is-page #screen-profile-settings h2{font:600 1rem/1.4 Inter,system-ui,sans-serif;margin:0}
+.profile-intro{display:flex;align-items:center;gap:15px;min-height:72px}
+.profile-avatar{display:grid;place-items:center;width:64px;height:64px;flex:none;border-radius:50%;
+ background-color:#454b50;background-position:center;background-size:cover;color:#fff;
+ font:500 2rem/1 "Bebas Neue",sans-serif}
+.profile-identity{min-width:0;flex:1}
+.profile-identity h1{font-size:2.2rem;overflow-wrap:anywhere}
+.profile-handle{font-size:.75rem;color:var(--muted)}
+.profile-edit-button{display:grid;place-items:center;width:44px;height:44px;padding:0;background:var(--panel-2);border:1px solid var(--line)}
+.profile-section{margin-top:26px}
+.profile-section-heading{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+ border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:4px}
+.profile-section-heading .section-count{font-size:.76rem;color:var(--muted)}
+.owned-list{display:grid}
+.owned-row{display:flex;align-items:center;width:100%;gap:9px;padding:13px 3px;
+ border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;text-align:left}
+.owned-row-main{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.owned-row-main strong{font-size:.88rem;font-weight:600;overflow-wrap:anywhere}
+.owned-row-main small{color:var(--muted);font-size:.73rem}
+.owned-row-side{display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex:none;text-align:right}
+.owned-row-side strong{font-size:.78rem;font-weight:600;white-space:nowrap}
+.owned-row-side small{color:var(--muted);font-size:.68rem;max-width:115px}
+.owned-row-arrow{font-size:1.4rem;color:var(--muted);line-height:1}
+.owned-row.is-urgent .owned-row-main small{color:#f2a493}
+.owned-row.is-declining .owned-row-main small{color:#e2bd88}
+.owned-row:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.player-event{display:flex;justify-content:space-between;align-items:center;gap:12px;
+ border-bottom:1px solid var(--line);padding:12px 0}
+.player-event>div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.player-event strong{font-weight:600;font-size:.83rem;overflow-wrap:anywhere}
+.player-event small,.player-event span{color:var(--muted);font-size:.73rem}
+.player-event span{white-space:nowrap}
+.empty-state{color:var(--muted);font-size:.84rem;padding:14px 0}
+.profile-settings{border-top:1px solid var(--line);padding-top:18px;margin-bottom:10px}
+.profile-settings h2{font-size:.9rem}
+.profile-settings .danger{justify-self:start;margin-top:6px}
+.settings-back{display:flex;align-items:center;gap:5px;background:transparent;border:0;padding:7px 0 20px;
+ color:var(--muted);font-size:.84rem}
+.settings-back svg{width:21px;height:21px}
+.account-form{display:grid;gap:9px;margin-top:20px}
+.account-form>label{font-size:.8rem;font-weight:600;margin-top:7px}
+.account-form>input{min-height:45px;border:1px solid var(--line);border-radius:9px;background:var(--panel-2);
+ color:var(--text);padding:10px 12px;font:inherit;width:100%}
+.account-form>input:read-only{opacity:.65}
+.account-form button[type=submit]{min-height:46px;margin-top:15px}
+.account-avatar-row{display:flex;align-items:center;gap:18px;margin:5px 0 10px}
+.account-avatar-row>div:last-child{display:grid;gap:5px}
+.account-avatar-row small{font-size:.7rem;color:var(--muted)}
+.account-avatar-row #profile-image{position:absolute;width:1px;height:1px;overflow:hidden;opacity:0}
+.avatar-upload{display:inline-block;cursor:pointer;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);font-size:.81rem;font-weight:600}
+.avatar-upload:focus-within{outline:2px solid var(--accent)}
+.account-form-status{min-height:16px;color:#92cdb0;font-size:.79rem}
+.account-security{margin-top:28px;border-top:1px solid var(--line);padding-top:17px;display:grid;gap:10px}
+.account-security button{justify-self:start}
+.account-security p{font-size:.79rem;margin:0}
+@media(min-width:760px){
+ .sheet.is-page{left:0;right:0;top:0;bottom:0;width:100%;height:100dvh;border:0;border-radius:0;max-height:none;padding-bottom:105px}
+ .nav{z-index:1010}
+}
+@media(max-width:430px){
+ .owned-row-side small{max-width:92px}
+ .sheet.is-page{padding-left:16px;padding-right:16px}
+ .sheet.is-page .stats{padding:13px 6px}
+ .sheet.is-page .stats strong{font-size:1.85rem}
+}
