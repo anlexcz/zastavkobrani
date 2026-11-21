@@ -31,6 +31,15 @@ AP: 10 denně; běžné území 1 AP, významné (v aktuálním kódu od 2 hern�
 - Jednotkové testy včetně `tests/modules.test.cjs` a kontrola syntaxe všech JS modulů jsou součástí GitHub Actions. Vizuální regresní testy napříč mobilními prohlížeči nejsou dosud automatizovány.
 
 
+### Sjednocení responsivního designu (21. 11. 2026)
+
+- `design-system.css` je jediná globální definice barev, typografie, mezer, společných výšek a rozměrů. Načítá se před `style.css` v hlavní hře i před `style.css` a `admin/admin.css` v administraci. Komponentové CSS nemá duplikovat `:root`.
+- Kořenová velikost písma je `100%` (výchozí nastavení uživatele). Kompaktní základní text používá `--font-body: .875rem`; původní specifické `rem` hodnoty byly přepočteny, aby při běžných 16px nastaveních zůstal vzhled blízko předchozí verze. Rozměry odvozené od textu a mezery používají `rem`; geometrické mapové velikosti, hranice a breakpointy mohou zůstat v `px`.
+- Opakovaná odsazení vycházejí z `--space-1/2/3/4/6/8`. Sdílené `--header-h`, `--nav-h`, `--control-height`, `--action-height`, `--admin-header-h`, `--admin-sidebar-width` a `--admin-content-max` tvoří stabilní layoutový kontrakt. Neměnit vizuální proporce jednotlivých komponent bez testu.
+- Administrace do 759px místo horizontálního scrollování nabízí tlačítko **Nabídka** ve hlavičce. Otevře se svislý vysouvací panel s kompletním seznamem modulů, překryvem, tlačítkem zavření, podporou Escape, cyklickým Tab fokusem a správou `inert`. Od 760px je trvalá levá navigace.
+- Rozložení administračních karet se nově řídí `@container` podle dostupné šířky hlavního obsahu, ne pouze podle šířky okna. Formulářová pole používají čitelnou velikost 1rem a společnou minimální výšku.
+- Automatické testy `tests/refactor.test.cjs`, `tests/admin.test.cjs` a `tests/stop-card.test.cjs` ověřují společné CSS a základní invariantu navigace. Prohlížečové/mobilní vizuální regresní testy jsou stále otevřené; nepředstírat, že jednotkové testy je nahrazují.
+
 ### Administrace /admin (alpha, 21. 11. 2026)
 
 - URL: [Zastávkobraní – administrace](https://anlexcz.github.io/zastavkobrani/admin/). Samostatná mobile-first stránka, bez zásahu do navigace hry.
