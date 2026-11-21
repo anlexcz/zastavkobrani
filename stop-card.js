@@ -1,16 +1,7 @@
 "use strict";
 // Stručná karta podle aktuálního zadání. Původní obsáhlá karta Alphy 1.9 je nahrazena.
-const STOP_MODE_LABELS=Object.freeze({
-  metro:"Metro",train:"Vlak",funicular:"Lanovka",tram:"Tramvaj",
-  trolleybus:"Trolejbus",ferry:"Přívoz",urban_bus:"Městský autobus",
-  regional_bus:"Regionální autobus",bus:"Autobus"
-});
-// Existující veřejné piktogramy Temaki, nikoli vlastní dopravní ikony.
-const STOP_MODE_ICONS=Object.freeze({
-  metro:"subway",train:"train",funicular:"light_rail",tram:"tram",
-  trolleybus:"trolleybus",ferry:"ferry",urban_bus:"bus",
-  regional_bus:"bus",bus:"bus"
-});
+const STOP_MODE_LABELS=TRANSPORT_MODE_LABELS;
+const STOP_MODE_ICONS=TRANSPORT_MODE_ICONS;
 const TEMAKI_ICON_ROOT="assets/temaki/";
 function stopModeIcon(code){
   const name=STOP_MODE_ICONS[code];
