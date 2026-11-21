@@ -1,3 +1,13 @@
+# Zastávkobraní – aktuální mobilní alfa (UI v1, 21. 11. 2026)
+
+[Otevřít současnou alfu](https://anlexcz.github.io/zastavkobrani/?v=ui-v1)
+
+**Funkční UI v lokálním demu:** mapa celého katalogu PID; karta zastávky s dosavadními modaly rozpisu bodů a historie; odpočty ochrany a sestupné fáze vlastnictví; sekundární GPS akce „Splnit zastávku dne“ na kartě aktuální denní výzvy; obrazovka Zastávka dne s odpočtem do pražské uzávěrky ve 03:00 a rozbalovací historií předchozích 30 dnů; žebříček se dvěma rozsahy bodů (30 dní / celkem) a aktuálním počtem zastávek; profil s přepínáním testovacích hráčů a resetem. AP jsou nově v horní liště.
+
+**Omezení:** nadále pouze localStorage a dva demonstrační hráči. Denní zastávka se pro demo vybírá reprodukovatelně podle data a dostupných kategorií/bodů, nikoliv serverovým losováním. Odměny výzev nejsou určeny, takže návštěvy zatím nepřidávají body. Neschválené GPS body a produkční serverové ověřování zůstávají otevřeným technickým úkolem. Přenos na server nemá měnit schválený UI tok.
+
+---
+
 # Alfa – aktuální schválená ekonomika 21. 11. 2026 (v3: obsazení ×2)
 
 [Otevřít aktuální alfu](https://anlexcz.github.io/zastavkobrani/?v=economy-v3)
