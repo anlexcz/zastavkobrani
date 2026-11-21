@@ -126,8 +126,9 @@ button.danger {margin-top:22px;color:#ffc2bc}
 .stop-protection span {font-size:.82rem;color:#e9cbca}
 .stop-protection strong {font-size:1.18rem;font-variant-numeric:tabular-nums;color:#fff;white-space:nowrap}
 .stop-modes {display:flex;gap:6px;flex-wrap:wrap}
-.stop-mode {display:inline-flex;align-items:center;gap:7px;min-height:32px;font-size:.78rem;padding:5px 10px;border-radius:20px;background:#2b2e31;border:1px solid var(--line);color:#d7dbdd;white-space:nowrap}
-.stop-mode-icon {display:block;width:19px;height:19px;flex:none;filter:brightness(0) invert(1);opacity:.87}
+.stop-modes {display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.stop-mode {display:inline-flex;align-items:center;justify-content:center;min-width:24px;min-height:27px;color:#e2e6e8}
+.stop-mode-icon {display:block;width:25px;height:25px;flex:none;filter:brightness(0) invert(1);opacity:.91}
 .stop-metrics {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
 .stop-metrics>div {padding:11px 8px;border-radius:11px;text-align:center;background:var(--panel-2)}
 .stop-metrics strong {display:block;font:400 1.9rem/1.1 "Bebas Neue",sans-serif;font-variant-numeric:tabular-nums}
@@ -141,3 +142,24 @@ button.danger {margin-top:22px;color:#ffc2bc}
 #screen-stop .actions button {flex:1;min-width:0;min-height:47px;padding:8px 10px;font-size:.81rem}
 #screen-stop .actions button:disabled {opacity:.58}
 #screen-stop .message {margin-top:4px}
+
+/* Jediné akční tlačítko: prostorová blokace zachová barvu, ale skutečně zakáže kliknutí. */
+#screen-stop .actions {display:block;position:static;padding:0;background:none;margin-top:12px}
+#screen-stop .actions button {width:100%;min-height:50px;display:block;font-size:.9rem}
+#screen-stop .actions button.primary:disabled:not([data-block="time"]) {
+  opacity:.46;background:var(--accent);border-color:var(--accent);color:white;
+  cursor:not-allowed;filter:saturate(.75)
+}
+#screen-stop .actions button[data-block="time"]:disabled {
+  opacity:.58;background:#35383b;border-color:#45494d;color:#b9bdc1
+}
+.stop-location {display:flex;align-items:center;justify-content:space-between;gap:10px;
+  min-height:32px;margin-top:9px;color:var(--muted);font-size:.79rem;line-height:1.35}
+.stop-location strong {font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap;color:#dce1e4}
+.stop-location button {width:auto!important;min-height:35px!important;padding:5px 10px!important;
+  font-size:.78rem!important;border-color:#63727c;background:#30383f;color:#e8edf0}
+.stop-confirm {margin-top:12px;display:grid;gap:9px}
+.stop-confirm p {margin:0;font-size:.85rem}
+.stop-confirm-buttons {display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.stop-confirm-buttons button {min-height:47px}
+.stop-confirm[hidden] {display:none}
