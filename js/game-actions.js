@@ -2,7 +2,7 @@
 import {gameDay} from "./game-time.js";
 import {verifyGps} from "./gps.js";
 // Jediné místo, kde se lokální herní akce mění na zápis události.
-export function createGameActions({getState,getSelectedStop,STOP_BY_ID,PLAYERS,remaining,actionCost,captureScore,award,challengeStop,visitsFor,stopLocationState,persist,note,render,$}){
+export function createGameActions({getState,getSelectedStop,STOP_BY_ID,PLAYERS,RULES,remaining,actionCost,captureScore,award,challengeStop,visitsFor,stopLocationState,persist,note,render,$}){
 let gpsBusy=false;
 async function doGpsAction(action){
   const stop=STOP_BY_ID.get(getSelectedStop());
