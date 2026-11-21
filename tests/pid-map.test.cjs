@@ -110,7 +110,7 @@ test("GPS oblasti zůstávají viditelné i při vypnutí barevných území",()
  assert.equal(map.layoutVisibility["game-territory-area-outline"],"visible");
  assert.ok(map.sources["game-territory-areas"].data.features.length>0);
  api.setMapOverlayVisibility(map,{stops:false,polygons:true});
- assert.equal(map.layoutVisibility["game-territory-area-fill"],"visible");
+ assert.equal(map.layoutVisibility["game-territory-area-fill"],"none");
  assert.equal(map.sources["game-territory-areas"].data.features.length,0);
 });
 test("Agregace clusterů pracuje s územími a barvami všech hráčů",()=>{
@@ -195,7 +195,7 @@ test("Přepínání vrstev skryje body a polygony nezávisle a lze je obnovit",(
  assert.equal(map.layoutVisibility["game-owner-border"],"none");
  assert.equal(map.layoutVisibility["game-owner-border-glow"],"none");
  assert.equal(map.layoutVisibility["game-owner-border-highlight"],"none");
- assert.equal(map.layoutVisibility["game-territory-area-fill"],"none");
+ assert.equal(map.layoutVisibility["game-territory-area-fill"],"visible");
  assert.equal(map.sources["game-territory-areas"].data.features.length,0);
  controls(map,{stops:true,polygons:true});
  assert.ok(Object.values(map.layoutVisibility).every(v=>v==="visible"));
