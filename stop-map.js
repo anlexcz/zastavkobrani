@@ -36,13 +36,13 @@ function setMapOverlayVisibility(map, next) {
     }
   }
   if(mapOverlayState.polygons)refreshVisibleAreas(map);
-  refreshVisibleCaptureCircles(map);
   else {
     areaGeneration++;
     // Vypnutí oblastí zároveň zastaví nákladné výpočty GPS náhledů.
     const source=map.getSource("game-territory-areas");
     if(source)source.setData(geoCollection([]));
   }
+  refreshVisibleCaptureCircles(map);
 }
 
 
