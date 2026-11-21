@@ -187,6 +187,6 @@ test("Kompaktní zápisy historie neztrácejí datum, AP ani získané body",()=
  assert.match(app,/data-owned-stop/);
  const css=fs.readFileSync("style.css","utf8");
  assert.match(css,/\.compact-disclosure>summary/);
- assert.match(css,/\.compact-disclosure \.owned-row\{padding:8px 2px/);
- assert.match(css,/\.history-dialog \.history-item\{padding:9px 0/);
+ assert.match(css,/\.compact-disclosure \.owned-row\{padding:\.5rem \.125rem/);
+ assert.match(css,/\.history-dialog \.history-item\{padding:\.5625rem 0/);
 });
