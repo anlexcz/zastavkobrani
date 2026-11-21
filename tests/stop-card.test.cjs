@@ -171,3 +171,24 @@ test("Profil má vlastní zastávky, rozbalení událostí a účetní nastaven�
  assert.match(html,/Změna hesla bude dostupná po připojení skutečných účtů k serveru/);
  assert.doesNotMatch(app,/localStorage\.setItem\(["']password/);
 });
+
+test("Profil používá výchozí sbalené přístupné seznamy",()=>{
+ assert.match(html,/<details class="profile-section compact-disclosure" id="owned-section">/);
+ assert.match(html,/<details class="profile-section compact-disclosure" id="events-section">/);
+ assert.doesNotMatch(html,/<details[^>]+id="owned-section"[^>]+open/);
+ assert.doesNotMatch(html,/<details[^>]+id="events-section"[^>]+open/);
+ for(const id of ["owned-title","player-events-title"])
+  assert.match(html,new RegExp('<summary[^>]*>[\\s\\S]*?id="'+id+'"'));
+});
+test("Kompaktní zápisy historie neztrácejí datum, AP ani získané body",()=>{
+ assert.match(app,/history-item-points/);
+ assert.match(app,/history-item-meta/);
+ assert.match(app,/e\.apCost\?"−"\+e\.apCost\+" AP"/);
+ assert.match(app,/Number\.isFinite\(e\.points\)/);
+ assert.match(app,/class="owned-row/);
+ assert.match(app,/data-owned-stop/);
+ const css=fs.readFileSync("style.css","utf8");
+ assert.match(css,/\.compact-disclosure>summary/);
+ assert.match(css,/\.compact-disclosure \.owned-row\{padding:8px 2px/);
+ assert.match(css,/\.history-dialog \.history-item\{padding:9px 0/);
+});
