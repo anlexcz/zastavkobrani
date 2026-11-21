@@ -1,3 +1,17 @@
+# Zastávkobraní — GPS terénní test (21. 11. 2026)
+
+[Otevřít testovací hru](https://anlexcz.github.io/zastavkobrani/?v=gps21)
+
+**Aktuální implementace na GitHub Pages je testovací lokální režim, nikoliv produkční multiplayer.** Dva přepínatelné profily: Tepa (p1) začíná bez zastávek a Soupeř 22 (p2) začíná s 20 konkrétními zastávkami mezi Bílou Horou a Štěpánskou. Po prvním spuštění je scénář uložen v `localStorage`; přepnutí hráče nemění společný lokální herní stav. Reset vrací oba profily do výchozího scénáře. Staré simulace mají jiný klíč a nepřenášejí se.
+
+**Obsazení, převzetí, údržba i zastávka dne vyžadují aktuální GPS měření při kliknutí.** Klient používá `getCurrentPosition` s vysokou přesností, nepřijímá měření starší než 10 s a vyžaduje hlášenou přesnost nejvýše 30 m. Nejbližší bod PID v příslušném území (mimo metro) musí být vzdálen nejvýše 30 m. Obsazení vyžaduje potvrzení. Kontrolují se 3 obsazení za herní den, 24h ochrana, 24h opakování téhož hráče a dostupnost údržby po 7 herních dnech. Neúspěšné GPS ověření akci nezapíše.
+
+**Důležité před veřejným spuštěním:** všech 3 659 PID bodů má dosud `captureEnabled:false` a nemá schválenou veřejnou přístupnost. Terénní test používá přímo jejich souřadnice pouze v izolovaném lokálním scénáři. Tím se **neschvalují** herní body. GPS pochází z klienta a lze ji podvrhnout; bez účtů, serverové databáze a serverového validačního API nejde o důvěryhodné, sdílené ani bezpečné produkční převzetí. Před vydáním je nutný backend s transakčními kontrolami a schválené capture_points. Přesnost ±30 m sama o sobě nedokazuje skutečnou fyzickou přítomnost do 30 m. Za jízdy tramvaje testovat jen bezpečně, bez ovládání telefonu při řízení.
+
+**Kontrola zdrojů:** všech 20 názvů je ověřeno proti PID datům a obsahuje kategorii `tram`. Syntaxe `app.js` byla ověřena. GitHub Actions spouští `node --test tests/*.test.cjs`; fyzické GPS chování vyžaduje test na mobilu a dokončený server později integrační testy.
+
+---
+
 # Zastávkobraní — Alpha 2.0: zjednodušená karta zastávky
 
 [Otevřít aktuální mapu](https://anlexcz.github.io/zastavkobrani/?v=alpha20) · [Vizuální specifikace – kapitola 30](https://docs.google.com/document/d/1aYjOdabqtIEnw13ROaFMkpbyH9MKoaK2uOY3l5AGMDE/edit)
