@@ -16,7 +16,16 @@ Schválené jednorázové sazby: autobus 16, tramvaj/trolejbus/lanovka/přívoz 
 
 Denní příjem: model C ×6 = 6/12/12/18 bodů pro 1/2/3/4+ druhy. Den akce 0; následuje 7 plných výnosových dní a 7 sestupných (pro základní váhu C: 6,5,4,3,2,1,0). Celý nepřerušený cyklus má 63× váha C bodů.
 
-AP: 10 denně; běžné území 1 AP, významné (zatím pracovní 3+ druhů) 2 AP, převzetí +1 AP. Ochrana 24 hodin. Jde o klientskou alfu s lokálním testovacím stavem linky 22. Dříve připsané body nejsou zpětně přepočtené; reset v profilu obnoví ukázková data podle současných pravidel. Produkční serverová databáze dosud není implementovaná.
+AP: 10 denně; běžné území 1 AP, významné (v aktuálním kódu od 2 herních druhů) 2 AP, převzetí +1 AP. Ochrana 24 hodin. Jde o klientskou alfu s lokálním testovacím stavem linky 22. Dříve připsané body nejsou zpětně přepočtené; reset v profilu obnoví ukázková data podle současných pravidel. Produkční serverová databáze dosud není implementovaná.
+
+### Technický refaktoring 21. 11. 2026
+
+- Sdílené názvy a piktogramy dopravních kategorií jsou v `transport-modes.js`; `scoring.js` zachovává výhradně bodovou a AP logiku.
+- Délka ochrany je definovaná v `RULES.protectionHours` (aktuálně 24 h); jde o sjednocení konfigurace, nikoli změnu pravidla.
+- `app.js` používá index `STOP_BY_ID` pro vyhledávání zastávek podle ID.
+- `style.css` konsoliduje vybrané opakované komponenty a obsahuje sémantické tokeny. Zachovaný je mobilní základ a responzivní úpravy.
+- `tests/refactor.test.cjs` hlídá klíčové invarianty; GitHub Actions ověřují syntax i testy.
+- Další možné rozdělení `app.js` do samostatných modulů (GPS, stav hry, obrazovky) zůstává navazující prací. Žádná serverová herní logika nebyla tímto refaktoringem přidána.
 
 ---
 
