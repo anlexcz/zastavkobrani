@@ -2,7 +2,7 @@
 // GeoJSON vrstvy pevně přivázané k souřadnicím. Žádné HTML markery,
 // které by zdědily CSS tlačítek a při zoomu se pohybovaly mimo geometrii.
 const PLATFORM_ZOOM = 16;
-const TERRITORY_AREA_ZOOM = 15.2;
+const TERRITORY_AREA_ZOOM = 14.5;
 let stopMapInitialized = false;
 let clusterPlayers = [];
 let territoryPoints = [];
