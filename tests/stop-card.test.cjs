@@ -3,7 +3,7 @@ const assert=require("node:assert/strict");
 const fs=require("node:fs");
 const vm=require("node:vm");
 const source=fs.readFileSync("transport-modes.js","utf8")+"\n"+fs.readFileSync("stop-card.js","utf8");
-const app=fs.readFileSync("app.js","utf8");
+const app=["app.js","js/game.js","js/game-actions.js","js/gps.js","js/storage.js","js/screens/daily.js","js/screens/ranking.js","js/screens/profile.js"].map(p=>fs.readFileSync(p,"utf8")).join("\n");
 const html=fs.readFileSync("index.html","utf8");
 const ctx={};
 vm.runInNewContext(source+"\nthis.card=stopCardHtml;this.countdown=stopCountdown;",ctx);
@@ -115,11 +115,9 @@ test("Nové stránky mají přepínač žebříčku a splnění denní výzvy po
  assert.match(app,/const isDailyStop=!!s&&s\.id===challenge\?\.id/);
 });
 test("Pražské uzávěrky respektují zimní i letní čas",()=>{
- const start=app.indexOf("function pragueBoundaryUtc(day){");
- const end=app.indexOf("function init(withSeed=true){",start);
- assert.ok(start>=0&&end>start);
+ const clock=fs.readFileSync("js/game-time.js","utf8").replace(/\bexport /g,"");
  const context={};
- vm.runInNewContext(app.slice(start,end)+"\nthis.boundary=pragueBoundaryUtc",context);
+ vm.runInNewContext(clock+"\nthis.boundary=pragueBoundaryUtc",context);
  assert.equal(context.boundary("2026-01-15"),"2026-01-15T02:00:00.000Z");
  assert.equal(context.boundary("2026-07-15"),"2026-07-15T01:00:00.000Z");
  assert.equal(context.boundary("2026-03-29"),"2026-03-29T01:00:00.000Z");
