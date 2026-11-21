@@ -135,7 +135,7 @@ test("Mapové úrovně zachovávají 14.5 / 16 / 17.2",()=>{
 });
 test("GPS test používá oddělené localStorage a skutečnou GPS kontrolu",()=>{
  assert.ok(appSource.includes("const STOPS = PID_PRAGUE;"));
- assert.ok(appSource.includes("zastavkobrani-gps-two-players-v1"));
+ assert.ok(appSource.includes("zastavkobrani-route22-ap-v3"));
  assert.ok(appSource.includes("getCurrentPosition"));
  assert.ok(appSource.includes("distance>30"));
  assert.ok(appSource.includes("maximumAge:0"));
@@ -152,7 +152,7 @@ test("Strategické Voroného oblasti pokrývají 1487 území bez překryvů her
  assert.ok(map.layers.find(l=>l.id==="game-strategic-fill").maxzoom<16);
  assert.ok(map.sources["game-territories"].clusterMaxZoom<15);
 });
-test("Tepa začíná bez zastávek a soupeř má 20 existujících tramvajových zastávek 22",()=>{
+test("Testovací linka 22 používá reálné názvy a dva profily",()=>{
  const profiles=ctx.sim.DEMO_PLAYERS;
  assert.equal(profiles.length,2);
  assert.equal(profiles[0].name,"Tepa");
@@ -162,7 +162,7 @@ test("Tepa začíná bez zastávek a soupeř má 20 existujících tramvajových
    assert.ok(groups.some(stop=>stop.name===name&&stop.cats.includes("tram")),name);
  }
  assert.ok(appSource.includes('selected:"p1"'));
- assert.ok(appSource.includes('owner:"p2"'));
+ assert.ok(appSource.includes('ROUTE_22_SEED.forEach'));
  assert.ok(appSource.includes("const PLAYERS=DEMO_PLAYERS"));
 });
 test("Zastávkové tečky jsou trvale viditelné včetně mapového detailu",()=>{
