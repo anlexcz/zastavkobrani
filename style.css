@@ -126,7 +126,8 @@ button.danger {margin-top:22px;color:#ffc2bc}
 .stop-protection span {font-size:.82rem;color:#e9cbca}
 .stop-protection strong {font-size:1.18rem;font-variant-numeric:tabular-nums;color:#fff;white-space:nowrap}
 .stop-modes {display:flex;gap:6px;flex-wrap:wrap}
-.stop-mode {font-size:.75rem;padding:4px 10px;border-radius:20px;background:#2b2e31;border:1px solid var(--line);color:#d7dbdd}
+.stop-mode {display:inline-flex;align-items:center;gap:7px;min-height:32px;font-size:.78rem;padding:5px 10px;border-radius:20px;background:#2b2e31;border:1px solid var(--line);color:#d7dbdd;white-space:nowrap}
+.stop-mode-icon {display:block;width:19px;height:19px;flex:none;filter:brightness(0) invert(1);opacity:.87}
 .stop-metrics {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
 .stop-metrics>div {padding:11px 8px;border-radius:11px;text-align:center;background:var(--panel-2)}
 .stop-metrics strong {display:block;font:400 1.9rem/1.1 "Bebas Neue",sans-serif;font-variant-numeric:tabular-nums}
