@@ -96,8 +96,8 @@ test("GPS oblasti se slučují po zastávkách a nejsou překryvné vrstvy",()=>
  assert.ok(features.every(f=>f.properties.approved===false));
  assert.equal(new Set(features.map(f=>f.properties.territoryId)).size,features.length);
  assert.ok(trace.circles>features.length);
- assert.equal(map.getLayer("game-territory-area-fill").minzoom,15.2);
- assert.equal(map.getLayer("game-territory-area-outline").minzoom,15.2);
+ assert.equal(map.getLayer("game-territory-area-fill").minzoom,14.5);
+ assert.equal(map.getLayer("game-territory-area-outline").minzoom,14.5);
  assert.equal(map.getLayer("game-capture-radius-fill"),undefined);
  assert.equal(map.getLayer("game-capture-radius-outline"),undefined);
  api.refreshStopMapColors(map,{},players,features[0].properties.territoryId);
@@ -127,9 +127,9 @@ test("Agregace clusterů pracuje s územími a barvami všech hráčů",()=>{
  assert.equal(segments.length,3);
  assert.equal(segments[0].fraction,.5);
 });
-test("Mapové úrovně zachovávají 15.2 / 16 / 17.2",()=>{
+test("Mapové úrovně zachovávají 14.5 / 16 / 17.2",()=>{
  const {map}=setup();
- assert.equal(map.layers.find(l=>l.id==="game-territory-area-fill").minzoom,15.2);
+ assert.equal(map.layers.find(l=>l.id==="game-territory-area-fill").minzoom,14.5);
  assert.equal(map.layers.find(l=>l.id==="game-platform").minzoom,16);
  assert.equal(map.layers.find(l=>l.id==="game-platform-label").minzoom,17.2);
 });
