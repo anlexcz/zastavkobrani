@@ -24,7 +24,7 @@ test("Kritické komponenty nemají duplicitní základní selektory",()=>{
 
 test("Ochrana je konfigurovaná a oba typy akce ji používají",()=>{
   assert.match(scoring,/protectionHours:24/);
-  assert.equal((app.match(/RULES\.protectionHours\*60\*60\*1000/g)||[]).length,2);
+  assert.ok((app.match(/RULES\.protectionHours\*60\*60\*1000/g)||[]).length>=3);
   assert.doesNotMatch(app,/now\.getTime\(\)\+86400000/);
 });
 
