@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#151719">
+<title>Administrace | Zastávkobraní</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css?v=ui-v3">
+<link rel="stylesheet" href="./admin.css?v=1">
+</head>
+<body class="admin-body">
+<header class="admin-header">
+  <a href="../" class="admin-brand" aria-label="Zastávkobraní – mapa">Zastávkobraní <span>ADMIN</span></a>
+  <a class="admin-back" href="../">Zpět do hry <span aria-hidden="true">↗</span></a>
+</header>
+<div class="admin-layout">
+  <aside class="admin-sidebar" aria-label="Moduly administrace">
+    <div class="admin-sidebar-head">SPRÁVA HRY</div>
+    <nav id="admin-menu" class="admin-menu" aria-label="Administrace"></nav>
+    <div class="admin-sidebar-foot">Testovací administrace<br>Bez serverového přihlášení</div>
+  </aside>
+  <main id="admin-main" class="admin-main">
+    <div class="admin-security" role="note"><strong>Veřejný náhled administrace.</strong> Současný web nemá serverovou autentizaci ani administrační API. Prohlížení a příprava změn je možné, ale žádné změny se neodesílají do hry ani na GitHub automaticky.</div>
+    <section id="admin-view" aria-live="polite">
+      <h1>Administrace</h1><p class="admin-muted">Načítám projektová data…</p>
+    </section>
+    <div id="admin-alert" class="admin-alert" role="status" aria-live="polite" hidden></div>
+  </main>
+</div>
+<script src="../pid-prague.js?v=20261119"></script>
+<script type="module" src="./admin.js?v=1"></script>
+</body>
+</html>
