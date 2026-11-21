@@ -1,3 +1,29 @@
+# Zastávkobraní – test AP, historie a dat linky 22 (21. 11. 2026)
+
+[Testovací web](https://anlexcz.github.io/zastavkobrani/?v=ap22history1)
+
+## Aktuální testovací režim
+- Praha nad auditovanými PID územími; fiktivní lokální hráči Tepa a Soupeř 22.
+- Na vybraných reálných zastávkách linky 22 jsou pouze **syntetická obsazení, převzetí a historie**. Čas a vlastník jsou vygenerované testovací údaje, ne reálné hry. Jedna pětina zastávek ze seed listu zůstává neutrální.
+- Historie se při každém skutečně provedeném testovacím obsazení/údržbě doplní; lokální stav je uložen jen v prohlížeči. Reset v profilu obnoví testovací scénář. Klíč úložiště je `zastavkobrani-route22-ap-v3`.
+- Schválená ekonomika: 10 AP na herní den (03:00 Europe/Prague), základní cena 1 nebo 2 AP, za převzetí +1 AP; bez limitu počtu akcí. Obsazení, převzetí i údržba vyvolají ochranu na 24 hodin.
+- Významnost od **3 kategorií** je zatím pracovní nastavení. Sestupná sedmidenní výnosová křivka je **pracovní demo parametr**, nikoli schválená finální posloupnost.
+- Zisky při obsazení 8/12/16 podle druhu, další kategorie 50 % a další 25 %, autobusové druhy při obsazení společně; neutrální bonus +8. Denní model C 1/2/2/3, den akce bez výnosu.
+- Na mapě a v profilu jsou zbývající AP. Historie konkrétní zastávky je ve spodní části karty.
+- GPS akce zůstávají ověřované čerstvou klientskou polohou do 30 m. **Nejde o produkční zabezpečení ani o skutečnou serverovou databázi.** Před spuštěním je nutná serverová validace a transakční historie.
+
+## Ověření
+```bash
+node --check app.js
+node --check scoring.js
+node --check stop-card.js
+node --test tests/*.test.cjs
+```
+
+---
+
+## Starší dokumentace (historická, již není aktivní konfigurací)
+
 # Zastávkobraní – rozpis bodů a UX karty, 21. 11. 2026
 
 [Otevřít aktuální mobilní verzi](https://anlexcz.github.io/zastavkobrani/?v=gps26score)
