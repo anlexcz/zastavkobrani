@@ -55,3 +55,14 @@ test("Odpočet správně přechází na nulu",()=>{
  assert.equal(ctx.countdown(until,Date.parse("2026-11-19T12:00:00Z")),"00:00:05");
  assert.equal(ctx.countdown(until,Date.parse("2026-11-19T12:00:10Z")),"00:00:00");
 });
+
+test("Kategorie mají existující piktogramy Temaki, ale žádné emoji",()=>{
+ const content=ctx.card(args);
+ assert.match(content,/class="stop-mode-icon"/);
+ assert.match(content,/icons\/tram.svg/);
+ assert.doesNotMatch(content,/🚋|🚌|🚆/);
+});
+test("Neobsazená zastávka je v horním označení karty",()=>{
+ assert.match(app,/Neobsazená zastávka/);
+ assert.doesNotMatch(app,/Neutrální zastávka/);
+});
