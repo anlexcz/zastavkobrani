@@ -1,47 +1,38 @@
 "use strict";
-// Jediný klientský model bodování. Server musí při produkčním nasazení ověřit
-// identické parametry, bonusy a výslednou transakci autoritativně.
-const SCORING_BASE=Object.freeze({
-  metro:16,train:14,funicular:12,tram:10,trolleybus:8,ferry:6,
-  urban_bus:4,regional_bus:4,bus:4
-});
-const SCORING_LABELS=Object.freeze({
-  metro:"Metro",train:"Vlak",funicular:"Lanovka",tram:"Tramvaj",
-  trolleybus:"Trolejbus",ferry:"Přívoz",urban_bus:"Městský autobus",
-  regional_bus:"Regionální autobus",bus:"Autobus"
-});
-// Zatím neexistuje schválený konkrétní bonus. Nikdy jej nevymýšlet z UI.
+const RULES=Object.freeze({version:"2026-11-21-demo",dailyAP:10,significantCategories:3,neutralBonus:8,
+ captureRates:{metro:16,train:16,funicular:12,tram:12,trolleybus:12,ferry:12,bus:8},
+ holdingByCategories:[0,1,2,2,3],declining:[1,1,1,.75,.5,.25,0]});
+const SCORING_BASE=Object.freeze({...RULES.captureRates,urban_bus:8,regional_bus:8});
+const SCORING_LABELS=Object.freeze({metro:"Metro",train:"Vlak",funicular:"Lanovka",tram:"Tramvaj",trolleybus:"Trolejbus",ferry:"Přívoz",bus:"Autobus",urban_bus:"Městský autobus",regional_bus:"Regionální autobus"});
 const ACTIVE_SCORE_BONUSES=Object.freeze([]);
 function scoringCategories(stop,kind){
-  const unique=[...new Set(stop.cats||[])];
-  return kind==="capture"
-    ?[...new Set(unique.map(x=>x==="urban_bus"||x==="regional_bus"?"bus":x))]
-    :unique;
+ const categories=[...new Set(stop.cats||[])];
+ return kind==="capture"?[...new Set(categories.map(c=>["urban_bus","regional_bus"].includes(c)?"bus":c))]:categories;
 }
-function scoringBreakdown(stop,kind,{ownerRecord=null,gameDay=null,diffDays=null,bonuses=[]}={}){
-  if(!["capture","holding"].includes(kind))throw Error("Neznámý druh výpočtu");
-  const entries=scoringCategories(stop,kind)
-    .filter(c=>Object.hasOwn(SCORING_BASE,c))
-    .map(code=>({code,name:SCORING_LABELS[code],base:SCORING_BASE[code]}));
-  if(kind==="capture")entries.sort((a,b)=>b.base-a.base);
-  const lines=entries.map((e,i)=>({
-    code:e.code,label:e.name,base:e.base,
-    multiplier:kind==="capture"?(i===0?1:0.5):1,
-    amount:kind==="capture"?(i===0?e.base:e.base/2):1
-  }));
-  const baseTotal=lines.reduce((sum,line)=>sum+line.amount,0);
-  const actualHolding=kind!=="holding"||!ownerRecord||!gameDay||!diffDays
-    ?baseTotal
-    :(diffDays(gameDay,ownerRecord.anchor)+1<=7?baseTotal:0);
-  // Bonusy se přijímají jen jako explicitně vypočtené a schválené položky
-  // pro danou akci. Testovací verze žádné aktivní bonusy neobsahuje.
-  const bonusLines=bonuses.filter(b=>b&&b.action===kind&&
-    typeof b.label==="string"&&Number.isInteger(b.points)&&b.points>=0)
-    .map(b=>({label:b.label,amount:b.points}));
-  const bonusTotal=bonusLines.reduce((sum,b)=>sum+b.amount,0);
-  return {kind,lines,baseTotal,bonusLines,bonusTotal,
-    holdingAdjustment:kind==="holding"?actualHolding-baseTotal:0,
-    total:actualHolding+bonusTotal};
+function actionCost(stop,kind,hasOpponent=false){
+ return (scoringCategories(stop,"holding").length>=RULES.significantCategories?2:1)+(kind==="capture"&&hasOpponent?1:0);
+}
+function holdingIncome(stop,record,day,diffDays){
+ const n=scoringCategories(stop,"holding").length,full=RULES.holdingByCategories[Math.min(n,4)]||0;
+ if(!record||!day||!diffDays)return full;
+ const age=diffDays(day,record.anchor);
+ if(age<=0||age>=15)return 0;
+ if(age<=7)return full;
+ return Math.round(full*RULES.declining[age-8]);
+}
+function scoringBreakdown(stop,kind,{ownerRecord=null,gameDay=null,diffDays=null,bonuses=[],neutral=false}={}){
+ if(!["capture","holding"].includes(kind))throw Error("Neznámý druh výpočtu");
+ const cats=scoringCategories(stop,kind);
+ const entries=cats.filter(c=>Object.hasOwn(SCORING_BASE,c)).map(code=>({code,label:SCORING_LABELS[code],base:SCORING_BASE[code]}));
+ if(kind==="capture")entries.sort((a,b)=>b.base-a.base||a.code.localeCompare(b.code));
+ const full=RULES.holdingByCategories[Math.min(cats.length,4)]||0;
+ const lines=kind==="capture"?entries.map((e,i)=>({...e,multiplier:i===0?1:i===1?.5:.25,amount:e.base*(i===0?1:i===1?.5:.25)})):[{code:"holding",label:"Denní základ ("+cats.length+" druhů)",base:full,multiplier:1,amount:full}];
+ const baseTotal=lines.reduce((n,e)=>n+e.amount,0);
+ const current=kind==="holding"&&ownerRecord?holdingIncome(stop,ownerRecord,gameDay,diffDays):baseTotal;
+ const bonusLines=bonuses.filter(b=>b?.action===kind&&typeof b.label==="string"&&Number.isInteger(b.points)&&b.points>=0).map(b=>({label:b.label,amount:b.points}));
+ if(kind==="capture"&&neutral)bonusLines.unshift({label:"Bonus za neutrální zastávku",amount:RULES.neutralBonus});
+ const bonusTotal=bonusLines.reduce((n,b)=>n+b.amount,0);
+ return {kind,lines,baseTotal,bonusLines,bonusTotal,holdingAdjustment:kind==="holding"?current-baseTotal:0,total:current+bonusTotal};
 }
 function captureBreakdown(stop,ctx={}){return scoringBreakdown(stop,"capture",ctx)}
 function holdingBreakdown(stop,ctx={}){return scoringBreakdown(stop,"holding",ctx)}
