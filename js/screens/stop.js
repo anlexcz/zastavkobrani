@@ -38,13 +38,13 @@ maintain.dataset.block=maintainTimeBlocked?"time":locationState.ok?"":"location"
 maintain.textContent=protectedNow?"Údržba za "+stopCountdown(rec.protectedUntil):remaining()<maintainCost?"Nedostatek AP (potřeba "+maintainCost+")":"Udržet · "+maintainCost+" AP";
 $("stop-location-status").textContent=locationState.status;
 $("stop-distance").textContent=locationState.distance===null?"—":formatStopDistance(locationState.distance);
-$("stop-request-location").hidden=!!getGpsSnapshot().watch&&!!getGpsSnapshot().position;
-$("stop-request-location").textContent=getGpsSnapshot().permissionDenied?"Povolení GPS":"Povolit polohu";
+$("stop-request-location").hidden=!!getGpsSnapshot()?.watch&&!!getGpsSnapshot()?.position;
+$("stop-request-location").textContent=getGpsSnapshot()?.permissionDenied?"Povolení GPS":"Povolit polohu";
 $("stop-confirm").hidden=!getConfirmingCapture()||!s||mine;
 $("capture").hidden=mine||getConfirmingCapture();
 $("actions").classList.toggle("is-confirming",getConfirmingCapture()&&!mine);
 $("confirm-yes").disabled=captureTimeBlocked||!locationState.ok||isActionBusy();
-$("stop-location").hidden=activeScreen!=="stop";
+$("stop-location").hidden=getActiveScreen()!=="stop";
 
 return {stop:s,locationState};
 }
