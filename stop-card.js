@@ -46,11 +46,11 @@ function stopCardHtml({stop,record,owner,selectedPlayer,gameDay,diffDays,capture
     (locked?'<div class="stop-protection"><span>Ochrana proti převzetí</span><strong data-protection-countdown="'+escapeStopText(record.protectedUntil)+'">'+stopCountdown(record.protectedUntil,now)+'</strong></div>':'')+
     '<div class="stop-modes">'+modes+'</div>'+
     '<div class="stop-metrics">'+
-      '<div><strong>'+escapeStopText(points)+'</strong><span>Bodů za obsazení</span></div>'+
-      '<div><strong>'+escapeStopText(fullYield?yieldPoints:hasOwner?0:yieldPoints)+'</strong><span>'+ (hasOwner?'Aktuální výnos / den':'Plný výnos / den')+'</span></div>'+
+      '<button type="button" class="stop-metric" data-score-detail="capture" aria-label="Zobrazit rozpis bodů za obsazení"><strong>'+escapeStopText(points)+'</strong><span>Bodů za obsazení</span><span class="stop-metric-more" aria-hidden="true">ⓘ</span></button>'+
+      '<button type="button" class="stop-metric" data-score-detail="holding" aria-label="Zobrazit rozpis denního výnosu"><strong>'+escapeStopText(fullYield?yieldPoints:hasOwner?0:yieldPoints)+'</strong><span>'+ (hasOwner?'Aktuální výnos / den':'Plný výnos / den')+'</span><span class="stop-metric-more" aria-hidden="true">ⓘ</span></button>'+
     '</div>'+
     (hasOwner?'<div class="stop-life-summary"><span>'+escapeStopText(fullYield?"Plný denní výnos":"Bez denního výnosu")+'</span>'+
       '<span>'+age+'. herní den vlastnictví</span></div>':'')+
-    '<p class="stop-small-note">GPS se ověřuje při akci. Testovací stav je uložen jen v tomto prohlížeči, bez serverového ověření.</p>'+
+
   '</div>';
 }
