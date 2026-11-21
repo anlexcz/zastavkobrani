@@ -1,4 +1,13 @@
 "use strict";
+import {gameDay,addDays,diffDays,pragueBoundaryUtc,nextGameBoundary} from "./js/game-time.js";
+import {STORAGE_KEY,loadStoredGame,saveStoredGame} from "./js/storage.js";
+import {formatStopDistance,stopLocationState as deriveStopLocationState} from "./js/gps.js";
+import {createGameModel} from "./js/game.js";
+import {createGameActions} from "./js/game-actions.js";
+import {createGpsController} from "./js/gps-controller.js";
+import {createDailyScreen} from "./js/screens/daily.js";
+import {createRankingScreen} from "./js/screens/ranking.js";
+import {createProfileScreen} from "./js/screens/profile.js";
 // Celopražský statický výřez auditu PID 19. 11. 2026, bez odhadovaných bodů.
 const STOPS = PID_PRAGUE;
 // Index pro opakované přístupy k herním územím bez lineárního procházení celé Prahy.
@@ -7,7 +16,7 @@ const STOP_BY_ID = new Map(STOPS.map(stop => [stop.id, stop]));
 const PLAYERS=DEMO_PLAYERS;
 // Všechny hodnoty a rozpisy jsou v samostatném scoring.js.
 // Oddělený scénář s deseti hráči a strategickými polygony.
-const STORAGE="zastavkobrani-route22-ap-v3";
+const STORAGE=STORAGE_KEY;
 const $=id=>document.getElementById(id);
 const LAYER_PREFS_KEY="zastavkobrani-map-layers-v1";
 function loadLayerPrefs(){
@@ -48,92 +57,14 @@ function setupMapLayerControls(){
 }
 setupMapLayerControls();
 
-const shortDay=d=>d.toISOString().slice(0,10);
-const addDays = (day,n) => shortDay(new Date(Date.parse(day+"T12:00:00Z") + n*86400000));
-const diffDays=(a,b)=>Math.round((Date.parse(a+"T12:00:00Z")-Date.parse(b+"T12:00:00Z"))/86400000);
-function gameDay(date=new Date()){const f=new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Prague",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",hourCycle:"h23"});const parts=Object.fromEntries(f.formatToParts(date).filter(p=>p.type!=="literal").map(p=>[p.type,p.value]));const d=parts.year+"-"+parts.month+"-"+parts.day;return Number(parts.hour)<3?addDays(d,-1):d;}
-// Převod uzávěrky 03:00 Europe/Prague, včetně změn času.
-function pragueBoundaryUtc(day){
- const target=Date.parse(day+"T03:00:00Z");
- const f=new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Prague",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"});
- let instant=target;
- for(let i=0;i<3;i++){
-  const p=Object.fromEntries(f.formatToParts(new Date(instant)).filter(v=>v.type!=="literal").map(v=>[v.type,v.value]));
-  const local=Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute,+p.second);
-  instant+=target-local;
- }
- return new Date(instant).toISOString();
-}
-function nextGameBoundary(now=new Date()){return pragueBoundaryUtc(addDays(gameDay(now),1))}
-function challengeStopForDay(day){
- const key=day.replaceAll("-","");let n=0;for(const c of key)n=(n*31+c.charCodeAt(0))>>>0;
- for(let offset=0;offset<STOPS.length;offset++){
-  const s=STOPS[(n+offset)%STOPS.length];
-  if(s.cats.length&&s.points.some(p=>p.insidePrague&&!p.isMetro))return s;
- }
- return null;
-}
-function init(withSeed=true){
- const day=gameDay(),now=new Date(),stops={},ledger=[],events=[];
- if(withSeed)ROUTE_22_SEED.forEach((name,index)=>{
-  const stop=STOPS.find(s=>s.name===name&&s.cats.includes("tram"));
-  if(!stop)return;
-  // Neutrální zastávky střídáme s obsazenými; historii vytváříme jen z testovacích událostí.
-  if(index%5===4)return;
-  const owner=index%3===0?"p1":"p2";
-  const date=new Date(now.getTime()-(6+index%3)*3600000);
-  const previous=owner==="p1"?"p2":"p1";
-  const past=new Date(date.getTime()-3*86400000);
-  const pastDay=gameDay(past),captureDay=gameDay(date);
-  events.push({action:"capture",stopId:stop.id,player:previous,day:pastDay,at:past.toISOString(),previousOwner:null,points:captureScore(stop,true),
-   text:PLAYERS.find(p=>p.id===previous).name+" obsadil/a "+stop.name,seed:true});
-  events.push({action:"capture",stopId:stop.id,player:owner,day:captureDay,at:date.toISOString(),previousOwner:previous,points:captureScore(stop),
-   text:PLAYERS.find(p=>p.id===owner).name+" převzal/a "+stop.name,seed:true});
-  stops[stop.id]={owner,anchor:captureDay,capturedAt:date.toISOString(),protectedUntil:new Date(date.getTime()+86400000).toISOString()};
-  ledger.push({player:previous,amount:captureBreakdown(stop,{neutral:true}).total,type:"capture",day:pastDay,at:past.toISOString(),seed:true});
-  ledger.push({player:owner,amount:captureBreakdown(stop).total,type:"capture",day:captureDay,at:date.toISOString(),seed:true});
- });
- events.sort((a,b)=>Date.parse(b.at)-Date.parse(a.at));
- return {version:3,selected:"p1",stops,ledger,events,visits:{},lastClosedDay:addDays(day,-1)};
-}
-function load(){try{const x=JSON.parse(localStorage.getItem(STORAGE));if(x&&x.version===3&&x.stops&&Array.isArray(x.ledger)&&Array.isArray(x.events))return x;}catch(e){}return init()}
+// Herní stav má jednoho vlastníka; obrazovky čtou aktuální stav přes rozhraní.
+const gameModel=createGameModel({STOPS,PLAYERS,ROUTE_22_SEED,RULES,captureBreakdown,holdingBreakdown,ACTIVE_SCORE_BONUSES,getState:()=>state,persist:()=>persist()});
+const {challengeStopForDay,init,award,captureScore,holdingScore,closeDays,spentAP,remaining,owned,total,challengeStop,visitsFor}=gameModel;
+function load(){return loadStoredGame(()=>init())}
 let state=load(),selectedStop=null;
-// GPS stav je dostupný už při prvním renderování aplikace.
-let gpsBusy=false,gpsPermissionDenied=false;
-let gpsWatch=null,gpsMarker=null,gpsPosition=null;
-function persist(){localStorage.setItem(STORAGE,JSON.stringify(state))}
-function award(player,amount,type,day=gameDay()){state.ledger.push({player,amount,type,day,at:new Date().toISOString()})}
-function captureScore(s,neutral=false){return captureBreakdown(s,{bonuses:ACTIVE_SCORE_BONUSES,neutral}).total}
-function holdingScore(s,record=null,day=gameDay()){return holdingBreakdown(s,{ownerRecord:record,gameDay:day,diffDays,bonuses:ACTIVE_SCORE_BONUSES}).total}
-function closeDays(){
- const today=gameDay();let d=addDays(state.lastClosedDay,1),count=0;
- while(d<today&&count++<730){
-  for(const stop of STOPS){
-   const item=state.stops[stop.id];if(!item?.owner)continue;
-   const age=diffDays(d,item.anchor);
-   if(age>0&&age<=14){
-    const income=holdingScore(stop,item,d);
-    if(income>0)award(item.owner,income,"holding",d);
-   }
-   if(age>=14&&holdingScore(stop,item,d)===0){
-    state.events.unshift({action:"expire",stopId:stop.id,day:d,at:new Date().toISOString(),previousOwner:item.owner,text:stop.name+": vlastnictví vypršelo"});
-    delete state.stops[stop.id];
-   }
-  }
-  state.lastClosedDay=d;d=addDays(d,1);
- }
- if(count>=730&&d<today)state.lastClosedDay=addDays(today,-1);
- persist();
-}
-function spentAP(player=state.selected,day=gameDay()){
- return state.events.filter(e=>!e.seed&&e.player===player&&e.day===day&&["capture","maintain"].includes(e.action))
-  .reduce((sum,e)=>sum+(e.apCost||0),0);
-}
-function remaining(player=state.selected){return Math.max(0,RULES.dailyAP-spentAP(player))}
-function owned(){return Object.values(state.stops).filter(v=>v.owner===state.selected).length}
-function total(id,days){return state.ledger.filter(x=>x.player===id&&(!days||diffDays(gameDay(),x.day)>=0&&diffDays(gameDay(),x.day)<days)).reduce((a,b)=>a+b.amount,0)}
-function challengeStop(){return challengeStopForDay(gameDay())}
-function visitsFor(id){return state.visits[gameDay()]?.[id]||false}
+function persist(){saveStoredGame(state)}
+let gpsController=null;
+function stopLocationState(stop){return deriveStopLocationState(stop,gpsController?.snapshot())}
 // MapLibre + vlastní vektorový styl. Herní stav zůstává oddělený od podkladu.
 const map = new maplibregl.Map({
   container:"map",style:"https://tiles.openfreemap.org/styles/liberty",
@@ -185,6 +116,12 @@ let rankingPeriod="30";
 let dailyHistoryExpanded=false;
 let profileEventsExpanded=false;
 let pendingProfileAvatar=null;
+const {renderDailyHistory,dailyHistoryItems}=createDailyScreen({getState:()=>state,getExpanded:()=>dailyHistoryExpanded,getSelectedPlayer:()=>state.selected,challengeStopForDay,escapeStopText,$});
+const {renderRanking}=createRankingScreen({getState:()=>state,getRankingPeriod:()=>rankingPeriod,PLAYERS,total,playerLabel:(id)=>playerLabel(id),escapeStopText,$});
+const {profileRecord,playerLabel,avatarUrl,paintAvatar,populateProfileSettings,profileOwnedItems,renderOwnedStops,playerEventEntries,renderProfileEvents}=createProfileScreen({
+  getState:()=>state,getEventsExpanded:()=>profileEventsExpanded,setPendingProfileAvatar:value=>{pendingProfileAvatar=value},
+  STOPS,STOP_BY_ID,PLAYERS,holdingScore,stopCountdown,escapeStopText,$
+});
 function openScreen(name){
   closeScoreDetailIfOpen();
   activeScreen=name;
@@ -325,98 +262,8 @@ document.addEventListener("keydown",event=>{
  if(event.key==="Escape"){event.preventDefault();event.stopImmediatePropagation();closeHistoryDetail();}
  if(event.key==="Tab"){event.preventDefault();$("history-dialog-close").focus();}
 },true);
-function dailyHistoryItems(day=gameDay()){
- const result=[];
- for(let i=1;i<=30;i++){const d=addDays(day,-i),stop=challengeStopForDay(d);if(stop)result.push({day:d,name:stop.name,done:!!state.visits[d]?.[state.selected]});}
- return result;
-}
-function renderDailyHistory(){
- const items=dailyHistoryItems(),shown=dailyHistoryExpanded?items:items.slice(0,5);
- const fmt=new Intl.DateTimeFormat("cs-CZ",{day:"numeric",month:"numeric",year:"numeric",timeZone:"Europe/Prague"});
- $("daily-history").innerHTML=shown.map(item=>
-  '<div class="daily-history-item"><div><time datetime="'+item.day+'">'+fmt.format(new Date(item.day+"T12:00:00Z"))+'</time><strong>'+escapeStopText(item.name)+'</strong></div><span class="daily-history-result '+(item.done?"is-done":"")+'">'+(item.done?"Splněno":"Nesplněno")+'</span></div>'
- ).join("")||'<p class="muted">Zatím žádná historie.</p>';
- $("daily-history-expand").hidden=items.length<=5;
- $("daily-history-expand").textContent=dailyHistoryExpanded?"Zobrazit méně":"Zobrazit celou historii ("+items.length+")";
- $("daily-history-expand").setAttribute("aria-expanded",String(dailyHistoryExpanded));
-}
-function renderRanking(){
- const period=rankingPeriod==="30"?30:null;
- const sorted=PLAYERS.slice().sort((a,b)=>total(b.id,period)-total(a.id,period)||a.name.localeCompare(b.name,"cs"));
- $("leaderboard").innerHTML=sorted.map((p,i)=>{
-  const current=Object.values(state.stops).filter(x=>x.owner===p.id).length;
-  return '<tr'+(p.id===state.selected?' class="is-me"':'')+'><td>'+(i+1)+'.</td><td><span class="ranking-player-dot" style="background:'+escapeStopText(p.color)+'"></span>'+escapeStopText(playerLabel(p.id))+'</td><td>'+total(p.id,period).toLocaleString("cs-CZ")+'</td><td>'+current+'</td></tr>';
- }).join("");
- for(const b of document.querySelectorAll("[data-ranking-period]"))b.setAttribute("aria-pressed",String(b.dataset.rankingPeriod===rankingPeriod));
-}
 for(const b of document.querySelectorAll("[data-ranking-period]"))b.onclick=()=>{rankingPeriod=b.dataset.rankingPeriod;renderRanking()};
 $("daily-history-expand").onclick=()=>{dailyHistoryExpanded=!dailyHistoryExpanded;renderDailyHistory()};
-// Testovací identita je oddělena od herní identity; hesla se v LocalStorage neukládají.
-function profileRecord(id=state.selected){return state.profiles?.[id]||{}}
-function playerLabel(id){
- const p=PLAYERS.find(x=>x.id===id),alias=profileRecord(id).displayName;
- return alias?.trim()||p?.name||"Neznámý hráč";
-}
-function avatarUrl(id=state.selected){
- const img=profileRecord(id).avatar;
- return typeof img==="string"&&img.length<120000&&/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(img)?img:null;
-}
-function paintAvatar(element,id){
- const p=PLAYERS.find(x=>x.id===id),url=avatarUrl(id);
- element.style.backgroundImage=url?'url("'+url+'")':"none";
- element.style.backgroundColor=url?"#34383e":p?.color||"#474c52";
- element.textContent=url?"":playerLabel(id).trim().charAt(0).toLocaleUpperCase("cs");
-}
-function populateProfileSettings(){
- pendingProfileAvatar=null;
- const player=PLAYERS.find(p=>p.id===state.selected),profile=profileRecord();
- $("profile-username").value=player?.name||"";
- $("profile-display-name").value=profile.displayName||"";
- $("profile-discord").value=profile.discord||"";
- $("profile-form-status").textContent="";
- $("profile-image").value="";
- paintAvatar($("settings-avatar"),state.selected);
-}
-function profileOwnedItems(){
- return STOPS.filter(s=>state.stops[s.id]?.owner===state.selected).map(stop=>{
-  const record=state.stops[stop.id],age=diffDays(gameDay(),record.anchor),now=Date.now();
-  const protectedUntil=Date.parse(record.protectedUntil||"")||0;
-  const expiry=Date.parse(pragueBoundaryUtc(addDays(record.anchor,15)));
-  const protectedNow=protectedUntil>now;
-  const decline=age>=8;
-  const daysLeft=Math.max(0,Math.ceil((expiry-now)/86400000));
-  return {stop,age,decline,protectedNow,protectedUntil,expiry,daysLeft,income:holdingScore(stop,record)};
- }).sort((a,b)=>a.expiry-b.expiry||a.stop.name.localeCompare(b.stop.name,"cs"));
-}
-function renderOwnedStops(){
- const items=profileOwnedItems();$("owned-count").textContent=String(items.length);
- $("owned-list").innerHTML=items.length?items.map(x=>{
-  const urgency=x.decline?(x.daysLeft<=3?"is-urgent":"is-declining"):"";
-  const status=x.protectedNow?"Ochrana "+stopCountdown(new Date(x.protectedUntil).toISOString()):
-    x.decline?"Do zániku "+x.daysLeft+" d":"Údržba dostupná";
-  return '<button type="button" class="owned-row '+urgency+'" data-owned-stop="'+escapeStopText(x.stop.id)+'">'+
-    '<span class="owned-row-main"><strong>'+escapeStopText(x.stop.name)+'</strong><small>'+escapeStopText(status)+'</small></span>'+
-    '<span class="owned-row-side"><strong>'+x.income+' b./den</strong></span>'+
-    '<span aria-hidden="true" class="owned-row-arrow">›</span></button>';
- }).join(""):'<p class="empty-state">Zatím nevlastníš žádnou zastávku.</p>';
-}
-function playerEventEntries(){
- return state.events.filter(e=>e.player===state.selected&&diffDays(gameDay(),e.day)>=0&&diffDays(gameDay(),e.day)<30)
-  .sort((a,b)=>Date.parse(b.at)-Date.parse(a.at));
-}
-function renderProfileEvents(){
- const entries=playerEventEntries(),shown=profileEventsExpanded?entries:entries.slice(0,5);
- $("events-count").textContent=entries.length+" za 30 dní";
- $("events").innerHTML=shown.length?shown.map(e=>{
-  const d=new Intl.DateTimeFormat("cs-CZ",{timeZone:"Europe/Prague",day:"numeric",month:"numeric",hour:"2-digit",minute:"2-digit"}).format(new Date(e.at));
-  const action=e.action==="capture"?(e.previousOwner?"Převzetí":"Obsazení"):e.action==="maintain"?"Údržba":e.action==="visit"?"Zastávka dne":"Událost";
-  const stop=STOP_BY_ID.get(e.stopId);
-  return '<div class="player-event"><div><strong>'+escapeStopText(action)+(stop?" · "+escapeStopText(stop.name):"")+'</strong><small>'+d+'</small></div><span>'+ (Number.isFinite(e.points)?"+"+e.points+" b.":"") +'</span></div>';
- }).join(""):'<p class="empty-state">Zatím žádné zaznamenané události.</p>';
- $("events-expand").hidden=entries.length<=5;
- $("events-expand").textContent=profileEventsExpanded?"Zobrazit méně":"Zobrazit další události ("+entries.length+")";
- $("events-expand").setAttribute("aria-expanded",String(profileEventsExpanded));
-}
 function render(){closeDays();const p=PLAYERS.find(x=>x.id===state.selected);$("player").value=state.selected;$("profile").textContent=playerLabel(p.id);$("remaining").textContent=remaining()+"/"+RULES.dailyAP;$("ap-map").textContent=remaining()+" / "+RULES.dailyAP;$("owned").textContent=owned();$("points").textContent=total(p.id,30);$("clock").textContent="Herní den "+gameDay()+" · uzávěrka 03:00";$("profile-handle").textContent="Testovací účet · "+p.name;paintAvatar($("profile-avatar"),p.id);
 refreshStopMapColors(map,state.stops,PLAYERS,selectedStop);
 const s=STOP_BY_ID.get(selectedStop),rec=s&&state.stops[s.id];
@@ -476,97 +323,11 @@ renderRanking();
 if(activeScreen==="profile"){renderOwnedStops();renderProfileEvents();}}
 $("player").innerHTML=PLAYERS.map(p=>'<option value="'+p.id+'">'+p.name+'</option>').join("");
 $("player").addEventListener("change",e=>{state.selected=e.target.value;confirmingCapture=false;profileEventsExpanded=false;persist();note("");render()});
-// GPS kontrolujeme vždy novým měřením v okamžiku akce; poloha z mapy nestačí.
-const GPS_STALE_MS=15000;
-function formatStopDistance(distance){
-  if(distance<1000)return Math.round(distance)+" m";
-  if(distance<10000)return (distance/1000).toFixed(1).replace(".",",")+" km";
-  return Math.round(distance/1000)+" km";
-}
-function stopLocationState(stop,now=Date.now()){
-  if(gpsPermissionDenied)return {ok:false,status:"Poloha zamítnuta",distance:null};
-  if(!gpsPosition)return {ok:false,status:gpsWatch!==null?"Zjišťování polohy":"Poloha nedostupná",distance:null};
-  const distance=nearestStopDistance(stop,{latitude:gpsPosition.lat,longitude:gpsPosition.lng});
-  if(!Number.isFinite(distance))return {ok:false,status:"GPS bod není dostupný",distance:null};
-  if(now-gpsPosition.timestamp>GPS_STALE_MS)return {ok:false,status:"Poloha není aktuální",distance};
-  if(gpsPosition.accuracy>30)return {ok:false,status:"Nepřesná GPS (±"+Math.round(gpsPosition.accuracy)+" m)",distance};
-  return {ok:distance<=30,status:distance<=30?"V dosahu 30 m":"Mimo dosah 30 m",distance};
-}
-function haversineM(a,b,c,d){
-  const rad=Math.PI/180,dl=(c-a)*rad,doLon=(d-b)*rad;
-  const h=Math.sin(dl/2)**2+Math.cos(a*rad)*Math.cos(c*rad)*Math.sin(doLon/2)**2;
-  return 6371000*2*Math.asin(Math.min(1,Math.sqrt(h)));
-}
-function nearestStopDistance(stop,coords){
-  return Math.min(...stop.points.filter(p=>!p.isMetro&&p.insidePrague).map(p=>
-    haversineM(coords.latitude,coords.longitude,p.lat,p.lon)));
-}
-function verifyGps(stop){
-  return new Promise((resolve,reject)=>{
-    if(!navigator.geolocation||!window.isSecureContext){
-      reject(Error("Pro ověření polohy je nutné HTTPS a přístup ke GPS."));return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      pos=>{
-        const age=Date.now()-pos.timestamp;
-        const accuracy=pos.coords.accuracy;
-        const distance=nearestStopDistance(stop,pos.coords);
-        if(age>10000){reject(Error("GPS měření je zastaralé. Zkus to znovu."));return;}
-        if(!Number.isFinite(accuracy)||accuracy>30){
-          reject(Error("GPS zatím není dost přesná (±"+Math.round(accuracy)+" m). Potřebujeme přesnost nejvýše 30 m."));return;
-        }
-        if(!Number.isFinite(distance)||distance>30){
-          reject(Error("Jsi "+Math.round(distance)+" m od nejbližšího bodu zastávky. Limit je 30 m."));return;
-        }
-        resolve({distance,accuracy,lat:pos.coords.latitude,lon:pos.coords.longitude});
-      },
-      err=>reject(Error(({1:"Poloha byla zamítnuta. Povol ji v nastavení prohlížeče.",2:"Polohu se nepodařilo zjistit.",3:"GPS nestihla polohu určit."})[err.code]||"GPS není dostupná.")),
-      {enableHighAccuracy:true,maximumAge:0,timeout:20000}
-    );
-  });
-}
-async function doGpsAction(action){
-  const stop=STOP_BY_ID.get(selectedStop);
-  if(!stop||gpsBusy)return;
-  if(!stopLocationState(stop).ok){note("Nejsi v ověřeném 30m dosahu zastávky.");render();return;}
-  const startingPlayer=state.selected, startingStop=selectedStop;
-  const validate=()=>{
-    if(state.selected!==startingPlayer||selectedStop!==startingStop)return "Během ověřování se změnil hráč nebo zastávka.";
-    const rec=state.stops[stop.id],now=Date.now();
-    if(action==="capture"){
-      if(rec?.owner===startingPlayer)return "Zastávku už vlastníš.";
-      if(rec?.protectedUntil&&Date.parse(rec.protectedUntil)>now)return "Zastávka je chráněná.";
-      if(remaining(startingPlayer)<actionCost(stop,"capture",!!rec?.owner))return "Nedostatek akčních bodů.";
-    }
-    if(action==="maintain"&&(!rec||rec.owner!==startingPlayer||(rec.protectedUntil&&Date.parse(rec.protectedUntil)>now)||remaining(startingPlayer)<actionCost(stop,"maintain")))return "Údržba není dostupná (ochrana nebo nedostatek AP).";
-    if(action==="visit"&&(challengeStop().id!==stop.id||visitsFor(startingPlayer)))return "Dnešní návštěvu nelze splnit.";
-    return "";
-  };
-  const invalid=validate();if(invalid){note(invalid);render();return;}
-  gpsBusy=true;note("Ověřuji aktuální GPS polohu…");render();
-  try{
-    const location=await verifyGps(stop);
-    const changed=validate();if(changed)throw Error(changed);
-    const now=new Date(),day=gameDay(),player=PLAYERS.find(p=>p.id===startingPlayer);
-    if(action==="capture"){
-      const previous=state.stops[stop.id]?.owner||null;
-      state.stops[stop.id]={owner:startingPlayer,anchor:day,capturedAt:now.toISOString(),protectedUntil:new Date(now.getTime()+RULES.protectionHours*60*60*1000).toISOString()};
-      const points=captureScore(stop,!previous),apCost=actionCost(stop,"capture",!!previous);award(startingPlayer,points,"capture");
-      state.events.unshift({action:"capture",stopId:stop.id,player:startingPlayer,day,at:now.toISOString(),previousOwner:previous,apCost,points,text:player.name+(previous?" převzal/a ":" obsadil/a ")+stop.name+" (+"+points+" b., −"+apCost+" AP)"});
-    }else if(action==="maintain"){
-      state.stops[stop.id].anchor=day;
-      state.stops[stop.id].protectedUntil=new Date(now.getTime()+RULES.protectionHours*60*60*1000).toISOString();
-      const apCost=actionCost(stop,"maintain");
-      state.events.unshift({action:"maintain",stopId:stop.id,player:startingPlayer,day,at:now.toISOString(),apCost,text:player.name+" udržel/a "+stop.name+" (−"+apCost+" AP)"});
-    }else{
-      state.visits[day]??={};state.visits[day][startingPlayer]=true;
-      state.events.unshift({action:"visit",stopId:stop.id,player:startingPlayer,day,at:now.toISOString(),text:"Návštěva zastávky dne: "+stop.name});
-    }
-    persist();note("GPS ověřena: "+Math.round(location.distance)+" m od zastávky, přesnost ±"+Math.round(location.accuracy)+" m. Akce zapsána do lokální testovací hry.");
-  }catch(error){note(error.message||"GPS ověření selhalo.");}
-  finally{gpsBusy=false;render();}
-}
-
+const {doGpsAction}=createGameActions({
+  getState:()=>state,getSelectedStop:()=>selectedStop,STOP_BY_ID,PLAYERS,
+  remaining,actionCost,captureScore,award,challengeStop,visitsFor,
+  stopLocationState,persist,note,render,$
+});
 $("profile-edit").onclick=()=>openScreen("profile-settings");
 $("settings-back").onclick=()=>openScreen("profile");
 $("events-expand").onclick=()=>{profileEventsExpanded=!profileEventsExpanded;renderProfileEvents()};
@@ -628,6 +389,7 @@ $("confirm-yes").onclick=()=>{
 $("maintain").onclick=()=>doGpsAction("maintain");
 $("daily-visit").onclick=()=>doGpsAction("visit");
 $("reset").onclick=()=>{if(!confirm("Opravdu resetovat testovací data linky 22?"))return;localStorage.removeItem(STORAGE);state=init(true);persist();selectedStop=null;note("Test byl vynulován.");openScreen("profile")};
+gpsController=createGpsController({map,maplibregl,render,note,$});
 window.addEventListener("storage",e=>{if(e.key===STORAGE){state=load();render()}});render();
 setInterval(()=>{
   if(activeScreen==="stop"&&selectedStop){
@@ -648,80 +410,3 @@ setInterval(()=>{
 },1000);
 setInterval(()=>{render()},5000);
 
-// Vizuální sledování GPS. Akce samostatně vyžadují nové přesné měření.
-const gpsButton=$("gps-toggle"), gpsStatus=$("gps-status");
-function gpsMessage(text) {gpsStatus.hidden=!text;gpsStatus.textContent=text;}
-function accuracyPolygon(lng,lat,radius) {
-  const coords=[];
-  const latM=111320, lonM=111320*Math.cos(lat*Math.PI/180);
-  for(let i=0;i<=64;i++){
-    const angle=i*Math.PI/32;
-    coords.push([lng+Math.cos(angle)*radius/lonM,lat+Math.sin(angle)*radius/latM]);
-  }
-  return {type:"Feature",geometry:{type:"Polygon",coordinates:[coords]},properties:{}};
-}
-function drawAccuracy(){
-  if(!gpsPosition||!map.isStyleLoaded())return;
-  const point=accuracyPolygon(gpsPosition.lng,gpsPosition.lat,gpsPosition.accuracy);
-  if(!map.getSource("gps-accuracy")) {
-    map.addSource("gps-accuracy",{type:"geojson",data:point});
-    map.addLayer({id:"gps-area",type:"fill",source:"gps-accuracy",
-      paint:{"fill-color":"#36a7e2","fill-opacity":.12}});
-    map.addLayer({id:"gps-outline",type:"line",source:"gps-accuracy",
-      paint:{"line-color":"#36a7e2","line-width":1.5}});
-  } else map.getSource("gps-accuracy").setData(point);
-}
-map.on("style.load",drawAccuracy);
-function disableGps(){
-  if(gpsWatch!==null)navigator.geolocation.clearWatch(gpsWatch);
-  gpsWatch=null;gpsPosition=null;gpsPermissionDenied=false;render();
-  if(gpsMarker){gpsMarker.remove();gpsMarker=null;}
-  if(map.getSource("gps-accuracy"))map.getSource("gps-accuracy").setData({
-    type:"FeatureCollection",features:[]});
-  gpsButton.setAttribute("aria-pressed","false");
-  gpsButton.querySelector("span").textContent="Zapnout GPS";
-  gpsMessage("");
-}
-function gpsError(error){
-  gpsPermissionDenied=error.code===1;
-  gpsPosition=null;
-  gpsMessage(({1:"Přístup k GPS byl zamítnut.",2:"GPS polohu nelze určit.",3:"Časový limit GPS vypršel."})[error.code]||"GPS není dostupná.");
-  if(gpsWatch!==null)navigator.geolocation.clearWatch(gpsWatch);
-  gpsWatch=null;
-  gpsButton.setAttribute("aria-pressed","false");
-  gpsButton.querySelector("span").textContent="Zapnout GPS";
-  render();
-}
-function requestGps(){
-  gpsPermissionDenied=false;
-  if(gpsWatch!==null){render();return;}
-  if(!navigator.geolocation||!window.isSecureContext){
-    gpsMessage("GPS vyžaduje HTTPS a podporu polohy v prohlížeči.");return;
-  }
-  gpsMessage("Zjišťuji polohu…");
-  gpsButton.setAttribute("aria-pressed","true");
-  gpsButton.querySelector("span").textContent="Vypnout GPS";
-  gpsWatch=navigator.geolocation.watchPosition((position)=>{
-    const coords=position.coords;
-    gpsPosition={lng:coords.longitude,lat:coords.latitude,
-      accuracy:Math.max(1,coords.accuracy||Infinity),timestamp:position.timestamp};
-    gpsPermissionDenied=false;
-    if(!gpsMarker){
-      const el=document.createElement("div");el.className="gps-dot";
-      gpsMarker=new maplibregl.Marker({element:el,anchor:"center"}).setLngLat([gpsPosition.lng,gpsPosition.lat]).addTo(map);
-      map.flyTo({center:[gpsPosition.lng,gpsPosition.lat],zoom:Math.max(map.getZoom(),15)});
-    }else gpsMarker.setLngLat([gpsPosition.lng,gpsPosition.lat]);
-    drawAccuracy();
-    gpsMessage("GPS přesnost ±"+Math.round(gpsPosition.accuracy)+" m · akce kontrolují nové měření");
-    render();
-  },gpsError,{enableHighAccuracy:true,maximumAge:5000,timeout:15000});
-  render();
-}
-$("stop-request-location").onclick=()=>{
-  if(gpsPermissionDenied){note("Povol polohu v nastavení oprávnění tohoto webu v prohlížeči.");}
-  requestGps();
-};
-gpsButton.addEventListener("click",()=>{
-  if(gpsWatch!==null){disableGps();return;}
-  requestGps();
-});
