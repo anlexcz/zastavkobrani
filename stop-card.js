@@ -29,7 +29,7 @@ function stopCountdown(until,now=Date.now()){
   const sec=seconds%60;
   return String(hours).padStart(2,"0")+":"+String(minutes).padStart(2,"0")+":"+String(sec).padStart(2,"0");
 }
-function stopCardHtml({stop,record,owner,selectedPlayer,gameDay,diffDays,captureScore,holdingScore,now=Date.now()}){
+function stopCardHtml({stop,record,owner,selectedPlayer,gameDay,diffDays,captureScore,holdingScore,expiresAt=null,now=Date.now()}){
   if(!stop)return "";
   const hasOwner=!!record?.owner;
   const mine=hasOwner&&record.owner===selectedPlayer;
@@ -51,6 +51,7 @@ function stopCardHtml({stop,record,owner,selectedPlayer,gameDay,diffDays,capture
     '</div>'+
     (hasOwner?'<div class="stop-life-summary"><span>'+escapeStopText(age===1?"Den akce · bez výnosu":fullYield?"Plný denní výnos":yieldPoints>0?"Klesající výnos":"Výnos dosáhl nuly")+'</span>'+
       '<span>'+age+'. herní den vlastnictví</span></div>':'')+
+    (hasOwner&&age>=9&&expiresAt?'<div class="stop-expiry"><span>Do zániku bez údržby</span><strong data-expiry-countdown="'+escapeStopText(expiresAt)+'">'+stopCountdown(expiresAt,now)+'</strong></div>':'')+
 
   '</div>';
 }
