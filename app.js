@@ -155,7 +155,7 @@ const maintenanceDays=mine&&rec?.anchor?Math.max(0,7-diffDays(gameDay(),rec.anch
 const selfCooldown=state.events.some(e=>e.action==="capture"&&e.player===state.selected&&e.stopId===s?.id&&Date.now()-Date.parse(e.at)<86400000);
 $("sheet").classList.toggle("sheet-stop",activeScreen==="stop");
 $("sheet").style.setProperty("--sheet-owner-color",owner?.color||"#929292");
-$("stop-owner-heading").textContent=owner?"Vlastní "+owner.name:"Neutrální zastávka";
+$("stop-owner-heading").textContent=owner?"Vlastní "+owner.name:"Neobsazená zastávka";
 $("stop-owner-heading").style.color="var(--muted)";
 $("stopdetail").innerHTML=s?stopCardHtml({
   stop:s,record:rec,owner,selectedPlayer:state.selected,
