@@ -1,3 +1,31 @@
+# Zastávkobraní – rozpis bodů a UX karty, 21. 11. 2026
+
+[Otevřít aktuální mobilní verzi](https://anlexcz.github.io/zastavkobrani/?v=gps26score)
+
+## Aktuální chování
+- Dva testovací hráči Tepa a Soupeř 22, lokální herní stav, neomezená obsazení výhradně v testovacím režimu; produkční pravidla tří obsazení/den, ochrana, údržba a autoritativní GPS server zůstávají v dokumentaci.
+- Karta: jeden hlavní akční ovladač, potvrzení obsazení Ano vlevo / Ne vpravo bez systémového potvrzovacího dialogu. Druhy dopravy zobrazené jen ikonami Temaki, žádný počet označníků, žádná technická poznámka.
+- GPS: 30m kandidátní oblasti a kontrola čerstvého klientského měření. Vzdálenost je drobný nenápadný údaj vpravo pod tlačítkem. V případě nepovolené polohy má být dostupná možnost jejího vyžádání.
+- Oba číselné boxy lze rozkliknout. Samostatný modal s `role="dialog"` ukazuje dopravu, příspěvek za každou kategorii, korekci aktuálního denního výnosu, samostatnou část Bonusy a Celkem. Zavření křížkem, Escape, klepnutím na pozadí. Při zavření se nemění aktuální zastávka ani lokální hra.
+
+## Jediný bodový výpočet
+`scoring.js` definuje pracovní schválené sazby, `captureBreakdown(stop,context)` a `holdingBreakdown(stop,context)`. Zdrojové kategorie `stop.cats` se deduplikují. Pro obsazení se `urban_bus` a `regional_bus` slučují do `bus`, nejvyšší základ má 100 % sazby, zbylé kategorie 50 %. Denní výnos vychází z jedné jednotky za každou kategorii, městský/regionální autobus se neslučuje. U vlastněné staré zastávky je v rozpisu samostatná korekce na nulu. `captureScore` a `holdingScore` v app.js volají tyto stejné funkce, takže detail není druhým odděleným výpočtem.
+
+`ACTIVE_SCORE_BONUSES=[]` je záměrně prázdné: nebyly schválené podmínky ani sazby žádného konkrétního bonusu. Rozpis umí přijmout předem vyhodnocené pojmenované bonusové položky v `context.bonuses`, ale NEIMPLEMENTUJE obecný bonusový engine ani neprohlašuje klienta za autoritu. Před produkčním spuštěním musí server vracet autoritativní detail a připisovat body v jediné transakci. Bonusové podmínky, časová platnost, kombinace a editace administrací zůstávají otevřené.
+
+## Reprodukce a ověření
+```bash
+node --check scoring.js
+node --check stop-card.js
+node --check app.js
+node --test tests/*.test.cjs
+```
+Regresní testy: `tests/scoring.test.cjs`, `tests/stop-card.test.cjs`, `tests/pid-map.test.cjs`. Příklady pro kontrolu: metro + tram + bus = 23 za obsazení / 3 denně; tram + urban_bus + regional_bus = 12 za obsazení / 3 denně; samotná tram 10 / 1. Zastaralé vlastnictví ukazuje základní denní hodnotu i korekci na nulu. Pro terénní test je důležité ověřit pohyb pod/za 30 m, ztrátu GPS, blokace a vzhled rozpisu na mobilu.
+
+Související projektová dokumentace na Google Disku: 00 (stav projektu), 02 (bodování), 03 (technika), 05 (databázový návrh) a 06 (UX). Historické zápisy starých alphas jsou ponechány jako historie; aktuálním stavem jsou novější doplňky datované 21. 11. 2026.
+
+---
+
 # Terénní test – upravené obsazování a mapový detail (21. 11. 2026)
 
 [Spustit verzi gps25field](https://anlexcz.github.io/zastavkobrani/?v=gps25field)
