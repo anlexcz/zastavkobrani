@@ -26,7 +26,7 @@ function init(withSeed=true){
    text:PLAYERS.find(p=>p.id===previous).name+" obsadil/a "+stop.name,seed:true});
   events.push({action:"capture",stopId:stop.id,player:owner,day:captureDay,at:date.toISOString(),previousOwner:previous,points:captureScore(stop),
    text:PLAYERS.find(p=>p.id===owner).name+" převzal/a "+stop.name,seed:true});
-  stops[stop.id]={owner,anchor:captureDay,capturedAt:date.toISOString(),protectedUntil:new Date(date.getTime()+86400000).toISOString()};
+  stops[stop.id]={owner,anchor:captureDay,capturedAt:date.toISOString(),protectedUntil:new Date(date.getTime()+RULES.protectionHours*60*60*1000).toISOString()};
   ledger.push({player:previous,amount:captureBreakdown(stop,{neutral:true}).total,type:"capture",day:pastDay,at:past.toISOString(),seed:true});
   ledger.push({player:owner,amount:captureBreakdown(stop).total,type:"capture",day:captureDay,at:date.toISOString(),seed:true});
  });
