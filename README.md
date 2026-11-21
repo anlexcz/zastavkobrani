@@ -31,6 +31,15 @@ AP: 10 denně; běžné území 1 AP, významné (v aktuálním kódu od 2 hern�
 - Jednotkové testy včetně `tests/modules.test.cjs` a kontrola syntaxe všech JS modulů jsou součástí GitHub Actions. Vizuální regresní testy napříč mobilními prohlížeči nejsou dosud automatizovány.
 
 
+### Administrace /admin (alpha, 21. 11. 2026)
+
+- URL: [Zastávkobraní – administrace](https://anlexcz.github.io/zastavkobrani/admin/). Samostatná mobile-first stránka, bez zásahu do navigace hry.
+- Architektura: `admin/index.html` (struktura), `admin/admin.css` (vlastní responzivní layout navazující na tokeny `style.css`), `admin/admin.js` (navigace a pohledy), `admin/core.js` (čistá validace a datový kontrakt).
+- Navigace: Přehled, Zastávka dne, Zastávky a GPS, PID importy, Hráči, Vlastnictví a akce, Ekonomika, Achievementy, Audit, Systém. Přehled a katalog jsou čtecí; Zastávka dne podporuje tvorbu návrhu výjimek; ostatní moduly zatím přesně označují budoucí odpovědnosti.
+- Zastávka dne: práce s publikovaným souborem `data/daily-stops.generated.json`, datumové přepínání, vyhledání způsobilé zastávky, příprava výjimky, vrácení původního losu, bezpečný import a export `data/daily-stops.overrides.json`. Minulé a právě probíhající termíny nelze upravovat. Vypublikování vyžaduje ruční aktualizaci souboru na GitHubu oprávněným uživatelem; následně se spouští workflow `generate-daily-stops.yml`.
+- Bezpečnost: `/admin` je **veřejný náhled**, nikoli zabezpečená administrace. Není zde účet admina, přihlašování ani přímé zápisy do serverové databáze. Současná verze neumožňuje měnit body, vlastnictví, GPS oprávnění, účty, mapové verze ani pravidla hry. Skutečná oprávnění a audit zásahů musí později zajišťovat server.
+- Testy: `tests/admin.test.cjs` pokrývají registr modulů, validaci termínů, výjimek, importů, exportů a ochranu historie; CI kontroluje syntaxi obou administračních JS modulů.
+
 ### Zastávka dne: publikovaný kalendář a budoucí administrace (21. 11. 2026)
 
 **Platný princip hry:** Jedna společná pražská zastávka za herní den (03:00–02:59 Europe/Prague), bez ohledu na vlastnictví a polohu hráčů. Výběr jen ze způsobilých území, kde existuje alespoň jeden nemetro povrchový PID bod v Praze. Tato alpha podmínka ještě není produkční administrátorské schválení bezpečného GPS bodu. Los se provádí rovnoměrně přes `crypto.randomInt`, nezohledňuje osobní polohu, počet druhů dopravy ani popularitu. Opakování zastávky v sousedních dnech je možné; zákaz opakování nebyl schválen.
