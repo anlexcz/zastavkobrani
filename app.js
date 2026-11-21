@@ -305,11 +305,12 @@ function showHistoryDetail(){
  $("stop-history-list").innerHTML=entries.length?entries.map(e=>{
   const who=e.player?playerLabel(e.player):"Systém";
   const old=e.previousOwner?playerLabel(e.previousOwner):null;
-  const label=e.action==="maintain"?"Údržba · "+who:e.action==="expire"?"Uvolnění do neutrality":old?"Převzetí · "+old+" → "+who:"Obsazení · "+who;
-  const time=new Intl.DateTimeFormat("cs-CZ",{timeZone:"Europe/Prague",day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"}).format(new Date(e.at));
-  const meta=[Number.isFinite(e.points)?"+"+e.points+" bodů":null,e.apCost?"−"+e.apCost+" AP":null,e.seed?"Testovací záznam":null].filter(Boolean).join(" · ");
-  return '<div class="history-item"><div class="history-item-head"><strong>'+escapeStopText(label)+'</strong><time>'+escapeStopText(time)+'</time></div>'+
-   (meta?'<small>'+escapeStopText(meta)+'</small>':'')+'</div>';
+  const label=e.action==="maintain"?"Údržba · "+who:e.action==="expire"?"Zánik vlastnictví":old?"Převzetí · "+old+" → "+who:"Obsazení · "+who;
+  const time=new Intl.DateTimeFormat("cs-CZ",{timeZone:"Europe/Prague",day:"numeric",month:"numeric",year:"2-digit",hour:"2-digit",minute:"2-digit"}).format(new Date(e.at));
+  const parts=[Number.isFinite(e.points)?"+"+e.points+" b.":null,e.apCost?"−"+e.apCost+" AP":null].filter(Boolean);
+  return '<div class="history-item"><div class="history-item-head"><strong>'+escapeStopText(label)+'</strong>'+
+   (parts.length?'<span class="history-item-points">'+escapeStopText(parts.join(" · "))+'</span>':"")+'</div>'+
+   '<div class="history-item-meta"><time>'+escapeStopText(time)+'</time>'+(e.seed?'<span>Testovací záznam</span>':"")+'</div></div>';
  }).join(""):'<p class="stop-history-empty">Zatím žádná historie.</p>';
  historyOverlay.hidden=false;
  $("history-dialog-close").focus();
@@ -390,11 +391,10 @@ function renderOwnedStops(){
  $("owned-list").innerHTML=items.length?items.map(x=>{
   const urgency=x.decline?(x.daysLeft<=3?"is-urgent":"is-declining"):"";
   const status=x.protectedNow?"Ochrana "+stopCountdown(new Date(x.protectedUntil).toISOString()):
-    x.decline?"Klesající výnos · "+x.daysLeft+" d do zániku":"Plný výnos";
-  const detail=x.protectedNow?"Údržba po skončení ochrany":x.decline?"Údržba dostupná":"Údržba dostupná";
+    x.decline?"Do zániku "+x.daysLeft+" d":"Údržba dostupná";
   return '<button type="button" class="owned-row '+urgency+'" data-owned-stop="'+escapeStopText(x.stop.id)+'">'+
     '<span class="owned-row-main"><strong>'+escapeStopText(x.stop.name)+'</strong><small>'+escapeStopText(status)+'</small></span>'+
-    '<span class="owned-row-side"><strong>'+x.income+' b./den</strong><small>'+escapeStopText(detail)+'</small></span>'+
+    '<span class="owned-row-side"><strong>'+x.income+' b./den</strong></span>'+
     '<span aria-hidden="true" class="owned-row-arrow">›</span></button>';
  }).join(""):'<p class="empty-state">Zatím nevlastníš žádnou zastávku.</p>';
 }
