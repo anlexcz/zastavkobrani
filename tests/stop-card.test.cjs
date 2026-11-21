@@ -81,3 +81,13 @@ test("Akční UI má jedno tlačítko a GPS stav bez přímého obsazení při n
  assert.match(app,/capture\.disabled=!s\|\|captureTimeBlocked\|\|!locationState\.ok/);
  assert.match(app,/const GPS_STALE_MS=15000/);
 });
+
+test("Terénní režim nepoužívá denní limit tří obsazení",()=>{
+ assert.match(app,/FIELD_TEST_UNLIMITED_CAPTURES=true/);
+ assert.match(app,/remaining\(\)\{return FIELD_TEST_UNLIMITED_CAPTURES\?Infinity/);
+});
+test("Potvrzení obsazení je součástí jedné akční oblasti",()=>{
+ assert.match(html,/class="actions" id="actions"/);
+ assert.match(html,/id="stop-confirm"/);
+ assert.match(app,/classList\.toggle\("is-confirming"/);
+});
