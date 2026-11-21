@@ -29,6 +29,12 @@ function stopCountdown(until,now=Date.now()){
   const sec=seconds%60;
   return String(hours).padStart(2,"0")+":"+String(minutes).padStart(2,"0")+":"+String(sec).padStart(2,"0");
 }
+function stopExpiryCountdown(until,now=Date.now()){
+ const seconds=Math.max(0,Math.ceil((Date.parse(until)-now)/1000));
+ const days=Math.floor(seconds/86400),rest=seconds%86400;
+ const time=String(Math.floor(rest/3600)).padStart(2,"0")+":"+String(Math.floor(rest%3600/60)).padStart(2,"0")+":"+String(rest%60).padStart(2,"0");
+ return days?days+" "+(days===1?"den":days>=2&&days<=4?"dny":"dní")+" "+time:time;
+}
 function stopCardHtml({stop,record,owner,selectedPlayer,gameDay,diffDays,captureScore,holdingScore,expiresAt=null,now=Date.now()}){
   if(!stop)return "";
   const hasOwner=!!record?.owner;
@@ -51,7 +57,7 @@ function stopCardHtml({stop,record,owner,selectedPlayer,gameDay,diffDays,capture
     '</div>'+
     (hasOwner?'<div class="stop-life-summary"><span>'+escapeStopText(age===1?"Den akce · bez výnosu":fullYield?"Plný denní výnos":yieldPoints>0?"Klesající výnos":"Výnos dosáhl nuly")+'</span>'+
       '<span>'+age+'. herní den vlastnictví</span></div>':'')+
-    (hasOwner&&age>=9&&expiresAt?'<div class="stop-expiry"><span>Do zániku bez údržby</span><strong data-expiry-countdown="'+escapeStopText(expiresAt)+'">'+stopCountdown(expiresAt,now)+'</strong></div>':'')+
+    (hasOwner&&age>=9&&expiresAt?'<div class="stop-expiry"><span>Do zániku bez údržby</span><strong data-expiry-countdown="'+escapeStopText(expiresAt)+'">'+stopExpiryCountdown(expiresAt,now)+'</strong></div>':'')+
 
   '</div>';
 }
