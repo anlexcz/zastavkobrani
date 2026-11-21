@@ -59,10 +59,25 @@ test("Odpočet správně přechází na nulu",()=>{
 test("Kategorie mají existující piktogramy Temaki, ale žádné emoji",()=>{
  const content=ctx.card(args);
  assert.match(content,/class="stop-mode-icon"/);
+ assert.doesNotMatch(content,/class="stop-mode"[^>]*><img[^>]*><span>/);
  assert.match(content,/icons\/tram.svg/);
  assert.doesNotMatch(content,/🚋|🚌|🚆/);
 });
 test("Neobsazená zastávka je v horním označení karty",()=>{
  assert.match(app,/Neobsazená zastávka/);
  assert.doesNotMatch(app,/Neutrální zastávka/);
+});
+
+test("Karta používá jen piktogramy s přístupným názvem, bez textových štítků",()=>{
+ const content=ctx.card({...args,stop:{...stop,cats:["tram","bus"]}});
+ assert.match(content,/aria-label="Tramvaj"/);
+ assert.match(content,/aria-label="Autobus"/);
+ assert.doesNotMatch(content,/>Tramvaj<|>Autobus</);
+});
+test("Akční UI má jedno tlačítko a GPS stav bez přímého obsazení při neplatné poloze",()=>{
+ assert.match(html,/id="stop-location-status"/);
+ assert.match(html,/id="stop-request-location"/);
+ assert.match(app,/stopLocationState\(s\)/);
+ assert.match(app,/capture\.disabled=!s\|\|captureTimeBlocked\|\|!locationState\.ok/);
+ assert.match(app,/const GPS_STALE_MS=15000/);
 });
