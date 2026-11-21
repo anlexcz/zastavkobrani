@@ -1,3 +1,16 @@
+# GPS test – oprava mapových okruhů a karty (21. 11. 2026)
+
+[Otevřít aktuální verzi](https://anlexcz.github.io/zastavkobrani/?v=gps23areas)
+
+- Opraveny GPS oblasti: od zoomu 15,2 se vykresluje jeden geograficky sloučený polygon 30m kruhů příslušných kandidátních povrchových PID bodů na každou herní zastávku. Žádné sčítání průhledností jednotlivých kruhů; 390m strategické polygony zůstávají oddělené.
+- Zobrazení GPS oblastí patří přepínači **Zastávky** a není závislé na nastavení **Barevná území**. Opravené styly dávají viditelnější obrys, výplň a zvýraznění vybrané zastávky.
+- Neobsazená zastávka je označena „Neobsazená zastávka“.
+- Kategorie dopravy mají ikony z existující sady **Temaki** (CC0-1.0); sedm potřebných SVG je lokálně uloženo v `assets/temaki/`, takže se při zobrazení karty nemusí načítat z CDN. Pro pozemní lanovku zůstává do výběru přesnějšího symbolu pracovní železniční piktogram `light_rail`, nikoli kabinová lanovka.
+- Toto je stále **lokální GPS test**, nikoli produkčně schválená mapa capture_points nebo serverově bezpečné dobývání. Všechny zdrojové PID body mají příznak `captureEnabled:false`; veřejně dostupná povolená místa musí později potvrdit administrace.
+- Proběhla kontrola syntaxe a vlastní funkční smoke testy zdrojů/vrstev/karty; kompletní Node CI a skutečné vykreslení na Androidu zůstává k ověření.
+
+---
+
 # Zastávkobraní — GPS terénní test (21. 11. 2026)
 
 [Otevřít testovací hru](https://anlexcz.github.io/zastavkobrani/?v=gps21)
