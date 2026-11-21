@@ -42,6 +42,16 @@ test("Žádný neschválený bonus se nepřipočítává automaticky",()=>{
  assert.equal(b.bonusLines.length,0);
  assert.equal(b.total,10);
 });
+test("Výslovně předané způsobilé bonusy se rozpíší a přičtou, jiné akce se ignorují",()=>{
+ const b=plain(captureBreakdown(stop(["tram"]),{bonuses:[
+   {action:"capture",label:"Testovací bonus výpočtu",points:3},
+   {action:"holding",label:"Nesouvisející bonus",points:99}
+ ]}));
+ assert.equal(b.baseTotal,10);
+ assert.equal(b.bonusTotal,3);
+ assert.equal(b.total,13);
+ assert.deepEqual(b.bonusLines.map(x=>x.label),["Testovací bonus výpočtu"]);
+});
 test("Karta a rozpis jsou klikatelné a používají stejné funkce",()=>{
  assert.match(card,/data-score-detail="capture"/);
  assert.match(card,/data-score-detail="holding"/);
