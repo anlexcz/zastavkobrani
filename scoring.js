@@ -1,5 +1,5 @@
 "use strict";
-const RULES=Object.freeze({version:"2026-11-21-economy-v3",dailyAP:10,significantCategories:3,neutralBonus:16,
+const RULES=Object.freeze({version:"2026-11-21-economy-v3",dailyAP:10,significantCategories:2,neutralBonus:16,
  captureRates:{metro:32,train:32,funicular:24,tram:24,trolleybus:24,ferry:24,bus:16},
  holdingByCategories:[0,6,12,12,18],declining:[6,5,4,3,2,1,0]});
 const SCORING_BASE=Object.freeze({...RULES.captureRates,urban_bus:16,regional_bus:16});
