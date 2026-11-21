@@ -38,6 +38,6 @@ function stopCardHtml({stop,record,owner,selectedPlayer,gameDay,diffDays,capture
     '</div>'+
     (hasOwner?'<div class="stop-life-summary"><span>'+escapeStopText(fullYield?"Plný denní výnos":"Bez denního výnosu")+'</span>'+
       '<span>'+age+'. herní den vlastnictví</span></div>':'')+
-    '<p class="stop-small-note">Testovací hra. Obsazení ani údržba zatím nejsou ověřovány serverem pomocí GPS.</p>'+
+    '<p class="stop-small-note">GPS se ověřuje při akci. Testovací stav je uložen jen v tomto prohlížeči, bez serverového ověření.</p>'+
   '</div>';
 }
