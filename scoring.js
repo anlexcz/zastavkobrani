@@ -6,8 +6,8 @@ const SCORING_BASE=Object.freeze({...RULES.captureRates,urban_bus:16,regional_bu
 const SCORING_LABELS=Object.freeze({metro:"Metro",train:"Vlak",funicular:"Lanovka",tram:"Tramvaj",trolleybus:"Trolejbus",ferry:"Přívoz",bus:"Autobus",urban_bus:"Městský autobus",regional_bus:"Regionální autobus"});
 const ACTIVE_SCORE_BONUSES=Object.freeze([]);
 function scoringCategories(stop,kind){
- const categories=[...new Set(stop.cats||[])];
- return kind==="capture"?[...new Set(categories.map(c=>["urban_bus","regional_bus"].includes(c)?"bus":c))]:categories;
+ // Městský a regionální autobus tvoří jediný herní druh ve všech výpočtech.
+ return [...new Set((stop.cats||[]).map(c=>["urban_bus","regional_bus"].includes(c)?"bus":c))];
 }
 function actionCost(stop,kind,hasOpponent=false){
  return (scoringCategories(stop,"holding").length>=RULES.significantCategories?2:1)+(kind==="capture"&&hasOpponent?1:0);
