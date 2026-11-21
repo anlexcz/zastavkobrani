@@ -107,6 +107,7 @@
  .admin-grid.wide-right{grid-template-columns:minmax(17rem,.85fr) minmax(0,1.15fr)}
 }
 @media(min-width:1100px){.admin-main{padding:var(--space-8) 2.875rem 5rem}}
-@media(max-width:420px){.admin-back{font-size:var(--font-small)}}
+@media(max-width:540px){.admin-back{display:none}}
+@media(max-width:420px){.admin-brand{font-size:1.25rem}.admin-header{padding-inline:var(--space-3)}.admin-menu-toggle{gap:var(--space-1)}}
 @media(prefers-reduced-motion:reduce){.admin-sidebar{transition:none}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important}}
