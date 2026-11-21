@@ -1,8 +1,8 @@
-# Alfa – schválená ekonomika 21. 11. 2026 (v2)
+# Alfa – aktuální schválená ekonomika 21. 11. 2026 (v3: obsazení ×2)
 
-[Otevřít aktuální alfu](https://anlexcz.github.io/zastavkobrani/?v=economy-v2)
+[Otevřít aktuální alfu](https://anlexcz.github.io/zastavkobrani/?v=economy-v3)
 
-Schválené jednorázové sazby: autobus 24, tramvaj/trolejbus/lanovka/přívoz 36, metro/vlak 48. Koeficienty 100/50/25, neutralita +24, při převzetí bez neutrality.
+Schválené jednorázové sazby: autobus 16, tramvaj/trolejbus/lanovka/přívoz 24, metro/vlak 32. Koeficienty 100/50/25, neutralita +16, při převzetí bez neutrality. Dříve používané ×3 (24/36/48, neutralita +24) je překonané.
 
 Denní příjem: model C ×6 = 6/12/12/18 bodů pro 1/2/3/4+ druhy. Den akce 0; následuje 7 plných výnosových dní a 7 sestupných (pro základní váhu C: 6,5,4,3,2,1,0). Celý nepřerušený cyklus má 63× váha C bodů.
 
@@ -10,7 +10,7 @@ AP: 10 denně; běžné území 1 AP, významné (zatím pracovní 3+ druhů) 2 
 
 ---
 
-# Zastávkobraní – test AP, historie a dat linky 22 (21. 11. 2026)
+# HISTORICKÉ POZNÁMKY – test AP, historie a dat linky 22 (21. 11. 2026; staré sazby nejsou aktuální)
 
 [Testovací web](https://anlexcz.github.io/zastavkobrani/?v=ap22history1)
 
