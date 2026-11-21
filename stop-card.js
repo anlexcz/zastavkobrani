@@ -35,7 +35,7 @@ function stopCardHtml({stop,record,owner,selectedPlayer,gameDay,diffDays,capture
   const mine=hasOwner&&record.owner===selectedPlayer;
   const locked=hasOwner&&record.protectedUntil&&Date.parse(record.protectedUntil)>now;
   const age=record?.anchor?Math.max(1,diffDays(gameDay,record.anchor)+1):0;
-  const fullYield=hasOwner&&age<=7;
+  const fullYield=hasOwner&&age>=2&&age<=8;
   const modes=(stop.cats.length?stop.cats:["unknown"]).map(code=>{
     const label=escapeStopText(STOP_MODE_LABELS[code]||(code==="unknown"?"Druh dopravy neurčen":code));
     return '<span class="stop-mode" title="'+label+'" aria-label="'+label+'">'+stopModeIcon(code)+'</span>';
@@ -43,13 +43,13 @@ function stopCardHtml({stop,record,owner,selectedPlayer,gameDay,diffDays,capture
   const points=stop.cats.length?captureScore(stop):"—";
   const yieldPoints=stop.cats.length?holdingScore(stop):"—";
   return '<div class="stop-card">'+
-    (locked?'<div class="stop-protection"><span>Ochrana proti převzetí</span><strong data-protection-countdown="'+escapeStopText(record.protectedUntil)+'">'+stopCountdown(record.protectedUntil,now)+'</strong></div>':'')+
+    (locked?'<div class="stop-protection"><span>Ochrana území</span><strong data-protection-countdown="'+escapeStopText(record.protectedUntil)+'">'+stopCountdown(record.protectedUntil,now)+'</strong></div>':'')+
     '<div class="stop-modes">'+modes+'</div>'+
     '<div class="stop-metrics">'+
       '<button type="button" class="stop-metric" data-score-detail="capture" aria-label="Zobrazit rozpis bodů za obsazení"><strong>'+escapeStopText(points)+'</strong><span>Bodů za obsazení</span><span class="stop-metric-more" aria-hidden="true">ⓘ</span></button>'+
-      '<button type="button" class="stop-metric" data-score-detail="holding" aria-label="Zobrazit rozpis denního výnosu"><strong>'+escapeStopText(fullYield?yieldPoints:hasOwner?0:yieldPoints)+'</strong><span>'+ (hasOwner?'Aktuální výnos / den':'Plný výnos / den')+'</span><span class="stop-metric-more" aria-hidden="true">ⓘ</span></button>'+
+      '<button type="button" class="stop-metric" data-score-detail="holding" aria-label="Zobrazit rozpis denního výnosu"><strong>'+escapeStopText(yieldPoints)+'</strong><span>'+ (hasOwner?'Aktuální výnos / den':'Plný výnos / den')+'</span><span class="stop-metric-more" aria-hidden="true">ⓘ</span></button>'+
     '</div>'+
-    (hasOwner?'<div class="stop-life-summary"><span>'+escapeStopText(fullYield?"Plný denní výnos":"Bez denního výnosu")+'</span>'+
+    (hasOwner?'<div class="stop-life-summary"><span>'+escapeStopText(age===1?"Den akce · bez výnosu":fullYield?"Plný denní výnos":yieldPoints>0?"Klesající výnos":"Výnos dosáhl nuly")+'</span>'+
       '<span>'+age+'. herní den vlastnictví</span></div>':'')+
 
   '</div>';
