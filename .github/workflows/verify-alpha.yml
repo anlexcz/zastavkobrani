@@ -15,6 +15,9 @@ jobs:
           node-version: '22'
       - name: JavaScript syntax
         run: |
+          node --check transport-modes.js
+          node --check scoring.js
+          node --check stop-card.js
           node --check app.js
           node --check stop-map.js
           node --check map-style.js
