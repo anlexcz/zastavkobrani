@@ -1,15 +1,9 @@
 "use strict";
 import {gameDay,addDays,diffDays} from "./game-time.js";
+import {resolveDailyStop} from "./daily-stops.js";
 // Lokální demo model; autoritativní serverové transakce jej v produkci nahradí.
 export function createGameModel({STOPS,PLAYERS,ROUTE_22_SEED,RULES,captureBreakdown,holdingBreakdown,ACTIVE_SCORE_BONUSES,getState,persist}){
-function challengeStopForDay(day){
- const key=day.replaceAll("-","");let n=0;for(const c of key)n=(n*31+c.charCodeAt(0))>>>0;
- for(let offset=0;offset<STOPS.length;offset++){
-  const s=STOPS[(n+offset)%STOPS.length];
-  if(s.cats.length&&s.points.some(p=>p.insidePrague&&!p.isMetro))return s;
- }
- return null;
-}
+function challengeStopForDay(day){return resolveDailyStop(day,STOPS)}
 function init(withSeed=true){
  const day=gameDay(),now=new Date(),stops={},ledger=[],events=[];
  if(withSeed)ROUTE_22_SEED.forEach((name,index)=>{
