@@ -28,11 +28,11 @@ test("AP rozpočet, drahé území a příplatek za převzetí",()=>{
  assert.equal(actionCost(stop(["tram"]),"capture",false),1);
  assert.equal(actionCost(stop(["tram"]),"capture",true),2);
  assert.equal(actionCost(stop(["metro","tram","bus"]),"capture",true),3);
- assert.equal(actionCost(stop(["metro","tram","bus"]),"maintain"),2);
+ assert.equal(actionCost(stop(["metro","tram","bus"]),"maintain"),1);
  assert.equal(RULES.significantCategories,2);
  assert.equal(actionCost(stop(["tram","bus"]),"capture",false),2);
  assert.equal(actionCost(stop(["tram","bus"]),"capture",true),3);
- assert.equal(actionCost(stop(["tram","bus"]),"maintain"),2);
+ assert.equal(actionCost(stop(["tram","bus"]),"maintain"),1);
  assert.equal(actionCost(stop(["bus"]),"maintain"),1);
  assert.equal(actionCost(stop(["urban_bus","regional_bus"]),"capture",false),1);
  assert.equal(actionCost(stop(["tram","urban_bus","regional_bus"]),"capture",false),2);
@@ -97,4 +97,13 @@ test("Autobusová kombinace nemá zvýhodnění při držení ani AP",()=>{
  assert.equal(holdingBreakdown(multi).total,holdingBreakdown(normalized).total);
  assert.equal(actionCost(multi,"capture"),actionCost(normalized,"capture"));
  assert.equal(actionCost(multi,"maintain"),actionCost(normalized,"maintain"));
+});
+
+test("Údržba stojí vždy 1 AP; obsazení a převzetí zachovávají hranici 2 druhů",()=>{
+ for(const cats of [["bus"],["tram","bus"],["metro","tram","bus"],["metro","tram","bus","trolleybus"],["urban_bus","regional_bus"]]){
+  assert.equal(actionCost(stop(cats),"maintain"),1);
+ }
+ assert.equal(actionCost(stop(["tram","bus"]),"capture"),2);
+ assert.equal(actionCost(stop(["tram","bus"]),"capture",true),3);
+ assert.equal(actionCost(stop(["bus"]),"capture",true),2);
 });
