@@ -3,7 +3,7 @@ const RULES=Object.freeze({version:"2026-11-21-economy-v3",dailyAP:10,significan
  captureRates:{metro:32,train:32,funicular:24,tram:24,trolleybus:24,ferry:24,bus:16},
  holdingByCategories:[0,6,12,12,18],declining:[6,5,4,3,2,1,0]});
 const SCORING_BASE=Object.freeze({...RULES.captureRates,urban_bus:16,regional_bus:16});
-const SCORING_LABELS=Object.freeze({metro:"Metro",train:"Vlak",funicular:"Lanovka",tram:"Tramvaj",trolleybus:"Trolejbus",ferry:"Přívoz",bus:"Autobus",urban_bus:"Městský autobus",regional_bus:"Regionální autobus"});
+const SCORING_LABELS=TRANSPORT_MODE_LABELS;
 const ACTIVE_SCORE_BONUSES=Object.freeze([]);
 function scoringCategories(stop,kind){
  // Městský a regionální autobus tvoří jediný herní druh ve všech výpočtech.
