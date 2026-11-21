@@ -65,12 +65,13 @@ export function effectiveDaily(day,calendar,overrides,stops){
  };
 }
 export function filterStops(stops,query,{eligibleOnly=false,limit=40}={}){
- const normalized=String(query||"").trim().toLocaleLowerCase("cs");
+ const normalize=value=>String(value??"").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLocaleLowerCase("cs");
+ const normalized=normalize(String(query||"").trim());
  const result=[];
  for(const stop of stops){
    if(eligibleOnly&&!isEligibleDailyStop(stop))continue;
-   if(normalized&&!stop.name.toLocaleLowerCase("cs").includes(normalized)&&
-      !stop.id.toLocaleLowerCase("cs").includes(normalized))continue;
+   if(normalized&&!normalize(stop.name).includes(normalized)&&
+      !normalize(stop.id).includes(normalized))continue;
    result.push(stop);
    if(result.length>=limit)break;
  }
