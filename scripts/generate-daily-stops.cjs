@@ -43,6 +43,17 @@ function gameDay(now=new Date()){
 function isEligible(stop){
   return !!stop&&stop.cats.length>0&&stop.points.some(p=>p.insidePrague&&!p.isMetro);
 }
+// Jednorázová migrace: dřívější dny zachovají výběr původní alpha hry.
+function legacyStopForDay(day,stops){
+  const key=day.replaceAll("-","");
+  let seed=0;
+  for(const char of key)seed=(seed*31+char.charCodeAt(0))>>>0;
+  for(let index=0;index<stops.length;index++){
+    const stop=stops[(seed+index)%stops.length];
+    if(isEligible(stop))return stop;
+  }
+  return null;
+}
 function readStops(){
   const source=fs.readFileSync(path.join(ROOT,"pid-prague.js"),"utf8");
   const stops=vm.runInNewContext(source+"\nPID_PRAGUE;",{}, {timeout:10000});
@@ -86,6 +97,7 @@ function generate(options={}){
     }
   }
   const days={...schedule.days};
+  const originalCount=Object.keys(days).length;
   for(const [day,stopId] of Object.entries(days)){
     if(!isDay(day)||typeof stopId!=="string"||!isEligible(stopMap.get(stopId))){
       throw Error("Dříve vylosovaná zastávka není platná: "+day+" / "+stopId);
@@ -94,6 +106,12 @@ function generate(options={}){
   for(let offset=-BACKFILL_DAYS;offset<=AHEAD_DAYS;offset++){
     const day=addDays(today,offset);
     if(days[day])continue;
+    if(day<=today){
+      const old=legacyStopForDay(day,stops);
+      if(!old)throw Error("Chybí historicky způsobilá zastávka dne "+day);
+      days[day]=old.id;
+      continue;
+    }
     const idx=options.pickIndex?options.pickIndex(eligible.length,day):randomInt(eligible.length);
     if(!Number.isInteger(idx)||idx<0||idx>=eligible.length)throw Error("Neplatný los "+day);
     days[day]=eligible[idx].id;
@@ -109,7 +127,7 @@ function generate(options={}){
   const json=JSON.stringify(next,null,2)+"\n";
   const browser='"use strict";\n// Generováno skriptem scripts/generate-daily-stops.cjs. Neupravovat ručně.\n'+
     "export const DAILY_STOP_SCHEDULE=Object.freeze("+JSON.stringify(module,null,2)+");\n";
-  return {json,browser,today,count:Object.keys(orderedDays).length,newCount:Object.keys(orderedDays).length-Object.keys(days).length};
+  return {json,browser,today,count:Object.keys(orderedDays).length,newCount:Object.keys(orderedDays).length-originalCount};
 }
 if(require.main===module){
   try{
