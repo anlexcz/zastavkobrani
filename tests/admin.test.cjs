@@ -66,3 +66,32 @@ test("Admin stránka je nezávislá na běžném mobilním navigátoru hry",()=>
  assert.match(js,/Stáhnout JSON výjimek/);
  assert.doesNotMatch(js,/fetch\([^)]*method\s*:\s*["']POST/);
 });
+
+test("Mobilní administrace používá svislý drawer bez horizontálního menu",()=>{
+ const html=fs.readFileSync(path.join(ROOT,"admin/index.html"),"utf8");
+ const css=fs.readFileSync(path.join(ROOT,"admin/admin.css"),"utf8");
+ const js=fs.readFileSync(path.join(ROOT,"admin/admin.js"),"utf8");
+ for(const fragment of ['id="admin-menu-toggle"','aria-expanded="false"','aria-controls="admin-sidebar"',
+                        'id="admin-menu-scrim"','id="admin-sidebar-close"','id="admin-sidebar"'])
+   assert.ok(html.includes(fragment),fragment);
+ assert.match(css,/\.admin-sidebar\{[^}]*position:fixed/);
+ assert.match(css,/\.admin-menu\{[^}]*display:grid/);
+ assert.doesNotMatch(css,/overflow-x:auto/);
+ assert.match(js,/event\.key==="Escape"/);
+ assert.match(js,/event\.key!=="Tab"/);
+ assert.match(js,/sidebar\.inert=mobile&&!next/);
+ assert.match(js,/setMenuOpen\(false/);
+});
+
+test("Obě stránky načítají společné designové tokeny před specializovanými styly",()=>{
+ const game=fs.readFileSync(path.join(ROOT,"index.html"),"utf8");
+ const admin=fs.readFileSync(path.join(ROOT,"admin/index.html"),"utf8");
+ assert.ok(game.indexOf("design-system.css")<game.indexOf('href="style.css'));
+ assert.ok(admin.indexOf("design-system.css")<admin.indexOf('href="../style.css'));
+ assert.ok(admin.indexOf('href="../style.css')<admin.indexOf("admin.css"));
+ const tokens=fs.readFileSync(path.join(ROOT,"design-system.css"),"utf8");
+ assert.match(tokens,/font-size:\s*100%/);
+ assert.match(tokens,/--admin-sidebar-width:/);
+ assert.match(tokens,/--control-height:/);
+ assert.match(tokens,/--space-4:/);
+});
