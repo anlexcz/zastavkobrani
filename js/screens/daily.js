@@ -1,7 +1,6 @@
 "use strict";
 import {gameDay,addDays} from "../game-time.js";
 export function createDailyScreen({getState,getExpanded,getSelectedPlayer,challengeStopForDay,escapeStopText,$}){
-function expanded(){return getExpanded()}
 function dailyHistoryItems(day=gameDay()){
  const result=[];
  for(let i=1;i<=30;i++){const d=addDays(day,-i),stop=challengeStopForDay(d);if(stop)result.push({day:d,name:stop.name,done:!!getState().visits[d]?.[getSelectedPlayer()]});}
