@@ -70,8 +70,8 @@ let gpsBusy=false,gpsPermissionDenied=false;
 let gpsWatch=null,gpsMarker=null,gpsPosition=null;
 function persist(){localStorage.setItem(STORAGE,JSON.stringify(state))}
 function award(player,amount,type,day=gameDay()){state.ledger.push({player,amount,type,day,at:new Date().toISOString()})}
-function captureScore(s){return captureBreakdown(s).total}
-function holdingScore(s){return holdingBreakdown(s).total}
+function captureScore(s){return captureBreakdown(s,{bonuses:ACTIVE_SCORE_BONUSES}).total}
+function holdingScore(s){return holdingBreakdown(s,{bonuses:ACTIVE_SCORE_BONUSES}).total}
 function closeDays(){const today=gameDay();let d=addDays(state.lastClosedDay,1),count=0;while(d<today&&count++<730){for(const s of STOPS){const item=state.stops[s.id];if(!item||!item.owner)continue;const age=diffDays(d,item.anchor)+1;if(age>=1&&age<=7)award(item.owner,holdingScore(s),"holding",d);if(age>=22){state.events.unshift({at:new Date().toISOString(),text:s.name+": vlastnictví vypršelo"});delete state.stops[s.id]}}state.lastClosedDay=d;d=addDays(d,1)}if(count>=730&&d<today){state.lastClosedDay=addDays(today,-1);state.events.unshift({at:new Date().toISOString(),text:"Dlouhá neaktivita: staré uzávěrky přeskočeny (demo režim)."});}persist()}
 function remaining(){return FIELD_TEST_UNLIMITED_CAPTURES?Infinity:Math.max(0,3-state.events.filter(e=>e.action==="capture"&&e.player===state.selected&&e.day===gameDay()).length)}
 function owned(){return Object.values(state.stops).filter(v=>v.owner===state.selected).length}
