@@ -170,7 +170,7 @@ function openScreen(name){
   render();
 }
 function note(t){$("message").textContent=t}
-function closeScoreDetailIfOpen(){if(!$("score-dialog-overlay").hidden)closeScoreDetail()}
+function closeScoreDetailIfOpen(){if(!$("score-dialog-overlay").hidden)closeScoreDetail();if(!$("history-dialog-overlay").hidden)closeHistoryDetail()}
 let confirmingCapture=false;
 $("close").onclick=()=>openScreen("map");
 $("scrim").onclick=()=>openScreen("map");
@@ -202,14 +202,19 @@ function showScoreDetail(kind){
     line.amount+" b."
   )).join("");
   const adjustment=detail.holdingAdjustment
-    ?scoreDetailRow("Stáří zastávky – bez denního výnosu",
-        detail.holdingAdjustment+" b.","score-detail-adjustment"):"";
+    ?scoreDetailRow("Vliv životního cyklu (testovací výpočet)",
+        (detail.holdingAdjustment>0?"+":"")+detail.holdingAdjustment+" b.","score-detail-adjustment"):"";
   const bonuses=detail.bonusLines.length
     ?detail.bonusLines.map(b=>scoreDetailRow(b.label,"+"+b.amount+" b.")).join("")
     :'<p class="score-detail-empty">Žádné aktuálně platné bonusy</p>';
+  const explanation=kind==="holding"?
+    '<p class="score-detail-explanation">'+(record?.owner
+      ?'Den akce bez výnosu, poté 7 dní plného výnosu a 7 dní sestupné fáze. Přesné celočíselné částky poklesu jsou zatím pracovní nastavení.'
+      :'Zobrazený denní základ odpovídá počtu dopravních druhů. Výnos začne vznikat až po obsazení a nevzniká v den akce.')+'</p>':
+    '<p class="score-detail-explanation">První druh dopravy se počítá celý, druhý z poloviny a další ze čtvrtiny. Bonus za neutralitu se přičítá pouze při obsazení neobsazené zastávky.</p>';
   $("score-dialog-lines").innerHTML=body+adjustment+
     '<div class="score-detail-subtitle">Bonusy</div>'+bonuses+
-    scoreDetailRow("Celkem",detail.total+" b.","score-detail-total");
+    scoreDetailRow("Celkem",detail.total+" b.","score-detail-total")+explanation;
   scoreDialog.hidden=false;
   $("score-dialog-close").focus();
 }
@@ -240,18 +245,50 @@ $("show-challenge").onclick=()=>{
 // Výběr GIS vrstvy neuzavírá detail.
 document.addEventListener("keydown",e=>{if(e.key==="Escape")openScreen("map")});
 
+const historyOverlay=$("history-dialog-overlay");
+let historyReturnFocus=null;
+function closeHistoryDetail(){
+ if(historyOverlay.hidden)return;
+ historyOverlay.hidden=true;
+ historyReturnFocus?.focus?.();
+ historyReturnFocus=null;
+}
+function stopHistoryEntries(stop){
+ return state.events.filter(e=>e.stopId===stop.id&&["capture","maintain","expire"].includes(e.action))
+  .sort((a,b)=>Date.parse(b.at)-Date.parse(a.at));
+}
 function renderStopHistory(stop){
- const target=$("stop-history-list");if(!target)return;
- if(!stop){target.innerHTML="";return;}
- const entries=state.events.filter(e=>e.stopId===stop.id&&["capture","maintain","expire"].includes(e.action)).sort((a,b)=>Date.parse(b.at)-Date.parse(a.at));
- target.innerHTML=entries.length?entries.slice(0,15).map(e=>{
+ const count=$("stop-history-count");
+ if(!stop){count.textContent="0 událostí";return;}
+ const n=stopHistoryEntries(stop).length;
+ count.textContent=n===1?"1 událost":n>=2&&n<=4?n+" události":n+" událostí";
+}
+function showHistoryDetail(){
+ const stop=STOPS.find(s=>s.id===selectedStop);if(!stop)return;
+ if(!$("score-dialog-overlay").hidden)closeScoreDetail();
+ const entries=stopHistoryEntries(stop);
+ historyReturnFocus=document.activeElement;
+ $("history-dialog-stop").textContent=stop.name;
+ $("stop-history-list").innerHTML=entries.length?entries.map(e=>{
   const who=PLAYERS.find(p=>p.id===e.player)?.name||"Systém";
   const old=PLAYERS.find(p=>p.id===e.previousOwner)?.name;
   const label=e.action==="maintain"?"Údržba · "+who:e.action==="expire"?"Uvolnění do neutrality":old?"Převzetí · "+old+" → "+who:"Obsazení · "+who;
-  const time=new Intl.DateTimeFormat("cs-CZ",{timeZone:"Europe/Prague",day:"numeric",month:"numeric",hour:"2-digit",minute:"2-digit"}).format(new Date(e.at));
-  return '<div class="stop-history-entry"><b>'+escapeStopText(label)+'</b><small>'+escapeStopText(time)+(e.seed?" · demo":"")+'</small></div>';
+  const time=new Intl.DateTimeFormat("cs-CZ",{timeZone:"Europe/Prague",day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"}).format(new Date(e.at));
+  const meta=[e.apCost?"−"+e.apCost+" AP":null,e.seed?"Testovací záznam":null].filter(Boolean).join(" · ");
+  return '<div class="history-item"><div class="history-item-head"><strong>'+escapeStopText(label)+'</strong><time>'+escapeStopText(time)+'</time></div>'+
+   (meta?'<small>'+escapeStopText(meta)+'</small>':'')+'</div>';
  }).join(""):'<p class="stop-history-empty">Zatím žádná historie.</p>';
+ historyOverlay.hidden=false;
+ $("history-dialog-close").focus();
 }
+$("stop-history-open").onclick=showHistoryDetail;
+$("history-dialog-close").onclick=closeHistoryDetail;
+historyOverlay.addEventListener("click",event=>{if(event.target===historyOverlay)closeHistoryDetail()});
+document.addEventListener("keydown",event=>{
+ if(historyOverlay.hidden)return;
+ if(event.key==="Escape"){event.preventDefault();event.stopImmediatePropagation();closeHistoryDetail();}
+ if(event.key==="Tab"){event.preventDefault();$("history-dialog-close").focus();}
+},true);
 function render(){closeDays();const p=PLAYERS.find(x=>x.id===state.selected);$("player").value=state.selected;$("profile").textContent=p.name;$("remaining").textContent=remaining()+"/"+RULES.dailyAP;$("ap-map").textContent=remaining()+" / "+RULES.dailyAP;$("owned").textContent=owned();$("points").textContent=total(p.id);$("clock").textContent="Herní den: "+gameDay()+" · uzávěrka ve 03:00 (Praha)";
 refreshStopMapColors(map,state.stops,PLAYERS,selectedStop);
 const s=STOPS.find(x=>x.id===selectedStop),rec=s&&state.stops[s.id];
