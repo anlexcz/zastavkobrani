@@ -5,6 +5,17 @@ const STOP_MODE_LABELS=Object.freeze({
   trolleybus:"Trolejbus",ferry:"Přívoz",urban_bus:"Městský autobus",
   regional_bus:"Regionální autobus",bus:"Autobus"
 });
+// Existující veřejné piktogramy Temaki, nikoli vlastní dopravní ikony.
+const STOP_MODE_ICONS=Object.freeze({
+  metro:"subway",train:"train",funicular:"light_rail",tram:"tram",
+  trolleybus:"trolleybus",ferry:"ferry",urban_bus:"bus",
+  regional_bus:"bus",bus:"bus"
+});
+const TEMAKI_ICON_ROOT="https://cdn.jsdelivr.net/gh/rapideditor/temaki@main/icons/";
+function stopModeIcon(code){
+  const name=STOP_MODE_ICONS[code];
+  return name?'<img class="stop-mode-icon" src="'+TEMAKI_ICON_ROOT+name+'.svg" alt="" width="19" height="19" loading="lazy" aria-hidden="true">':"";
+}
 function escapeStopText(value){
   return String(value??"").replace(/[&<>"']/g,ch=>({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
@@ -26,7 +37,7 @@ function stopCardHtml({stop,record,owner,selectedPlayer,gameDay,diffDays,capture
   const age=record?.anchor?Math.max(1,diffDays(gameDay,record.anchor)+1):0;
   const fullYield=hasOwner&&age<=7;
   const modes=(stop.cats.length?stop.cats:["unknown"]).map(code=>
-    '<span class="stop-mode">'+escapeStopText(STOP_MODE_LABELS[code]||(code==="unknown"?"Druh dopravy neurčen":code))+'</span>').join("");
+    '<span class="stop-mode">'+stopModeIcon(code)+'<span>'+escapeStopText(STOP_MODE_LABELS[code]||(code==="unknown"?"Druh dopravy neurčen":code))+'</span></span>').join("");
   const points=stop.cats.length?captureScore(stop):"—";
   const yieldPoints=stop.cats.length?holdingScore(stop):"—";
   return '<div class="stop-card">'+
