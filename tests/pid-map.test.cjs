@@ -15,7 +15,7 @@ vm.runInNewContext(dataSource+"\nthis.groups=PID_PRAGUE;",ctx);
 const groups=ctx.groups;
 vm.runInNewContext(strategicSource+"\nthis.polygons=PID_STRATEGIC_POLYGONS;",ctx);
 vm.runInNewContext(ownerBorderSource+"\nthis.borderTopology=PID_OWNER_BOUNDARIES;",ctx);
-vm.runInNewContext(demoSource+"\nthis.sim={DEMO_PLAYERS,demoOwner};",ctx);
+vm.runInNewContext(demoSource+"\nthis.sim={DEMO_PLAYERS,ROUTE_22_SEED};",ctx);
 const players=[{id:"p1",color:"#ef4444"},{id:"p2",color:"#3b82f6"},{id:"p3",color:"#22c55e"}];
 
 function createMock(zoom=10){
@@ -108,11 +108,13 @@ test("Mapové úrovně zachovávají 15.2 / 16 / 17.2",()=>{
  assert.equal(map.layers.find(l=>l.id==="game-platform").minzoom,16);
  assert.equal(map.layers.find(l=>l.id==="game-platform-label").minzoom,17.2);
 });
-test("Simulace používá Prahu a oddělené localStorage",()=>{
+test("GPS test používá oddělené localStorage a skutečnou GPS kontrolu",()=>{
  assert.ok(appSource.includes("const STOPS = PID_PRAGUE;"));
- assert.ok(appSource.includes("zastavkobrani-alpha-prague-10players-v1"));
- assert.ok(appSource.includes("demoOwner(stop)"));
- assert.ok(!appSource.includes("PID_KOBYLISY"));
+ assert.ok(appSource.includes("zastavkobrani-gps-two-players-v1"));
+ assert.ok(appSource.includes("getCurrentPosition"));
+ assert.ok(appSource.includes("distance>30"));
+ assert.ok(appSource.includes("maximumAge:0"));
+ assert.ok(!appSource.includes("demoOwner(stop)"));
 });
 
 test("Strategické Voroného oblasti pokrývají 1487 území bez překryvů herní identity",()=>{
@@ -125,21 +127,19 @@ test("Strategické Voroného oblasti pokrývají 1487 území bez překryvů her
  assert.ok(map.layers.find(l=>l.id==="game-strategic-fill").maxzoom<16);
  assert.ok(map.sources["game-territories"].clusterMaxZoom<15);
 });
-test("Deset pojmenovaných hráčů tvoří stabilní lokálně ovlivněnou simulaci",()=>{
- const players=ctx.sim.DEMO_PLAYERS;
- assert.equal(players.length,10);
- assert.equal(new Set(players.map(p=>p.name)).size,10);
- assert.ok(players.every(p=>!p.name.includes(" ")));
- assert.equal(new Set(players.map(p=>p.color)).size,10);
- const owners=groups.map(g=>ctx.sim.demoOwner(g));
- const owned=owners.filter(Boolean).length;
- assert.ok(owned>900&&owned<1220);
- assert.ok(players.every(p=>owners.includes(p.id)));
- assert.deepEqual(owners,groups.map(g=>ctx.sim.demoOwner(g)));
+test("Tepa začíná bez zastávek a soupeř má 20 existujících tramvajových zastávek 22",()=>{
+ const profiles=ctx.sim.DEMO_PLAYERS;
+ assert.equal(profiles.length,2);
+ assert.equal(profiles[0].name,"Tepa");
+ assert.equal(profiles[1].id,"p2");
+ assert.equal(ctx.sim.ROUTE_22_SEED.length,20);
+ for(const name of ctx.sim.ROUTE_22_SEED){
+   assert.ok(groups.some(stop=>stop.name===name&&stop.cats.includes("tram")),name);
+ }
+ assert.ok(appSource.includes('selected:"p1"'));
+ assert.ok(appSource.includes('owner:"p2"'));
  assert.ok(appSource.includes("const PLAYERS=DEMO_PLAYERS"));
- assert.ok(appSource.includes("zastavkobrani-alpha-prague-10players-v1"));
 });
-
 test("Zastávkové tečky jsou trvale viditelné včetně mapového detailu",()=>{
  const {map}=setup(10.65);
  assert.equal(map.sources["game-stop-points"].data.features.length,1487);
