@@ -211,7 +211,7 @@ function showScoreDetail(kind){
     '<p class="score-detail-explanation">'+(record?.owner
       ?'Den akce bez výnosu, poté 7 dní plného výnosu a 7 dní sestupné fáze. Sestupná fáze vyplácí postupně 6/6, 5/6, 4/6, 3/6, 2/6, 1/6 a 0 plného výnosu.'
       :'Plný denní výnos podle modelu C ×6 činí 6, 12 nebo 18 bodů podle počtu druhů dopravy. Výnos začne vznikat až po obsazení a nevzniká v den akce.')+'</p>':
-    '<p class="score-detail-explanation">První druh dopravy se počítá celý, druhý z poloviny a další ze čtvrtiny. Bonus +24 bodů za neutralitu se přičítá pouze při obsazení neobsazené zastávky.</p>';
+    '<p class="score-detail-explanation">První druh dopravy se počítá celý, druhý z poloviny a další ze čtvrtiny. Bonus +16 bodů za neutralitu se přičítá pouze při obsazení neobsazené zastávky.</p>';
   $("score-dialog-lines").innerHTML=body+adjustment+
     '<div class="score-detail-subtitle">Bonusy</div>'+bonuses+
     scoreDetailRow("Celkem",detail.total+" b.","score-detail-total")+explanation;
