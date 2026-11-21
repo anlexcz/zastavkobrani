@@ -3,16 +3,26 @@ const test=require("node:test");
 const assert=require("node:assert/strict");
 const fs=require("node:fs");
 const css=fs.readFileSync("style.css","utf8");
+const tokens=fs.readFileSync("design-system.css","utf8");
 const app=["app.js","js/game.js","js/game-actions.js","js/gps.js","js/storage.js","js/screens/daily.js","js/screens/ranking.js","js/screens/profile.js","js/screens/stop.js","js/ui.js"].map(p=>fs.readFileSync(p,"utf8")).join("\n");
 const scoring=fs.readFileSync("scoring.js","utf8");
 
 test("Základní mobile-first rozvržení sdílí tokeny",()=>{
   for(const token of ["--header-h","--nav-h","--accent","--color-success","--action-height"])
-    assert.ok(css.includes(token+":"),token);
+    assert.ok(tokens.includes(token+":"),token);
   assert.match(css,/\.nav\s*\{[^}]*bottom:0/);
   assert.match(css,/@media\(min-width:760px\)/);
 });
 
+test("Typografie a responzivita sdílí jediný design systém",()=>{
+ assert.match(tokens,/font-size:\s*100%/);
+ assert.match(tokens,/--font-body:\s*\.875rem/);
+ assert.match(tokens,/--space-3:\s*\.75rem/);
+ assert.doesNotMatch(css,/^:root\s*\{/m);
+ const admin=fs.readFileSync("admin/admin.css","utf8");
+ assert.match(admin,/var\(--admin-sidebar-width\)/);
+ assert.match(admin,/var\(--admin-header-h\)/);
+});
 test("Kritické komponenty nemají duplicitní základní selektory",()=>{
   for(const selector of [
     ".stop-card {",".stop-modes {",".stop-history{",
