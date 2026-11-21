@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<link rel="stylesheet" href="style.css?v=ui-v2">
+<link rel="stylesheet" href="style.css?v=ui-v3">
 </head>
 <body>
 <div id="map" role="region" aria-label="Mapa herních zastávek Prahy"></div><div id="map-error" class="map-error" hidden></div>
@@ -84,15 +84,15 @@
       <div><strong id="owned">0</strong><span>Moje zastávky</span></div>
     </div>
     <p id="clock" class="muted"></p>
-    <section class="profile-section" aria-labelledby="owned-title">
-      <div class="profile-section-heading"><h2 id="owned-title">Moje zastávky</h2><span class="section-count" id="owned-count">0</span></div>
+    <details class="profile-section compact-disclosure" id="owned-section">
+      <summary class="profile-section-heading"><h2 id="owned-title">Moje zastávky</h2><span class="section-count" id="owned-count">0</span><span class="disclosure-chevron" aria-hidden="true"></span></summary>
       <div class="owned-list" id="owned-list"></div>
-    </section>
-    <section class="profile-section" aria-labelledby="player-events-title">
-      <div class="profile-section-heading"><h2 id="player-events-title">Moje události</h2><span class="section-count" id="events-count"></span></div>
+    </details>
+    <details class="profile-section compact-disclosure" id="events-section">
+      <summary class="profile-section-heading"><h2 id="player-events-title">Moje události</h2><span class="section-count" id="events-count"></span><span class="disclosure-chevron" aria-hidden="true"></span></summary>
       <div id="events" class="events"></div>
       <button type="button" id="events-expand" class="history-expand" aria-expanded="false">Zobrazit další události</button>
-    </section>
+    </details>
     <section class="profile-section profile-settings" aria-label="Testovací režim">
       <h2>Testovací režim</h2><label for="player">Testovací hráč</label><select id="player" aria-label="Testovací hráč"></select>
       <p class="muted">Testovací účty sdílejí stav jen v tomto prohlížeči.</p>
@@ -129,14 +129,14 @@
  </section>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="map-style.js?v=ui-v2"></script>
-<script src="pid-prague.js?v=ui-v2"></script>
-<script src="pid-strategic.js?v=ui-v2"></script>
-<script src="pid-owner-boundaries.js?v=ui-v2"></script>
-<script src="demo-world.js?v=ui-v2"></script>
+<script src="map-style.js?v=ui-v3"></script>
+<script src="pid-prague.js?v=ui-v3"></script>
+<script src="pid-strategic.js?v=ui-v3"></script>
+<script src="pid-owner-boundaries.js?v=ui-v3"></script>
+<script src="demo-world.js?v=ui-v3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7.2.0/turf.min.js"></script>
-<script src="stop-map.js?v=ui-v2"></script>
-<script src="scoring.js?v=ui-v2"></script>
-<script src="stop-card.js?v=ui-v2"></script>
-<script src="app.js?v=ui-v2" defer></script>
+<script src="stop-map.js?v=ui-v3"></script>
+<script src="scoring.js?v=ui-v3"></script>
+<script src="stop-card.js?v=ui-v3"></script>
+<script src="app.js?v=ui-v3" defer></script>
 </body></html>
