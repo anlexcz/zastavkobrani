@@ -9,13 +9,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<link rel="stylesheet" href="style.css?v=economy-v3">
+<link rel="stylesheet" href="style.css?v=ui-v1">
 </head>
 <body>
 <div id="map" role="region" aria-label="Mapa herních zastávek Prahy"></div><div id="map-error" class="map-error" hidden></div>
 <header class="topbar">
   <div class="brand">Zastávkobraní <small>ALPHA</small></div>
-  <label class="player-choice"><span>Hráč</span><select id="player" aria-label="Testovací hráč"></select></label>
+  <div class="ap-panel" aria-label="Zbývající akční body"><span>AP</span><strong id="ap-map">10 / 10</strong></div>
 </header>
 <button id="gps-toggle" class="gps-toggle" type="button" aria-pressed="false" title="Zapnout GPS">◎ <span>Zapnout GPS</span></button>
 <div id="gps-status" class="gps-status" role="status" aria-live="polite" hidden></div>
@@ -32,7 +32,7 @@
     <small>Území jsou pouze vizuální, ne GPS dosah.</small>
   </div>
 </div>
-<div class="test-label">TESTOVACÍ DATA LINKY 22 · LOKÁLNÍ DEMO</div><div class="ap-panel"><span>Akční body</span><strong id="ap-map">10 / 10</strong></div>
+<div class="test-label">TESTOVACÍ DATA LINKY 22 · LOKÁLNÍ DEMO</div>
 <nav class="nav" aria-label="Herní nabídka">
   <button type="button" data-screen="map" class="active">Mapa</button>
   <button type="button" data-screen="daily">Zastávka dne</button>
@@ -54,27 +54,33 @@
         <div class="stop-confirm-buttons"><button class="primary" id="confirm-yes">Ano</button><button id="confirm-no">Ne</button></div>
       </div>
     </div>
+    <div class="daily-stop-action" id="daily-stop-action" hidden><button type="button" id="daily-visit" disabled>Splnit zastávku dne</button><small id="daily-stop-hint"></small></div>
     <div class="stop-location" id="stop-location" aria-live="polite"><span id="stop-location-status">Poloha nedostupná</span><strong id="stop-distance">—</strong><button type="button" id="stop-request-location">Povolit polohu</button></div>
     <section class="stop-history" aria-label="Historie zastávky"><button type="button" id="stop-history-open" class="stop-history-trigger"><span>Historie zastávky</span><span class="stop-history-meta"><span id="stop-history-count">0 událostí</span><span aria-hidden="true">›</span></span></button></section><p id="message" class="message" aria-live="polite"></p>
   </div>
   <div class="screen" id="screen-daily" hidden>
     <div class="eyebrow">Denní výzva</div><h1>Zastávka dne</h1>
-    <h2 id="challenge"></h2><p id="challengeinfo" class="muted"></p>
-    <button id="show-challenge" class="primary">Ukázat na mapě</button>
-    <button id="visit" disabled>Splnit návštěvu</button>
+    <div class="daily-feature"><div class="daily-feature-label">Dnešní zastávka</div><h2 id="challenge"></h2>
+      <span class="daily-time-label">Do konce herního dne</span><strong class="daily-countdown" id="challenge-countdown">—</strong>
+      <p id="challengeinfo" class="daily-status"></p><button id="show-challenge" class="primary">Ukázat na mapě</button>
+    </div>
+    <div class="daily-history-head"><h2>Historie zastávek dne</h2><small>Posledních 30 dní</small></div>
+    <div id="daily-history" class="daily-history"></div><button id="daily-history-expand" type="button" class="history-expand" aria-expanded="false">Zobrazit celou historii</button>
   </div>
   <div class="screen" id="screen-ranking" hidden>
-    <div class="eyebrow">Posledních 30 herních dní</div><h1>Pořadí hráčů</h1>
-    <div id="leaderboard"></div>
+    <div class="eyebrow">Srovnání hráčů</div><h1>Žebříček</h1>
+    <div class="ranking-switch" role="group" aria-label="Období bodového žebříčku"><button type="button" data-ranking-period="30" aria-pressed="true">Posledních 30 dní</button><button type="button" data-ranking-period="all" aria-pressed="false">Celkem</button></div>
+    <div class="ranking-table-wrap"><table class="ranking-table"><thead><tr><th scope="col">#</th><th scope="col">Hráč</th><th scope="col">Body</th><th scope="col"><abbr title="Aktuálně vlastněné zastávky">Zast.</abbr></th></tr></thead><tbody id="leaderboard"></tbody></table></div>
   </div>
   <div class="screen" id="screen-profile" hidden>
-    <div class="eyebrow">Testovací účet</div><h1 id="profile">Hráč</h1>
+    <div class="eyebrow">Profil a nastavení</div><h1 id="profile">Hráč</h1>
     <div class="stats">
       <div><strong id="remaining">10/10</strong><span>Akční body dnes</span></div>
       <div><strong id="owned">0</strong><span>Moje zastávky</span></div>
       <div><strong id="points">0</strong><span>Celkem bodů</span></div>
     </div>
     <p id="clock" class="muted"></p>
+    <div class="profile-settings"><h2>Nastavení testu</h2><label for="player">Testovací hráč</label><select id="player" aria-label="Testovací hráč"></select><p class="muted">Údaje jsou uložené pouze v tomto prohlížeči.</p></div>
     <div class="eyebrow">Nedávné události</div><div id="events" class="events"></div>
     <button id="reset" class="danger">Resetovat testovací hru</button>
   </div>
@@ -92,14 +98,14 @@
  </section>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="map-style.js?v=economy-v3"></script>
-<script src="pid-prague.js?v=economy-v3"></script>
-<script src="pid-strategic.js?v=economy-v3"></script>
-<script src="pid-owner-boundaries.js?v=economy-v3"></script>
-<script src="demo-world.js?v=economy-v3"></script>
+<script src="map-style.js?v=ui-v1"></script>
+<script src="pid-prague.js?v=ui-v1"></script>
+<script src="pid-strategic.js?v=ui-v1"></script>
+<script src="pid-owner-boundaries.js?v=ui-v1"></script>
+<script src="demo-world.js?v=ui-v1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7.2.0/turf.min.js"></script>
-<script src="stop-map.js?v=economy-v3"></script>
-<script src="scoring.js?v=economy-v3"></script>
-<script src="stop-card.js?v=economy-v3"></script>
-<script src="app.js?v=economy-v3" defer></script>
+<script src="stop-map.js?v=ui-v1"></script>
+<script src="scoring.js?v=ui-v1"></script>
+<script src="stop-card.js?v=ui-v1"></script>
+<script src="app.js?v=ui-v1" defer></script>
 </body></html>
