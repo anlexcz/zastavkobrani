@@ -64,6 +64,9 @@ function init(withSeed=true){
 }
 function load(){try{const x=JSON.parse(localStorage.getItem(STORAGE));if(x&&x.version===2&&x.stops&&Array.isArray(x.ledger))return x;}catch(e){}return init()}
 let state=load(),selectedStop=null;
+// GPS stav je dostupný už při prvním renderování aplikace.
+let gpsBusy=false,gpsPermissionDenied=false;
+let gpsWatch=null,gpsMarker=null,gpsPosition=null;
 function persist(){localStorage.setItem(STORAGE,JSON.stringify(state))}
 function award(player,amount,type,day=gameDay()){state.ledger.push({player,amount,type,day,at:new Date().toISOString()})}
 function captureScore(s){let vals=[...new Set(s.cats.map(c=>c==="urban_bus"||c==="regional_bus"?"bus":c))].map(c=>BASE[c]||0).sort((a,b)=>b-a);return vals.length?vals[0]+vals.slice(1).reduce((a,b)=>a+b/2,0):0}
@@ -189,8 +192,6 @@ $("events").innerHTML=state.events.slice(0,8).map(e=>'<div class="listrow">'+e.t
 $("player").innerHTML=PLAYERS.map(p=>'<option value="'+p.id+'">'+p.name+'</option>').join("");
 $("player").addEventListener("change",e=>{state.selected=e.target.value;confirmingCapture=false;persist();note("");render()});
 // GPS kontrolujeme vždy novým měřením v okamžiku akce; poloha z mapy nestačí.
-let gpsBusy=false;
-let gpsPermissionDenied=false;
 const GPS_STALE_MS=15000;
 function formatStopDistance(distance){
   if(distance<1000)return Math.round(distance)+" m";
@@ -310,7 +311,6 @@ setInterval(()=>{
 setInterval(()=>{render()},5000);
 
 // Vizuální sledování GPS. Akce samostatně vyžadují nové přesné měření.
-let gpsWatch=null, gpsMarker=null, gpsPosition=null;
 const gpsButton=$("gps-toggle"), gpsStatus=$("gps-status");
 function gpsMessage(text) {gpsStatus.hidden=!text;gpsStatus.textContent=text;}
 function accuracyPolygon(lng,lat,radius) {
@@ -349,12 +349,10 @@ function gpsError(error){
   gpsPosition=null;
   render();
   gpsMessage(({1:"Přístup k GPS byl zamítnut.",2:"GPS polohu nelze určit.",3:"Časový limit GPS vypršel."})[error.code]||"GPS není dostupná.");
-  if(error.code===1) {
-    if(gpsWatch!==null)navigator.geolocation.clearWatch(gpsWatch);
-    gpsWatch=null;
-    gpsButton.setAttribute("aria-pressed","false");
-    gpsButton.querySelector("span").textContent="Zapnout GPS";
-  }
+  if(gpsWatch!==null)navigator.geolocation.clearWatch(gpsWatch);
+  gpsWatch=null;
+  gpsButton.setAttribute("aria-pressed","false");
+  gpsButton.querySelector("span").textContent="Zapnout GPS";
 }
 function requestGps(){
   gpsPermissionDenied=false;
