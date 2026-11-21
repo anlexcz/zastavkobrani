@@ -51,3 +51,19 @@ test("Lokální herní model nevlastní DOM a zachová datový formát",async()=
  assert.equal(model.total("p1"),24);
  assert.equal(writes,0);
 });
+
+test("Moduly všech obrazovek a řadičů lze samostatně importovat",async()=>{
+ const modules={
+  "../js/screens/stop.js":"createStopScreen",
+  "../js/screens/daily.js":"createDailyScreen",
+  "../js/screens/ranking.js":"createRankingScreen",
+  "../js/screens/profile.js":"createProfileScreen",
+  "../js/game-actions.js":"createGameActions",
+  "../js/gps-controller.js":"createGpsController",
+  "../js/ui.js":"createMapLayerControls"
+ };
+ for(const [path,name] of Object.entries(modules)){
+  const module=await import(path);
+  assert.equal(typeof module[name],"function",path+"."+name);
+ }
+});
