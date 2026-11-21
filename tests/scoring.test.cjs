@@ -40,6 +40,10 @@ test("Den akce nula, sedm plných dnů a pokles do nuly",()=>{
 });
 test("Rozpis, historie a AP na mapě jsou propojené",()=>{
  assert.match(html,/id="stop-history-list"/);
+ assert.match(html,/id="stop-history-open"/);
+ assert.match(html,/id="history-dialog-overlay"/);
+ assert.match(app,/function showHistoryDetail/);
+ assert.match(app,/function closeHistoryDetail/);
  assert.match(html,/id="ap-map"/);
  assert.match(app,/function renderStopHistory/);
  assert.match(app,/function spentAP/);
