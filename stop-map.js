@@ -2,6 +2,7 @@
 // GeoJSON vrstvy pevně přivázané k souřadnicím. Žádné HTML markery,
 // které by zdědily CSS tlačítek a při zoomu se pohybovaly mimo geometrii.
 const PLATFORM_ZOOM = 16;
+const CAPTURE_CIRCLE_ZOOM = 16;
 const TERRITORY_AREA_ZOOM = 15.2;
 let stopMapInitialized = false;
 let clusterPlayers = [];
@@ -11,6 +12,8 @@ let currentOwnership = {};
 const areaGeometryCache = new Map();
 const territoryBounds = new Map();
 let areaGeneration = 0;
+let selectedCaptureTerritory = null;
+const captureCircleGeometryCache = new Map();
 
 // Různé výřezy mapy sdílejí stejné agregace; ikony se generují jen na požádání.
 const CLUSTER_ICON_PREFIX = "owner-ring:";
@@ -20,7 +23,7 @@ const CLUSTER_VISIBLE_ZOOM = 11.6;
 // Neprovádíme přepínání zdroje při změně zoomu (dříve mezera 11,6–16).
 const STOP_DOTS_MIN_ZOOM = 0;
 const MAP_OVERLAY_LAYER_IDS = Object.freeze({
-  stops:["game-territory","game-cluster","game-cluster-count","game-territory-label","game-platform","game-platform-metro","game-platform-label"],
+  stops:["game-territory","game-cluster","game-cluster-count","game-territory-label","game-platform","game-platform-metro","game-platform-label","game-capture-radius-fill","game-capture-radius-outline"],
   polygons:["game-strategic-fill","game-owner-border-glow","game-owner-border","game-owner-border-highlight","game-territory-area-fill","game-territory-area-outline"]
 });
 let mapOverlayState = {stops:true,polygons:true};
@@ -33,6 +36,7 @@ function setMapOverlayVisibility(map, next) {
     }
   }
   if(mapOverlayState.polygons)refreshVisibleAreas(map);
+  refreshVisibleCaptureCircles(map);
   else {
     areaGeneration++;
     // Vypnutí oblastí zároveň zastaví nákladné výpočty GPS náhledů.
@@ -55,6 +59,41 @@ function meterCircle(lon,lat,meters) {
     coords.push([lon+Math.cos(angle)*meters/lonScale,lat+Math.sin(angle)*meters/latScale]);
   }
   return {type:"Polygon",coordinates:[coords]};
+}
+
+// Skutečné 30m kruhy kolem každého povrchového PID bodu pro terénní test.
+// Jsou odlišné od 390m strategických polygonů i od kruhu přesnosti telefonu.
+// Dosud neschválená PID místa se zde pouze zobrazují, nikoli schvalují.
+function refreshVisibleCaptureCircles(map) {
+  const source=map.getSource("game-capture-radii");
+  if(!source || !map.getZoom || !map.getBounds)return;
+  if(!mapOverlayState.stops || map.getZoom()<CAPTURE_CIRCLE_ZOOM){
+    source.setData(geoCollection([]));
+    return;
+  }
+  const bounds=map.getBounds(),margin=.0006,features=[];
+  for(const stop of territoryPoints){
+    const extent=territoryBounds.get(stop.id);
+    if(!extent||extent.east<bounds.getWest()-margin ||
+      extent.west>bounds.getEast()+margin ||
+      extent.north<bounds.getSouth()-margin ||
+      extent.south>bounds.getNorth()+margin)continue;
+    for(const point of stop.points){
+      // Stejná množina bodů, kterou používá klientská kontrola GPS.
+      if(point.isMetro || !point.insidePrague)continue;
+      if(point.lon<bounds.getWest()-margin || point.lon>bounds.getEast()+margin ||
+        point.lat<bounds.getSouth()-margin || point.lat>bounds.getNorth()+margin)continue;
+      let geometry=captureCircleGeometryCache.get(point.id);
+      if(!geometry){
+        geometry=meterCircle(point.lon,point.lat,30);
+        captureCircleGeometryCache.set(point.id,geometry);
+      }
+      features.push({type:"Feature",geometry,properties:{
+        territoryId:stop.id,pointId:point.id,approved:!!point.captureEnabled
+      }});
+    }
+  }
+  source.setData(geoCollection(features));
 }
 
 // Clustering počítá herní zastávky, nikoliv jednotlivá PID stanoviště.
@@ -239,6 +278,7 @@ function installStopMap(map, territories, showTerritory, players=[], ownership={
   });
   map.addSource("game-platforms",{type:"geojson",data:platformFeatures});
   map.addSource("game-territory-areas",{type:"geojson",data:geoCollection([])});
+  map.addSource("game-capture-radii",{type:"geojson",data:geoCollection([])});
   map.addLayer({id:"game-strategic-fill",type:"fill",source:"game-strategic",
     maxzoom:STRATEGIC_MAX_ZOOM,
     paint:{"fill-color":["get","color"],
@@ -273,6 +313,17 @@ function installStopMap(map, territories, showTerritory, players=[], ownership={
   map.addLayer({id:"game-territory-area-outline",type:"line",
     source:"game-territory-areas",minzoom:TERRITORY_AREA_ZOOM,
     paint:{"line-color":["get","color"],"line-opacity":.38,"line-width":1.15}});
+  // Přesný herní dosah. Výplň je slabá, obrys zřetelný i na tmavém podkladu.
+  // Překryvy kruhů zůstanou viditelné; samotné body leží nad nimi.
+  map.addLayer({id:"game-capture-radius-fill",type:"fill",
+    source:"game-capture-radii",minzoom:CAPTURE_CIRCLE_ZOOM,
+    paint:{"fill-color":"#85c9df",
+      "fill-opacity":["case",["==",["get","territoryId"],""],.19,.105]}});
+  map.addLayer({id:"game-capture-radius-outline",type:"line",
+    source:"game-capture-radii",minzoom:CAPTURE_CIRCLE_ZOOM,
+    paint:{"line-color":"#b7e4f0",
+      "line-opacity":.9,
+      "line-width":["interpolate",["linear"],["zoom"],16,1.5,18,2.1,20,2.5]}});
   map.on("styleimagemissing",event=>createRingIcon(event.id,map,players));
   map.addLayer({id:"game-territory",type:"circle",source:"game-stop-points",
     minzoom:STOP_DOTS_MIN_ZOOM,
@@ -311,8 +362,12 @@ function installStopMap(map, territories, showTerritory, players=[], ownership={
       "text-anchor":"top","text-optional":true},
     paint:{"text-color":"#f0f0f0","text-halo-color":"#181a1c","text-halo-width":1.1}});
 
-  map.on("moveend",()=>refreshVisibleAreas(map));
+  map.on("moveend",()=>{
+    refreshVisibleAreas(map);
+    refreshVisibleCaptureCircles(map);
+  });
   refreshVisibleAreas(map);
+  refreshVisibleCaptureCircles(map);
   const selectFeature=e=>{
     const p=e.features?.[0]?.properties;
     if(!p?.territoryId)return;
@@ -357,6 +412,14 @@ function refreshStopMapColors(map,ownership,players,selectedId) {
     }))));
     refreshVisibleAreas(map);
   }
+  selectedCaptureTerritory=selectedId||null;
+  const selectedExpression=["==",["get","territoryId"],selectedCaptureTerritory||""];
+  map.setPaintProperty("game-capture-radius-fill","fill-opacity",
+    ["case",selectedExpression,.24,.105]);
+  map.setPaintProperty("game-capture-radius-outline","line-opacity",
+    ["case",selectedExpression,1,.86]);
+  map.setPaintProperty("game-capture-radius-outline","line-color",
+    ["case",selectedExpression,"#e2faff","#a6d6e5"]);
   // Výplň čte flag owned přímo z GeoJSON – žádný 1000položkový match výraz.
   map.setPaintProperty("game-territory-area-outline","line-opacity",
     ["case",["==",["get","territoryId"],selectedId||""],.85,
