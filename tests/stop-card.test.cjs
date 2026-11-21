@@ -91,3 +91,37 @@ test("Potvrzení obsazení je součástí jedné akční oblasti",()=>{
  assert.match(html,/id="stop-confirm"/);
  assert.match(app,/classList\.toggle\("is-confirming"/);
 });
+
+test("Karta zobrazí odpočet zániku až v sestupné fázi",()=>{
+ const record={owner:"p1",anchor:"2026-11-01"};
+ const base={...args,record,gameDay:"2026-11-10",diffDays:()=>9,
+   expiresAt:"2026-11-16T02:00:00Z",now:Date.parse("2026-11-10T12:00:00Z")};
+ const html=ctx.card(base);
+ assert.match(html,/Do zániku bez údržby/);
+ assert.match(html,/data-expiry-countdown="2026-11-16T02:00:00Z"/);
+ const full=ctx.card({...base,diffDays:()=>4});
+ assert.doesNotMatch(full,/Do zániku bez údržby/);
+});
+test("Nové stránky mají přepínač žebříčku a splnění denní výzvy pouze na kartě",()=>{
+ assert.match(html,/data-ranking-period="30"/);
+ assert.match(html,/data-ranking-period="all"/);
+ assert.match(html,/id="daily-history"/);
+ assert.match(html,/id="daily-history-expand"/);
+ assert.match(html,/id="daily-visit"/);
+ assert.doesNotMatch(html,/id="visit"/);
+ assert.match(app,/function renderDailyHistory/);
+ assert.match(app,/function renderRanking/);
+ assert.match(app,/\$\("daily-visit"\)\.onclick=\(\)=>doGpsAction\("visit"\)/);
+ assert.match(app,/const isDailyStop=!!s&&s\.id===challenge\?\.id/);
+});
+test("Pražské uzávěrky respektují zimní i letní čas",()=>{
+ const start=app.indexOf("function pragueBoundaryUtc(day){");
+ const end=app.indexOf("function init(withSeed=true){",start);
+ assert.ok(start>=0&&end>start);
+ const context={};
+ vm.runInNewContext(app.slice(start,end)+"\nthis.boundary=pragueBoundaryUtc",context);
+ assert.equal(context.boundary("2026-01-15"),"2026-01-15T02:00:00.000Z");
+ assert.equal(context.boundary("2026-07-15"),"2026-07-15T01:00:00.000Z");
+ assert.equal(context.boundary("2026-03-29"),"2026-03-29T01:00:00.000Z");
+ assert.equal(context.boundary("2026-10-25"),"2026-10-25T02:00:00.000Z");
+});
