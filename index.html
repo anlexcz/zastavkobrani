@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<link rel="stylesheet" href="style.css?v=gps26score">
+<link rel="stylesheet" href="style.css?v=ap22history1">
 </head>
 <body>
 <div id="map" role="region" aria-label="Mapa herních zastávek Prahy"></div><div id="map-error" class="map-error" hidden></div>
@@ -32,7 +32,7 @@
     <small>Území jsou pouze vizuální, ne GPS dosah.</small>
   </div>
 </div>
-<div class="test-label">GPS TEST · bez denního limitu · 2 hráči</div>
+<div class="test-label">TESTOVACÍ DATA LINKY 22 · LOKÁLNÍ DEMO</div><div class="ap-panel"><span>Akční body</span><strong id="ap-map">10 / 10</strong></div>
 <nav class="nav" aria-label="Herní nabídka">
   <button type="button" data-screen="map" class="active">Mapa</button>
   <button type="button" data-screen="daily">Zastávka dne</button>
@@ -55,7 +55,7 @@
       </div>
     </div>
     <div class="stop-location" id="stop-location" aria-live="polite"><span id="stop-location-status">Poloha nedostupná</span><strong id="stop-distance">—</strong><button type="button" id="stop-request-location">Povolit polohu</button></div>
-    <p id="message" class="message" aria-live="polite"></p>
+    <section class="stop-history" aria-label="Historie zastávky"><h2>Historie zastávky</h2><div id="stop-history-list"></div></section><p id="message" class="message" aria-live="polite"></p>
   </div>
   <div class="screen" id="screen-daily" hidden>
     <div class="eyebrow">Denní výzva</div><h1>Zastávka dne</h1>
@@ -70,7 +70,7 @@
   <div class="screen" id="screen-profile" hidden>
     <div class="eyebrow">Testovací účet</div><h1 id="profile">Hráč</h1>
     <div class="stats">
-      <div><strong id="remaining">∞</strong><span>Obsazení (test)</span></div>
+      <div><strong id="remaining">10/10</strong><span>Akční body dnes</span></div>
       <div><strong id="owned">0</strong><span>Moje zastávky</span></div>
       <div><strong id="points">0</strong><span>Celkem bodů</span></div>
     </div>
@@ -86,14 +86,14 @@
   </section>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="map-style.js?v=gps26score"></script>
-<script src="pid-prague.js?v=gps26score"></script>
-<script src="pid-strategic.js?v=gps26score"></script>
-<script src="pid-owner-boundaries.js?v=gps26score"></script>
-<script src="demo-world.js?v=gps26score"></script>
+<script src="map-style.js?v=ap22history1"></script>
+<script src="pid-prague.js?v=ap22history1"></script>
+<script src="pid-strategic.js?v=ap22history1"></script>
+<script src="pid-owner-boundaries.js?v=ap22history1"></script>
+<script src="demo-world.js?v=ap22history1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7.2.0/turf.min.js"></script>
-<script src="stop-map.js?v=gps26score"></script>
-<script src="scoring.js?v=gps26score"></script>
-<script src="stop-card.js?v=gps26score"></script>
-<script src="app.js?v=gps26score" defer></script>
+<script src="stop-map.js?v=ap22history1"></script>
+<script src="scoring.js?v=ap22history1"></script>
+<script src="stop-card.js?v=ap22history1"></script>
+<script src="app.js?v=ap22history1" defer></script>
 </body></html>
