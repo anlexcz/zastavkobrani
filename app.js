@@ -261,6 +261,7 @@ document.addEventListener("keydown",event=>{
 for(const b of document.querySelectorAll(".nav button")) b.onclick=()=>openScreen(b.dataset.screen);
 $("show-challenge").onclick=()=>{
   const s=challengeStop();
+  if(!s)return;
   selectedStop=s.id;selectedPlatform=null;
   map.flyTo({center:[s.lon,s.lat],zoom:15});
   openScreen("stop");
@@ -381,8 +382,19 @@ $("capture").hidden=mine||confirmingCapture;
 $("actions").classList.toggle("is-confirming",confirmingCapture&&!mine);
 $("confirm-yes").disabled=captureTimeBlocked||!locationState.ok||gpsBusy;
 $("stop-location").hidden=activeScreen!=="stop";
-const challenge=challengeStop();$("challenge").textContent=challenge.name;$("challengeinfo").textContent=visitsFor(state.selected)?"Dnešní výzva splněna.":"Jedna společná zastávka pro všechny hráče · návštěva vyžaduje GPS.";$("visit").disabled=selectedStop!==challenge.id||visitsFor(state.selected);
-$("leaderboard").innerHTML=PLAYERS.slice().sort((a,b)=>total(b.id,30)-total(a.id,30)).map(p=>'<div class="listrow"><span><span style="color:'+p.color+'">●</span> '+p.name+'</span> <b>'+total(p.id,30)+' b.</b></div>').join("");
+const challenge=challengeStop(),done=visitsFor(state.selected);
+$("challenge").textContent=challenge?.name||"Není dostupná";
+$("challengeinfo").textContent=done?"Dnes splněno":"Zatím nesplněno";
+$("challengeinfo").classList.toggle("is-done",done);
+$("challenge-countdown").textContent=stopCountdown(nextGameBoundary());
+$("show-challenge").disabled=!challenge;
+const isDailyStop=!!s&&s.id===challenge?.id;
+$("daily-stop-action").hidden=!isDailyStop;
+$("daily-visit").disabled=!isDailyStop||done||!locationState.ok||gpsBusy;
+$("daily-visit").textContent=done?"Dnes splněno":"Splnit zastávku dne";
+$("daily-stop-hint").textContent=done?"Návštěva byla zaznamenána.":"Samostatná GPS návštěva · 0 AP";
+if(activeScreen==="daily")renderDailyHistory();
+renderRanking();
 $("events").innerHTML=state.events.slice(0,8).map(e=>'<div class="listrow">'+e.text+'</div>').join("")||"Zatím žádné události.";}
 $("player").innerHTML=PLAYERS.map(p=>'<option value="'+p.id+'">'+p.name+'</option>').join("");
 $("player").addEventListener("change",e=>{state.selected=e.target.value;confirmingCapture=false;persist();note("");render()});
@@ -489,7 +501,7 @@ $("confirm-yes").onclick=()=>{
   if(!$("capture").disabled)doGpsAction("capture");
 };
 $("maintain").onclick=()=>doGpsAction("maintain");
-$("visit").onclick=()=>{selectedStop=challengeStop().id;doGpsAction("visit");};
+$("daily-visit").onclick=()=>doGpsAction("visit");
 $("reset").onclick=()=>{if(!confirm("Opravdu resetovat testovací data linky 22?"))return;localStorage.removeItem(STORAGE);state=init(true);persist();selectedStop=null;note("Test byl vynulován.");openScreen("profile")};
 window.addEventListener("storage",e=>{if(e.key===STORAGE){state=load();render()}});render();
 setInterval(()=>{
@@ -504,6 +516,10 @@ setInterval(()=>{
       $("capture").textContent="Převzetí za "+stopCountdown(record.protectedUntil);
     }else if(counter&&remainingMs<=0)render();
   }
+},1000);
+setInterval(()=>{
+ if(activeScreen==="daily")$("challenge-countdown").textContent=stopCountdown(nextGameBoundary());
+ if(activeScreen==="stop"&&selectedStop){const e=$("stopdetail").querySelector("[data-expiry-countdown]");if(e)e.textContent=stopCountdown(e.dataset.expiryCountdown);}
 },1000);
 setInterval(()=>{render()},5000);
 
