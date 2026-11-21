@@ -1,0 +1,58 @@
+name: Generate daily-stop calendar
+
+on:
+  schedule:
+    # 04:17 UTC je bezpečně po pražské uzávěrce 03:00 v zimě i v létě.
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - data/daily-stops.overrides.json
+      - scripts/generate-daily-stops.cjs
+      - pid-prague.js
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: daily-stop-calendar-main
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Generate calendar and validate overrides
+        run: |
+          node scripts/generate-daily-stops.cjs
+          node --test tests/daily-stops.test.cjs
+      - name: Commit generated calendar if it changed
+        id: commit
+        run: |
+          if git diff --quiet -- data/daily-stops.generated.json js/daily-stops.generated.js; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Calendar is already current"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/daily-stops.generated.json js/daily-stops.generated.js
+          git commit -m "chore(daily): extend published stop-of-the-day calendar"
+          git push origin HEAD:main
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+      - name: Request Pages rebuild for bot-generated commit
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # GITHUB_TOKEN pushes themselves do not initiate GitHub Pages builds.
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/pages/builds" >/dev/null
