@@ -62,9 +62,9 @@ function init(withSeed=true){
   const previous=owner==="p1"?"p2":"p1";
   const past=new Date(date.getTime()-3*86400000);
   const pastDay=gameDay(past),captureDay=gameDay(date);
-  events.push({action:"capture",stopId:stop.id,player:previous,day:pastDay,at:past.toISOString(),previousOwner:null,
+  events.push({action:"capture",stopId:stop.id,player:previous,day:pastDay,at:past.toISOString(),previousOwner:null,points:captureScore(stop,true),
    text:PLAYERS.find(p=>p.id===previous).name+" obsadil/a "+stop.name,seed:true});
-  events.push({action:"capture",stopId:stop.id,player:owner,day:captureDay,at:date.toISOString(),previousOwner:previous,
+  events.push({action:"capture",stopId:stop.id,player:owner,day:captureDay,at:date.toISOString(),previousOwner:previous,points:captureScore(stop),
    text:PLAYERS.find(p=>p.id===owner).name+" převzal/a "+stop.name,seed:true});
   stops[stop.id]={owner,anchor:captureDay,capturedAt:date.toISOString(),protectedUntil:new Date(date.getTime()+86400000).toISOString()};
   ledger.push({player:previous,amount:captureBreakdown(stop,{neutral:true}).total,type:"capture",day:pastDay,at:past.toISOString(),seed:true});
@@ -274,7 +274,7 @@ function showHistoryDetail(){
   const old=PLAYERS.find(p=>p.id===e.previousOwner)?.name;
   const label=e.action==="maintain"?"Údržba · "+who:e.action==="expire"?"Uvolnění do neutrality":old?"Převzetí · "+old+" → "+who:"Obsazení · "+who;
   const time=new Intl.DateTimeFormat("cs-CZ",{timeZone:"Europe/Prague",day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"}).format(new Date(e.at));
-  const meta=[e.apCost?"−"+e.apCost+" AP":null,e.seed?"Testovací záznam":null].filter(Boolean).join(" · ");
+  const meta=[Number.isFinite(e.points)?"+"+e.points+" bodů":null,e.apCost?"−"+e.apCost+" AP":null,e.seed?"Testovací záznam":null].filter(Boolean).join(" · ");
   return '<div class="history-item"><div class="history-item-head"><strong>'+escapeStopText(label)+'</strong><time>'+escapeStopText(time)+'</time></div>'+
    (meta?'<small>'+escapeStopText(meta)+'</small>':'')+'</div>';
  }).join(""):'<p class="stop-history-empty">Zatím žádná historie.</p>';
@@ -413,7 +413,7 @@ async function doGpsAction(action){
       const previous=state.stops[stop.id]?.owner||null;
       state.stops[stop.id]={owner:startingPlayer,anchor:day,capturedAt:now.toISOString(),protectedUntil:new Date(now.getTime()+86400000).toISOString()};
       const points=captureScore(stop,!previous),apCost=actionCost(stop,"capture",!!previous);award(startingPlayer,points,"capture");
-      state.events.unshift({action:"capture",stopId:stop.id,player:startingPlayer,day,at:now.toISOString(),previousOwner:previous,apCost,text:player.name+(previous?" převzal/a ":" obsadil/a ")+stop.name+" (+"+points+" b., −"+apCost+" AP)"});
+      state.events.unshift({action:"capture",stopId:stop.id,player:startingPlayer,day,at:now.toISOString(),previousOwner:previous,apCost,points,text:player.name+(previous?" převzal/a ":" obsadil/a ")+stop.name+" (+"+points+" b., −"+apCost+" AP)"});
     }else if(action==="maintain"){
       state.stops[stop.id].anchor=day;
       state.stops[stop.id].protectedUntil=new Date(now.getTime()+86400000).toISOString();
