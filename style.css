@@ -230,3 +230,53 @@ button.danger {margin-top:22px;color:#ffc2bc}
 .history-item small{display:block;margin-top:5px;color:var(--muted);font-size:.73rem}
 .score-detail-explanation{font-size:.79rem;color:var(--muted);line-height:1.55;margin:14px 0 0}
 @media(max-width:450px){.history-item-head{flex-direction:column;gap:4px}}
+
+/* Alpha UI: nové obrazovky používají stávající tokeny, typografii i panely. */
+.topbar .ap-panel{position:static;z-index:auto;top:auto;right:auto;box-shadow:none;background:var(--panel-2);padding:6px 11px;border-radius:9px;gap:8px;white-space:nowrap}
+.topbar .ap-panel span{color:var(--muted);font-size:.8rem;font-weight:600}
+.topbar .ap-panel strong{font-size:1rem;font-family:Inter,system-ui,sans-serif;font-weight:700}
+.daily-stop-action{display:grid;gap:5px;margin-top:4px}
+.daily-stop-action[hidden]{display:none}
+.daily-stop-action button{min-height:42px;width:100%;background:transparent;border:1px solid #71767c;color:var(--text);font-weight:600;font-size:.82rem}
+.daily-stop-action button:disabled{opacity:.5}
+.daily-stop-action small{font-size:.7rem;color:var(--muted);text-align:center}
+.stop-expiry{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:.78rem;color:var(--muted)}
+.stop-expiry strong{color:#f3c0a9;font-variant-numeric:tabular-nums;white-space:nowrap}
+.daily-feature{display:grid;gap:9px;padding:18px 0 22px}
+.daily-feature h2{font-size:2.3rem;margin:0;line-height:1.1}
+.daily-feature-label{font-size:.73rem;text-transform:uppercase;letter-spacing:.075em;color:var(--muted)}
+.daily-time-label{font-size:.78rem;color:var(--muted);margin-top:10px}
+.daily-countdown{font-family:"Bebas Neue",sans-serif;font-size:2.5rem;line-height:1;font-variant-numeric:tabular-nums;font-weight:400;letter-spacing:.04em}
+.daily-status{display:flex;align-items:center;gap:8px;margin:5px 0 7px;color:var(--muted);font-size:.88rem;font-weight:600}
+.daily-status:before{content:"";display:block;width:10px;height:10px;border-radius:50%;border:1px solid currentColor}
+.daily-status.is-done{color:#80c9a0}.daily-status.is-done:before{background:#80c9a0}
+.daily-feature .primary{width:100%;min-height:46px}
+.daily-history-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;border-top:1px solid var(--line);padding-top:16px}
+.daily-history-head h2{font:600 .93rem/1.4 Inter,system-ui,sans-serif;margin:0}
+.daily-history-head small{color:var(--muted);font-size:.72rem;white-space:nowrap}
+.daily-history-item{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.daily-history-item>div{display:grid;gap:2px;min-width:0}
+.daily-history-item time{font-size:.72rem;color:var(--muted)}
+.daily-history-item strong{font-size:.87rem;font-weight:600;overflow-wrap:anywhere}
+.daily-history-result{font-size:.75rem;white-space:nowrap;color:var(--muted)}
+.daily-history-result.is-done{color:#80c9a0}
+.history-expand{border:0;background:transparent;width:100%;margin:10px 0 0;padding:12px;color:var(--muted);font-size:.82rem}
+.history-expand[hidden]{display:none}
+.ranking-switch{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:var(--panel-2);border-radius:10px;margin:14px 0 16px}
+.ranking-switch button{padding:9px 5px;background:transparent;border:0;font-size:.79rem;color:var(--muted);font-weight:600}
+.ranking-switch button[aria-pressed="true"]{background:#45494e;color:var(--text)}
+.ranking-table-wrap{overflow-x:auto}
+.ranking-table{width:100%;border-collapse:collapse;font-size:.83rem;font-variant-numeric:tabular-nums}
+.ranking-table th{font-size:.72rem;font-weight:600;color:var(--muted);text-align:left;padding:8px 5px;border-bottom:1px solid var(--line)}
+.ranking-table td{padding:13px 5px;border-bottom:1px solid var(--line)}
+.ranking-table th:nth-child(n+3),.ranking-table td:nth-child(n+3){text-align:right;white-space:nowrap}
+.ranking-table th:first-child,.ranking-table td:first-child{width:24px;color:var(--muted)}
+.ranking-table td:nth-child(2){font-weight:600;overflow-wrap:anywhere}
+.ranking-table tbody tr.is-me{background:#ffffff0a}
+.ranking-player-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px}
+.profile-settings{margin:18px 0 22px;display:grid;gap:8px}
+.profile-settings h2{font:600 .97rem/1.4 Inter,system-ui,sans-serif;margin:0 0 2px}
+.profile-settings label{color:var(--muted);font-size:.78rem}
+.profile-settings select{background:var(--panel-2);border:1px solid var(--line);padding:10px;border-radius:8px;max-width:100%}
+.profile-settings p{font-size:.74rem;margin:2px 0}
+@media(max-width:360px){.topbar .ap-panel{padding:5px 7px}.topbar .ap-panel strong{font-size:.88rem}}
