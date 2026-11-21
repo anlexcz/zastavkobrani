@@ -133,3 +133,41 @@ test("Odpočet zániku používá dny, ochrana hodiny",()=>{
  assert.equal(scope.formatExpiry("2026-11-12T13:02:03Z",now),"2 dny 01:02:03");
  assert.equal(scope.formatExpiry("2026-11-10T13:00:00Z",now),"01:00:00");
 });
+
+test("Čtyři hlavní položky navigace mají ikony a přístupné názvy",()=>{
+ for(const key of ["map","daily","ranking","profile"]){
+  const button=html.match(new RegExp('<button[^>]*data-screen="'+key+'"[^>]*>[\\s\\S]*?<\\/button>'))?.[0];
+  assert.ok(button,key);
+  assert.match(button,/<svg/);
+  assert.match(button,/aria-label=/);
+ }
+});
+test("Pouze detail zastávky se zobrazuje jako karta, ostatní obrazovky jsou celostránkové",()=>{
+ assert.match(app,/const isStop=name==="stop"/);
+ assert.match(app,/classList\.toggle\("is-page",visible&&!isStop\)/);
+ assert.match(app,/\$\("scrim"\)\.hidden=!isStop/);
+ const css=require("node:fs").readFileSync("style.css","utf8");
+ assert.match(css,/\.sheet\.is-page\{/);
+ assert.match(css,/\.sheet\.is-page \.sheet-head\{display:none\}/);
+});
+test("Zobrazení denní zastávky pouze vycentruje mapu a nezobrazuje detail",()=>{
+ const start=app.indexOf('$("show-challenge").onclick=');
+ const end=app.indexOf("};",start);
+ const content=app.slice(start,end);
+ assert.match(content,/openScreen\("map"\)/);
+ assert.match(content,/map\.flyTo/);
+ assert.doesNotMatch(content,/openScreen\("stop"\)/);
+});
+test("Profil má vlastní zastávky, rozbalení událostí a účetní nastavení",()=>{
+ for(const id of ["owned-list","owned-count","events-expand","profile-edit","screen-profile-settings","profile-form","profile-display-name","profile-discord","profile-image","profile-username","settings-back"]){
+  assert.match(html,new RegExp('id="'+id+'"'),id);
+ }
+ assert.match(app,/function renderOwnedStops/);
+ assert.match(app,/function renderProfileEvents/);
+ assert.match(app,/function populateProfileSettings/);
+ assert.match(app,/classList\.toggle\("is-page"/);
+ assert.match(app,/playerLabel\(p\.id\)/);
+ assert.match(app,/\$\("points"\)\.textContent=total\(p\.id,30\)/);
+ assert.match(html,/Změna hesla bude dostupná po připojení skutečných účtů k serveru/);
+ assert.doesNotMatch(app,/localStorage\.setItem\(["']password/);
+});
