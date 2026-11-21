@@ -182,6 +182,7 @@ let activeScreen="map";
 let rankingPeriod="30";
 let dailyHistoryExpanded=false;
 let profileEventsExpanded=false;
+let pendingProfileAvatar=null;
 function openScreen(name){
   closeScoreDetailIfOpen();
   activeScreen=name;
@@ -364,6 +365,7 @@ function paintAvatar(element,id){
  element.textContent=url?"":playerLabel(id).trim().charAt(0).toLocaleUpperCase("cs");
 }
 function populateProfileSettings(){
+ pendingProfileAvatar=null;
  const player=PLAYERS.find(p=>p.id===state.selected),profile=profileRecord();
  $("profile-username").value=player?.name||"";
  $("profile-display-name").value=profile.displayName||"";
@@ -386,7 +388,7 @@ function profileOwnedItems(){
 function renderOwnedStops(){
  const items=profileOwnedItems();$("owned-count").textContent=String(items.length);
  $("owned-list").innerHTML=items.length?items.map(x=>{
-  const urgency=x.decline&&(x.daysLeft<=3?"is-urgent":"is-declining");
+  const urgency=x.decline?(x.daysLeft<=3?"is-urgent":"is-declining"):"";
   const status=x.protectedNow?"Ochrana "+stopCountdown(new Date(x.protectedUntil).toISOString()):
     x.decline?"Klesající výnos · "+x.daysLeft+" d do zániku":"Plný výnos";
   const detail=x.protectedNow?"Údržba po skončení ochrany":x.decline?"Údržba dostupná":"Údržba dostupná";
@@ -579,7 +581,7 @@ $("profile-form").addEventListener("submit",event=>{
  event.preventDefault();
  const name=$("profile-display-name").value.trim(),discord=$("profile-discord").value.trim();
  state.profiles??={};
- state.profiles[state.selected]={...profileRecord(),displayName:name.slice(0,36),discord:discord.slice(0,40)};
+ state.profiles[state.selected]={...profileRecord(),displayName:name.slice(0,36),discord:discord.slice(0,40),...(pendingProfileAvatar?{avatar:pendingProfileAvatar}:{})};
  persist();openScreen("profile");
 });
 $("profile-image").addEventListener("change",event=>{
@@ -598,9 +600,10 @@ $("profile-image").addEventListener("change",event=>{
    ctx.drawImage(img,(img.width-edge)/2,(img.height-edge)/2,edge,edge,0,0,160,160);
    const data=canvas.toDataURL("image/jpeg",.72);
    if(data.length>120000){status.textContent="Obrázek je příliš velký.";return;}
-   state.profiles??={};state.profiles[state.selected]={...profileRecord(),avatar:data};
-   persist();paintAvatar($("settings-avatar"),state.selected);
-   status.textContent="Obrázek uložen v tomto prohlížeči.";
+   pendingProfileAvatar=data;
+   $("settings-avatar").style.backgroundImage='url("'+data+'")';
+   $("settings-avatar").textContent="";
+   status.textContent="Obrázek je připravený. Pro uložení klikni na Uložit profil.";
   };
   img.onerror=()=>{status.textContent="Obrázek se nepodařilo načíst."};
   img.src=String(reader.result);
