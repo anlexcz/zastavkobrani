@@ -50,6 +50,27 @@ const shortDay=d=>d.toISOString().slice(0,10);
 const addDays = (day,n) => shortDay(new Date(Date.parse(day+"T12:00:00Z") + n*86400000));
 const diffDays=(a,b)=>Math.round((Date.parse(a+"T12:00:00Z")-Date.parse(b+"T12:00:00Z"))/86400000);
 function gameDay(date=new Date()){const f=new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Prague",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",hourCycle:"h23"});const parts=Object.fromEntries(f.formatToParts(date).filter(p=>p.type!=="literal").map(p=>[p.type,p.value]));const d=parts.year+"-"+parts.month+"-"+parts.day;return Number(parts.hour)<3?addDays(d,-1):d;}
+// Převod uzávěrky 03:00 Europe/Prague, včetně změn času.
+function pragueBoundaryUtc(day){
+ const target=Date.parse(day+"T03:00:00Z");
+ const f=new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Prague",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"});
+ let instant=target;
+ for(let i=0;i<3;i++){
+  const p=Object.fromEntries(f.formatToParts(new Date(instant)).filter(v=>v.type!=="literal").map(v=>[v.type,v.value]));
+  const local=Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute,+p.second);
+  instant+=target-local;
+ }
+ return new Date(instant).toISOString();
+}
+function nextGameBoundary(now=new Date()){return pragueBoundaryUtc(addDays(gameDay(now),1))}
+function challengeStopForDay(day){
+ const key=day.replaceAll("-","");let n=0;for(const c of key)n=(n*31+c.charCodeAt(0))>>>0;
+ for(let offset=0;offset<STOPS.length;offset++){
+  const s=STOPS[(n+offset)%STOPS.length];
+  if(s.cats.length&&s.points.some(p=>p.insidePrague&&!p.isMetro))return s;
+ }
+ return null;
+}
 function init(withSeed=true){
  const day=gameDay(),now=new Date(),stops={},ledger=[],events=[];
  if(withSeed)ROUTE_22_SEED.forEach((name,index)=>{
@@ -109,7 +130,7 @@ function spentAP(player=state.selected,day=gameDay()){
 function remaining(player=state.selected){return Math.max(0,RULES.dailyAP-spentAP(player))}
 function owned(){return Object.values(state.stops).filter(v=>v.owner===state.selected).length}
 function total(id,days){return state.ledger.filter(x=>x.player===id&&(!days||diffDays(gameDay(),x.day)>=0&&diffDays(gameDay(),x.day)<days)).reduce((a,b)=>a+b.amount,0)}
-function challengeStop(){const d=gameDay().replaceAll("-","");let n=0;for(const c of d)n=(n*31+c.charCodeAt(0))>>>0;return STOPS[n%STOPS.length]}
+function challengeStop(){return challengeStopForDay(gameDay())}
 function visitsFor(id){return state.visits[gameDay()]?.[id]||false}
 // MapLibre + vlastní vektorový styl. Herní stav zůstává oddělený od podkladu.
 const map = new maplibregl.Map({
@@ -158,6 +179,8 @@ map.on("style.load",()=>{
 });
 map.on("error",event=>console.warn("MapLibre:",event.error?.message||event.error));
 let activeScreen="map";
+let rankingPeriod="30";
+let dailyHistoryExpanded=false;
 function openScreen(name){
   closeScoreDetailIfOpen();
   activeScreen=name;
@@ -254,7 +277,7 @@ function closeHistoryDetail(){
  historyReturnFocus=null;
 }
 function stopHistoryEntries(stop){
- return state.events.filter(e=>e.stopId===stop.id&&["capture","maintain","expire"].includes(e.action))
+ return state.events.filter(e=>e.stopId===stop.id&&diffDays(gameDay(),e.day)>=0&&diffDays(gameDay(),e.day)<30&&["capture","maintain","expire"].includes(e.action))
   .sort((a,b)=>Date.parse(b.at)-Date.parse(a.at));
 }
 function renderStopHistory(stop){
@@ -289,6 +312,32 @@ document.addEventListener("keydown",event=>{
  if(event.key==="Escape"){event.preventDefault();event.stopImmediatePropagation();closeHistoryDetail();}
  if(event.key==="Tab"){event.preventDefault();$("history-dialog-close").focus();}
 },true);
+function dailyHistoryItems(day=gameDay()){
+ const result=[];
+ for(let i=1;i<=30;i++){const d=addDays(day,-i),stop=challengeStopForDay(d);if(stop)result.push({day:d,name:stop.name,done:!!state.visits[d]?.[state.selected]});}
+ return result;
+}
+function renderDailyHistory(){
+ const items=dailyHistoryItems(),shown=dailyHistoryExpanded?items:items.slice(0,5);
+ const fmt=new Intl.DateTimeFormat("cs-CZ",{day:"numeric",month:"numeric",year:"numeric",timeZone:"Europe/Prague"});
+ $("daily-history").innerHTML=shown.map(item=>
+  '<div class="daily-history-item"><div><time datetime="'+item.day+'">'+fmt.format(new Date(item.day+"T12:00:00Z"))+'</time><strong>'+escapeStopText(item.name)+'</strong></div><span class="daily-history-result '+(item.done?"is-done":"")+'">'+(item.done?"Splněno":"Nesplněno")+'</span></div>'
+ ).join("")||'<p class="muted">Zatím žádná historie.</p>';
+ $("daily-history-expand").hidden=items.length<=5;
+ $("daily-history-expand").textContent=dailyHistoryExpanded?"Zobrazit méně":"Zobrazit celou historii ("+items.length+")";
+ $("daily-history-expand").setAttribute("aria-expanded",String(dailyHistoryExpanded));
+}
+function renderRanking(){
+ const period=rankingPeriod==="30"?30:null;
+ const sorted=PLAYERS.slice().sort((a,b)=>total(b.id,period)-total(a.id,period)||a.name.localeCompare(b.name,"cs"));
+ $("leaderboard").innerHTML=sorted.map((p,i)=>{
+  const current=Object.values(state.stops).filter(x=>x.owner===p.id).length;
+  return '<tr'+(p.id===state.selected?' class="is-me"':'')+'><td>'+(i+1)+'.</td><td><span class="ranking-player-dot" style="background:'+escapeStopText(p.color)+'"></span>'+escapeStopText(p.name)+'</td><td>'+total(p.id,period).toLocaleString("cs-CZ")+'</td><td>'+current+'</td></tr>';
+ }).join("");
+ for(const b of document.querySelectorAll("[data-ranking-period]"))b.setAttribute("aria-pressed",String(b.dataset.rankingPeriod===rankingPeriod));
+}
+for(const b of document.querySelectorAll("[data-ranking-period]"))b.onclick=()=>{rankingPeriod=b.dataset.rankingPeriod;renderRanking()};
+$("daily-history-expand").onclick=()=>{dailyHistoryExpanded=!dailyHistoryExpanded;renderDailyHistory()};
 function render(){closeDays();const p=PLAYERS.find(x=>x.id===state.selected);$("player").value=state.selected;$("profile").textContent=p.name;$("remaining").textContent=remaining()+"/"+RULES.dailyAP;$("ap-map").textContent=remaining()+" / "+RULES.dailyAP;$("owned").textContent=owned();$("points").textContent=total(p.id);$("clock").textContent="Herní den: "+gameDay()+" · uzávěrka ve 03:00 (Praha)";
 refreshStopMapColors(map,state.stops,PLAYERS,selectedStop);
 const s=STOPS.find(x=>x.id===selectedStop),rec=s&&state.stops[s.id];
@@ -310,7 +359,7 @@ $("stop-owner-heading").textContent=owner?"Vlastní "+owner.name:"Neobsazená za
 $("stop-owner-heading").style.color="var(--muted)";
 $("stopdetail").innerHTML=s?stopCardHtml({
   stop:s,record:rec,owner,selectedPlayer:state.selected,
-  gameDay:gameDay(),diffDays,captureScore:(stop)=>captureScore(stop,!rec?.owner),holdingScore:(stop)=>holdingScore(stop,rec)
+  gameDay:gameDay(),diffDays,captureScore:(stop)=>captureScore(stop,!rec?.owner),holdingScore:(stop)=>holdingScore(stop,rec),expiresAt:rec?.anchor?pragueBoundaryUtc(addDays(rec.anchor,15)):null
 }):"";
 renderStopHistory(s);
 const capture=$("capture"),maintain=$("maintain");
