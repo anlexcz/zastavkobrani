@@ -88,29 +88,30 @@ test("Oblasti vznikají jen ve výřezu a uvnitř území se slučují",()=>{
  assert.equal(trace.circles,before);
  assert.ok(map.sources["game-territory-areas"].data.features.every(x=>x.properties.approved===false));
 });
-test("30m okruhy existují pro každý blízký povrchový bod a nikoliv pro metro",()=>{
- const {map,api}=setup(16.4);
- const features=map.sources["game-capture-radii"].data.features;
+test("GPS oblasti se slučují po zastávkách a nejsou překryvné vrstvy",()=>{
+ const {map,trace,api}=setup(16.4);
+ const features=map.sources["game-territory-areas"].data.features;
  assert.ok(features.length>0);
- assert.ok(features.every(f=>f.geometry.type==="Polygon"));
+ assert.ok(features.every(f=>["Polygon","MultiPolygon"].includes(f.geometry.type)));
  assert.ok(features.every(f=>f.properties.approved===false));
- const existing=groups.flatMap(g=>g.points.filter(p=>!p.isMetro&&p.insidePrague).map(p=>p.id));
- assert.ok(features.every(f=>existing.includes(f.properties.pointId)));
- assert.equal(map.getLayer("game-capture-radius-fill").minzoom,16);
- assert.equal(map.getLayer("game-capture-radius-outline").minzoom,16);
- const first=features[0],a=first.geometry.coordinates[0][0];
- const point=groups.flatMap(g=>g.points).find(p=>p.id===first.properties.pointId);
- const meters=6371000*Math.acos(Math.min(1,Math.max(-1,
-   Math.sin(a[1]*Math.PI/180)*Math.sin(point.lat*Math.PI/180)+
-   Math.cos(a[1]*Math.PI/180)*Math.cos(point.lat*Math.PI/180)*
-   Math.cos((a[0]-point.lon)*Math.PI/180))));
- assert.ok(Math.abs(meters-30)<0.6,"poloměr musí být 30 metrů");
- api.refreshStopMapColors(map,{},players,first.properties.territoryId);
- assert.ok(map.paint["game-capture-radius-outline.line-opacity"]);
+ assert.equal(new Set(features.map(f=>f.properties.territoryId)).size,features.length);
+ assert.ok(trace.circles>features.length);
+ assert.equal(map.getLayer("game-territory-area-fill").minzoom,15.2);
+ assert.equal(map.getLayer("game-territory-area-outline").minzoom,15.2);
+ assert.equal(map.getLayer("game-capture-radius-fill"),undefined);
+ assert.equal(map.getLayer("game-capture-radius-outline"),undefined);
+ api.refreshStopMapColors(map,{},players,features[0].properties.territoryId);
+ assert.ok(map.paint["game-territory-area-outline.line-opacity"]);
 });
-test("Při malém zoomu nejsou vykresleny 30m kruhy",()=>{
- const {map}=setup(10.65);
- assert.equal(map.sources["game-capture-radii"].data.features.length,0);
+test("GPS oblasti zůstávají viditelné i při vypnutí barevných území",()=>{
+ const {map,api}=setup(16.4);
+ api.setMapOverlayVisibility(map,{stops:true,polygons:false});
+ assert.equal(map.layoutVisibility["game-territory-area-fill"],"visible");
+ assert.equal(map.layoutVisibility["game-territory-area-outline"],"visible");
+ assert.ok(map.sources["game-territory-areas"].data.features.length>0);
+ api.setMapOverlayVisibility(map,{stops:false,polygons:true});
+ assert.equal(map.layoutVisibility["game-territory-area-fill"],"visible");
+ assert.equal(map.sources["game-territory-areas"].data.features.length,0);
 });
 test("Agregace clusterů pracuje s územími a barvami všech hráčů",()=>{
  const {map,api}=setup();
@@ -182,7 +183,7 @@ test("Přepínání vrstev skryje body a polygony nezávisle a lze je obnovit",(
  controls(map,{stops:false,polygons:true});
  const hiddenStops=["game-cluster","game-cluster-count",
    "game-territory","game-territory-label","game-platform","game-platform-metro","game-platform-label",
-   "game-capture-radius-fill","game-capture-radius-outline"];
+   "game-territory-area-fill","game-territory-area-outline"];
  for(const id of hiddenStops)assert.equal(map.layoutVisibility[id],"none",id);
  assert.equal(map.layoutVisibility["game-strategic-fill"],"visible");
  assert.equal(map.layoutVisibility["game-owner-border"],"visible");
