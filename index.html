@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<link rel="stylesheet" href="style.css?v=ap22history1">
+<link rel="stylesheet" href="style.css?v=ap22history2">
 </head>
 <body>
 <div id="map" role="region" aria-label="Mapa herních zastávek Prahy"></div><div id="map-error" class="map-error" hidden></div>
@@ -55,7 +55,7 @@
       </div>
     </div>
     <div class="stop-location" id="stop-location" aria-live="polite"><span id="stop-location-status">Poloha nedostupná</span><strong id="stop-distance">—</strong><button type="button" id="stop-request-location">Povolit polohu</button></div>
-    <section class="stop-history" aria-label="Historie zastávky"><h2>Historie zastávky</h2><div id="stop-history-list"></div></section><p id="message" class="message" aria-live="polite"></p>
+    <section class="stop-history" aria-label="Historie zastávky"><button type="button" id="stop-history-open" class="stop-history-trigger"><span>Historie zastávky</span><span class="stop-history-meta"><span id="stop-history-count">0 událostí</span><span aria-hidden="true">›</span></span></button></section><p id="message" class="message" aria-live="polite"></p>
   </div>
   <div class="screen" id="screen-daily" hidden>
     <div class="eyebrow">Denní výzva</div><h1>Zastávka dne</h1>
@@ -85,15 +85,21 @@
     <div id="score-dialog-lines" class="score-dialog-lines"></div>
   </section>
 </div>
+<div class="score-dialog-overlay" id="history-dialog-overlay" hidden>
+ <section class="score-dialog history-dialog" role="dialog" aria-modal="true" aria-labelledby="history-dialog-title" aria-describedby="history-dialog-stop">
+  <div class="score-dialog-head"><div><h2 id="history-dialog-title">Historie zastávky</h2><p id="history-dialog-stop"></p></div><button type="button" id="history-dialog-close" aria-label="Zavřít historii">×</button></div>
+  <div id="stop-history-list" class="history-dialog-content"></div>
+ </section>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="map-style.js?v=ap22history1"></script>
-<script src="pid-prague.js?v=ap22history1"></script>
-<script src="pid-strategic.js?v=ap22history1"></script>
-<script src="pid-owner-boundaries.js?v=ap22history1"></script>
-<script src="demo-world.js?v=ap22history1"></script>
+<script src="map-style.js?v=ap22history2"></script>
+<script src="pid-prague.js?v=ap22history2"></script>
+<script src="pid-strategic.js?v=ap22history2"></script>
+<script src="pid-owner-boundaries.js?v=ap22history2"></script>
+<script src="demo-world.js?v=ap22history2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7.2.0/turf.min.js"></script>
-<script src="stop-map.js?v=ap22history1"></script>
-<script src="scoring.js?v=ap22history1"></script>
-<script src="stop-card.js?v=ap22history1"></script>
-<script src="app.js?v=ap22history1" defer></script>
+<script src="stop-map.js?v=ap22history2"></script>
+<script src="scoring.js?v=ap22history2"></script>
+<script src="stop-card.js?v=ap22history2"></script>
+<script src="app.js?v=ap22history2" defer></script>
 </body></html>
