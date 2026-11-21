@@ -11,7 +11,7 @@ const STOP_MODE_ICONS=Object.freeze({
   trolleybus:"trolleybus",ferry:"ferry",urban_bus:"bus",
   regional_bus:"bus",bus:"bus"
 });
-const TEMAKI_ICON_ROOT="https://cdn.jsdelivr.net/gh/rapideditor/temaki@main/icons/";
+const TEMAKI_ICON_ROOT="assets/temaki/";
 function stopModeIcon(code){
   const name=STOP_MODE_ICONS[code];
   return name?'<img class="stop-mode-icon" src="'+TEMAKI_ICON_ROOT+name+'.svg" alt="" width="19" height="19" loading="lazy" aria-hidden="true">':"";
