@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<link rel="stylesheet" href="style.css?v=gps25field">
+<link rel="stylesheet" href="style.css?v=gps26score">
 </head>
 <body>
 <div id="map" role="region" aria-label="Mapa herních zastávek Prahy"></div><div id="map-error" class="map-error" hidden></div>
@@ -79,14 +79,21 @@
     <button id="reset" class="danger">Resetovat testovací hru</button>
   </div>
 </section>
+<div class="score-dialog-overlay" id="score-dialog-overlay" hidden>
+  <section class="score-dialog" role="dialog" aria-modal="true" aria-labelledby="score-dialog-title" aria-describedby="score-dialog-stop">
+    <div class="score-dialog-head"><div><h2 id="score-dialog-title">Rozpis bodů</h2><p id="score-dialog-stop"></p></div><button type="button" id="score-dialog-close" aria-label="Zavřít rozpis">×</button></div>
+    <div id="score-dialog-lines" class="score-dialog-lines"></div>
+  </section>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="map-style.js?v=gps25field"></script>
-<script src="pid-prague.js?v=gps25field"></script>
-<script src="pid-strategic.js?v=gps25field"></script>
-<script src="pid-owner-boundaries.js?v=gps25field"></script>
-<script src="demo-world.js?v=gps25field"></script>
+<script src="map-style.js?v=gps26score"></script>
+<script src="pid-prague.js?v=gps26score"></script>
+<script src="pid-strategic.js?v=gps26score"></script>
+<script src="pid-owner-boundaries.js?v=gps26score"></script>
+<script src="demo-world.js?v=gps26score"></script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7.2.0/turf.min.js"></script>
-<script src="stop-map.js?v=gps25field"></script>
-<script src="stop-card.js?v=gps25field"></script>
-<script src="app.js?v=gps25field" defer></script>
+<script src="stop-map.js?v=gps26score"></script>
+<script src="scoring.js?v=gps26score"></script>
+<script src="stop-card.js?v=gps26score"></script>
+<script src="app.js?v=gps26score" defer></script>
 </body></html>
