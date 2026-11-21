@@ -91,8 +91,7 @@ function generate(options={}){
     }
   }
   for(const [day,item] of Object.entries(overrides)){
-    if(day<=today&&stable(item)!==stable((schedule.publishedOverrides||{})[day])&&
-       Object.keys(schedule.publishedOverrides||{}).length>0){
+    if(day<=today&&stable(item)!==stable((schedule.publishedOverrides||{})[day])){
       throw Error("Výjimku pro probíhající nebo uzavřený herní den nelze nově přidat: "+day);
     }
   }
