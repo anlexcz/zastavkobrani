@@ -50,7 +50,8 @@ function setMenuOpen(open,{restoreFocus=true}={}){
  toggle.setAttribute("aria-expanded",String(next));
  toggle.setAttribute("aria-label",next?"Zavřít nabídku administrace":"Otevřít nabídku administrace");
  if(next){
-   sidebar.querySelector('[aria-current="page"]')?.focus()||$("admin-sidebar-close").focus();
+   const selected=sidebar.querySelector('[aria-current="page"]');
+   (selected||$("admin-sidebar-close")).focus();
  }else if(restoreFocus&&mobile&&returnFocus?.isConnected){
    returnFocus.focus();
  }
@@ -84,7 +85,7 @@ function renderNavigation(){
     location.hash=button.dataset.view;
     // Při kliknutí na již aktivní sekci nedojde k hashchange.
     render();
-    $("admin-menu-toggle").focus({preventScroll:true});
+    if(!desktopMedia.matches)$("admin-menu-toggle").focus({preventScroll:true});
   });
  });
  const current=ADMIN_SECTIONS.find(section=>section.id===state.view);
