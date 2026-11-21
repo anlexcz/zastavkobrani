@@ -84,6 +84,7 @@ let selectedPlatform=null;
 map.on("load",()=>{
   installStopMap(map,STOPS,(id,pointId)=>{
     selectedStop=id;selectedPlatform=pointId;
+    confirmingCapture=false;
     note("");
     $("sheet").scrollTop=0;
     openScreen("stop");
@@ -127,10 +128,11 @@ function openScreen(name){
   $("scrim").hidden=!visible;
   for(const el of document.querySelectorAll(".screen")) el.hidden=el.id!=="screen-"+name;
   for(const el of document.querySelectorAll(".nav button")) el.classList.toggle("active",el.dataset.screen===name);
-  if(name==="map") {selectedStop=null;selectedPlatform=null;}
+  if(name==="map") {selectedStop=null;selectedPlatform=null;confirmingCapture=false;}
   render();
 }
 function note(t){$("message").textContent=t}
+let confirmingCapture=false;
 $("close").onclick=()=>openScreen("map");
 $("scrim").onclick=()=>openScreen("map");
 for(const b of document.querySelectorAll(".nav button")) b.onclick=()=>openScreen(b.dataset.screen);
@@ -153,6 +155,9 @@ const protectedNow=!!rec?.owner&&protectionEnd>Date.now();
 const protectionOther=protectedNow&&!mine;
 const maintenanceDays=mine&&rec?.anchor?Math.max(0,7-diffDays(gameDay(),rec.anchor)):null;
 const selfCooldown=state.events.some(e=>e.action==="capture"&&e.player===state.selected&&e.stopId===s?.id&&Date.now()-Date.parse(e.at)<86400000);
+const locationState=s?stopLocationState(s):{ok:false,status:"Poloha nedostupná",distance:null};
+const captureTimeBlocked=mine||protectedNow||remaining()===0||selfCooldown;
+const maintainTimeBlocked=!mine||maintenanceDays>0;
 $("sheet").classList.toggle("sheet-stop",activeScreen==="stop");
 $("sheet").style.setProperty("--sheet-owner-color",owner?.color||"#929292");
 $("stop-owner-heading").textContent=owner?"Vlastní "+owner.name:"Neobsazená zastávka";
@@ -161,20 +166,46 @@ $("stopdetail").innerHTML=s?stopCardHtml({
   stop:s,record:rec,owner,selectedPlayer:state.selected,
   gameDay:gameDay(),diffDays,captureScore,holdingScore
 }):"";
-$("capture").disabled=!s||mine||protectedNow||remaining()===0||selfCooldown||gpsBusy;
-$("capture").textContent=mine?"Tvoje zastávka":protectionOther?
+const capture=$("capture"),maintain=$("maintain");
+capture.hidden=mine;maintain.hidden=!mine;
+capture.disabled=!s||captureTimeBlocked||!locationState.ok||gpsBusy;
+capture.dataset.block=captureTimeBlocked?"time":locationState.ok?"":"location";
+capture.textContent=mine?"Tvoje zastávka":protectionOther?
   "Převzetí za "+stopCountdown(rec.protectedUntil):remaining()===0?
-  "Vyčerpány pokusy":selfCooldown?"Znovu až za 24 h":rec?.owner?"Převzít zastávku":"Obsadit zastávku";
-$("maintain").disabled=!s||!mine||maintenanceDays>0;
-$("maintain").textContent=!mine?"Údržba":maintenanceDays>0?
-  "Údržba za "+maintenanceDays+" dní":"Provést údržbu";
+  "Vyčerpány pokusy":selfCooldown?"Znovu až za 24 h":rec?.owner?"Obsadit zastávku":"Obsadit zastávku";
+maintain.disabled=!s||maintainTimeBlocked||!locationState.ok||gpsBusy;
+maintain.dataset.block=maintainTimeBlocked?"time":locationState.ok?"":"location";
+maintain.textContent=maintenanceDays>0?"Udržet zastávku · za "+maintenanceDays+" dní":"Udržet zastávku";
+$("stop-location-status").textContent=locationState.status;
+$("stop-distance").textContent=locationState.distance===null?"—":formatStopDistance(locationState.distance);
+$("stop-request-location").hidden=!!gpsWatch&&!!gpsPosition;
+$("stop-request-location").textContent=gpsPermissionDenied?"Povolení GPS":"Povolit polohu";
+$("stop-confirm").hidden=!confirmingCapture||!s||mine;
+$("capture").hidden=mine||confirmingCapture;
+$("stop-location").hidden=activeScreen!=="stop";
 const challenge=challengeStop();$("challenge").textContent=challenge.name;$("challengeinfo").textContent=visitsFor(state.selected)?"Dnešní výzva splněna.":"Jedna společná zastávka pro všechny hráče · návštěva vyžaduje GPS.";$("visit").disabled=selectedStop!==challenge.id||visitsFor(state.selected);
 $("leaderboard").innerHTML=PLAYERS.slice().sort((a,b)=>total(b.id,30)-total(a.id,30)).map(p=>'<div class="listrow"><span><span style="color:'+p.color+'">●</span> '+p.name+'</span> <b>'+total(p.id,30)+' b.</b></div>').join("");
 $("events").innerHTML=state.events.slice(0,8).map(e=>'<div class="listrow">'+e.text+'</div>').join("")||"Zatím žádné události.";}
 $("player").innerHTML=PLAYERS.map(p=>'<option value="'+p.id+'">'+p.name+'</option>').join("");
-$("player").addEventListener("change",e=>{state.selected=e.target.value;persist();note("");render()});
+$("player").addEventListener("change",e=>{state.selected=e.target.value;confirmingCapture=false;persist();note("");render()});
 // GPS kontrolujeme vždy novým měřením v okamžiku akce; poloha z mapy nestačí.
 let gpsBusy=false;
+let gpsPermissionDenied=false;
+const GPS_STALE_MS=15000;
+function formatStopDistance(distance){
+  if(distance<1000)return Math.round(distance)+" m";
+  if(distance<10000)return (distance/1000).toFixed(1).replace(".",",")+" km";
+  return Math.round(distance/1000)+" km";
+}
+function stopLocationState(stop,now=Date.now()){
+  if(gpsPermissionDenied)return {ok:false,status:"Poloha zamítnuta",distance:null};
+  if(!gpsPosition)return {ok:false,status:gpsWatch!==null?"Zjišťování polohy":"Poloha nedostupná",distance:null};
+  const distance=nearestStopDistance(stop,{latitude:gpsPosition.lat,longitude:gpsPosition.lng});
+  if(!Number.isFinite(distance))return {ok:false,status:"GPS bod není dostupný",distance:null};
+  if(now-gpsPosition.timestamp>GPS_STALE_MS)return {ok:false,status:"Poloha není aktuální",distance};
+  if(gpsPosition.accuracy>30)return {ok:false,status:"Nepřesná GPS (±"+Math.round(gpsPosition.accuracy)+" m)",distance};
+  return {ok:distance<=30,status:distance<=30?"V dosahu 30 m":"Mimo dosah 30 m",distance};
+}
 function haversineM(a,b,c,d){
   const rad=Math.PI/180,dl=(c-a)*rad,doLon=(d-b)*rad;
   const h=Math.sin(dl/2)**2+Math.cos(a*rad)*Math.cos(c*rad)*Math.sin(doLon/2)**2;
@@ -211,6 +242,7 @@ function verifyGps(stop){
 async function doGpsAction(action){
   const stop=STOPS.find(s=>s.id===selectedStop);
   if(!stop||gpsBusy)return;
+  if(!stopLocationState(stop).ok){note("Nejsi v ověřeném 30m dosahu zastávky.");render();return;}
   const startingPlayer=state.selected, startingStop=selectedStop;
   const validate=()=>{
     if(state.selected!==startingPlayer||selectedStop!==startingStop)return "Během ověřování se změnil hráč nebo zastávka.";
@@ -226,7 +258,6 @@ async function doGpsAction(action){
     return "";
   };
   const invalid=validate();if(invalid){note(invalid);render();return;}
-  if(action==="capture"&&!confirm((state.stops[stop.id]?.owner?"Převzít":"Obsadit")+" zastávku "+stop.name+"? Spotřebuješ jeden ze tří denních pokusů."))return;
   gpsBusy=true;note("Ověřuji aktuální GPS polohu…");render();
   try{
     const location=await verifyGps(stop);
@@ -248,7 +279,17 @@ async function doGpsAction(action){
   }catch(error){note(error.message||"GPS ověření selhalo.");}
   finally{gpsBusy=false;render();}
 }
-$("capture").onclick=()=>doGpsAction("capture");
+$("capture").onclick=()=>{
+  const stop=STOPS.find(s=>s.id===selectedStop);
+  if(!stop||!stopLocationState(stop).ok||$("capture").disabled)return;
+  confirmingCapture=true;render();
+};
+$("confirm-no").onclick=()=>{confirmingCapture=false;render()};
+$("confirm-yes").onclick=()=>{
+  confirmingCapture=false;
+  render();
+  if(!$("capture").disabled)doGpsAction("capture");
+};
 $("maintain").onclick=()=>doGpsAction("maintain");
 $("visit").onclick=()=>{selectedStop=challengeStop().id;doGpsAction("visit");};
 $("reset").onclick=()=>{if(!confirm("Opravdu resetovat oba testovací hráče do výchozího stavu?"))return;localStorage.removeItem(STORAGE);state=init(true);persist();selectedStop=null;note("Test byl vynulován.");openScreen("profile")};
@@ -266,7 +307,7 @@ setInterval(()=>{
     }else if(counter&&remainingMs<=0)render();
   }
 },1000);
-setInterval(()=>{render()},60000);
+setInterval(()=>{render()},5000);
 
 // Vizuální sledování GPS. Akce samostatně vyžadují nové přesné měření.
 let gpsWatch=null, gpsMarker=null, gpsPosition=null;
@@ -295,7 +336,7 @@ function drawAccuracy(){
 map.on("style.load",drawAccuracy);
 function disableGps(){
   if(gpsWatch!==null)navigator.geolocation.clearWatch(gpsWatch);
-  gpsWatch=null;gpsPosition=null;
+  gpsWatch=null;gpsPosition=null;gpsPermissionDenied=false;render();
   if(gpsMarker){gpsMarker.remove();gpsMarker=null;}
   if(map.getSource("gps-accuracy"))map.getSource("gps-accuracy").setData({
     type:"FeatureCollection",features:[]});
@@ -304,6 +345,9 @@ function disableGps(){
   gpsMessage("");
 }
 function gpsError(error){
+  gpsPermissionDenied=error.code===1;
+  gpsPosition=null;
+  render();
   gpsMessage(({1:"Přístup k GPS byl zamítnut.",2:"GPS polohu nelze určit.",3:"Časový limit GPS vypršel."})[error.code]||"GPS není dostupná.");
   if(error.code===1) {
     if(gpsWatch!==null)navigator.geolocation.clearWatch(gpsWatch);
@@ -312,16 +356,20 @@ function gpsError(error){
     gpsButton.querySelector("span").textContent="Zapnout GPS";
   }
 }
-gpsButton.addEventListener("click",()=>{
-  if(gpsWatch!==null){disableGps();return;}
+function requestGps(){
+  gpsPermissionDenied=false;
+  if(gpsWatch!==null){render();return;}
   if(!navigator.geolocation||!window.isSecureContext){
     gpsMessage("GPS vyžaduje HTTPS a podporu polohy v prohlížeči.");return;
   }
   gpsMessage("Zjišťuji polohu…");
   gpsButton.setAttribute("aria-pressed","true");
   gpsButton.querySelector("span").textContent="Vypnout GPS";
-  gpsWatch=navigator.geolocation.watchPosition(({coords})=>{
-    gpsPosition={lng:coords.longitude,lat:coords.latitude,accuracy:Math.max(1,coords.accuracy||1)};
+  gpsWatch=navigator.geolocation.watchPosition((position)=>{
+    const coords=position.coords;
+    gpsPosition={lng:coords.longitude,lat:coords.latitude,
+      accuracy:Math.max(1,coords.accuracy||Infinity),timestamp:position.timestamp};
+    gpsPermissionDenied=false;
     if(!gpsMarker){
       const el=document.createElement("div");el.className="gps-dot";
       gpsMarker=new maplibregl.Marker({element:el,anchor:"center"}).setLngLat([gpsPosition.lng,gpsPosition.lat]).addTo(map);
@@ -329,5 +377,15 @@ gpsButton.addEventListener("click",()=>{
     }else gpsMarker.setLngLat([gpsPosition.lng,gpsPosition.lat]);
     drawAccuracy();
     gpsMessage("GPS přesnost ±"+Math.round(gpsPosition.accuracy)+" m · akce kontrolují nové měření");
+    render();
   },gpsError,{enableHighAccuracy:true,maximumAge:5000,timeout:15000});
+  render();
+}
+$("stop-request-location").onclick=()=>{
+  if(gpsPermissionDenied){note("Povol polohu v nastavení oprávnění tohoto webu v prohlížeči.");}
+  requestGps();
+};
+gpsButton.addEventListener("click",()=>{
+  if(gpsWatch!==null){disableGps();return;}
+  requestGps();
 });
