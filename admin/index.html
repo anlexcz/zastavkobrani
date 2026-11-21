@@ -8,17 +8,29 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../style.css?v=ui-v3">
-<link rel="stylesheet" href="./admin.css?v=1">
+<link rel="stylesheet" href="../design-system.css?v=1">
+<link rel="stylesheet" href="../style.css?v=ui-v5">
+<link rel="stylesheet" href="./admin.css?v=2">
 </head>
 <body class="admin-body">
 <header class="admin-header">
   <a href="../" class="admin-brand" aria-label="Zastávkobraní – mapa">Zastávkobraní <span>ADMIN</span></a>
-  <a class="admin-back" href="../">Zpět do hry <span aria-hidden="true">↗</span></a>
+  <div class="admin-header-actions">
+    <a class="admin-back" href="../">Zpět do hry <span aria-hidden="true">↗</span></a>
+    <button class="admin-menu-toggle" id="admin-menu-toggle" type="button"
+      aria-label="Otevřít nabídku administrace" aria-expanded="false" aria-controls="admin-sidebar">
+      <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <path d="M4 7h16M4 12h16M4 17h16"/>
+      </svg><span>Nabídka</span>
+    </button>
+  </div>
 </header>
+<div class="admin-menu-scrim" id="admin-menu-scrim" hidden></div>
 <div class="admin-layout">
-  <aside class="admin-sidebar" aria-label="Moduly administrace">
-    <div class="admin-sidebar-head">SPRÁVA HRY</div>
+  <aside class="admin-sidebar" id="admin-sidebar" aria-label="Moduly administrace" inert>
+    <div class="admin-sidebar-head"><span>SPRÁVA HRY</span>
+      <button class="admin-sidebar-close" id="admin-sidebar-close" type="button" aria-label="Zavřít nabídku">×</button>
+    </div>
     <nav id="admin-menu" class="admin-menu" aria-label="Administrace"></nav>
     <div class="admin-sidebar-foot">Testovací administrace<br>Bez serverového přihlášení</div>
   </aside>
@@ -31,6 +43,6 @@
   </main>
 </div>
 <script src="../pid-prague.js?v=20261119"></script>
-<script type="module" src="./admin.js?v=1"></script>
+<script type="module" src="./admin.js?v=2"></script>
 </body>
 </html>
