@@ -255,7 +255,7 @@ if(activeScreen==="profile"){renderOwnedStops();renderProfileEvents();}}
 $("player").innerHTML=PLAYERS.map(p=>'<option value="'+p.id+'">'+p.name+'</option>').join("");
 $("player").addEventListener("change",e=>{state.selected=e.target.value;confirmingCapture=false;profileEventsExpanded=false;persist();note("");render()});
 const gameActions=createGameActions({
-  getState:()=>state,getSelectedStop:()=>selectedStop,STOP_BY_ID,PLAYERS,
+  getState:()=>state,getSelectedStop:()=>selectedStop,STOP_BY_ID,PLAYERS,RULES,
   remaining,actionCost,captureScore,award,challengeStop,visitsFor,
   stopLocationState,persist,note,render,$
 });
