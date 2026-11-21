@@ -3,7 +3,7 @@
 const STOPS = PID_PRAGUE;
 // Dva testovací profily, sdílející stav pouze v tomto prohlížeči.
 const PLAYERS=DEMO_PLAYERS;
-const BASE={metro:16,train:14,funicular:12,tram:10,trolleybus:8,ferry:6,bus:4};
+// Všechny hodnoty a rozpisy jsou v samostatném scoring.js.
 // Oddělený scénář s deseti hráči a strategickými polygony.
 const STORAGE="zastavkobrani-gps-two-players-v1";
 const FIELD_TEST_UNLIMITED_CAPTURES=true;
@@ -70,8 +70,8 @@ let gpsBusy=false,gpsPermissionDenied=false;
 let gpsWatch=null,gpsMarker=null,gpsPosition=null;
 function persist(){localStorage.setItem(STORAGE,JSON.stringify(state))}
 function award(player,amount,type,day=gameDay()){state.ledger.push({player,amount,type,day,at:new Date().toISOString()})}
-function captureScore(s){let vals=[...new Set(s.cats.map(c=>c==="urban_bus"||c==="regional_bus"?"bus":c))].map(c=>BASE[c]||0).sort((a,b)=>b-a);return vals.length?vals[0]+vals.slice(1).reduce((a,b)=>a+b/2,0):0}
-function holdingScore(s){return s.cats.length}
+function captureScore(s){return captureBreakdown(s).total}
+function holdingScore(s){return holdingBreakdown(s).total}
 function closeDays(){const today=gameDay();let d=addDays(state.lastClosedDay,1),count=0;while(d<today&&count++<730){for(const s of STOPS){const item=state.stops[s.id];if(!item||!item.owner)continue;const age=diffDays(d,item.anchor)+1;if(age>=1&&age<=7)award(item.owner,holdingScore(s),"holding",d);if(age>=22){state.events.unshift({at:new Date().toISOString(),text:s.name+": vlastnictví vypršelo"});delete state.stops[s.id]}}state.lastClosedDay=d;d=addDays(d,1)}if(count>=730&&d<today){state.lastClosedDay=addDays(today,-1);state.events.unshift({at:new Date().toISOString(),text:"Dlouhá neaktivita: staré uzávěrky přeskočeny (demo režim)."});}persist()}
 function remaining(){return FIELD_TEST_UNLIMITED_CAPTURES?Infinity:Math.max(0,3-state.events.filter(e=>e.action==="capture"&&e.player===state.selected&&e.day===gameDay()).length)}
 function owned(){return Object.values(state.stops).filter(v=>v.owner===state.selected).length}
@@ -126,6 +126,7 @@ map.on("style.load",()=>{
 map.on("error",event=>console.warn("MapLibre:",event.error?.message||event.error));
 let activeScreen="map";
 function openScreen(name){
+  closeScoreDetailIfOpen();
   activeScreen=name;
   const visible=name!=="map";
   $("sheet").hidden=!visible;
@@ -136,9 +137,66 @@ function openScreen(name){
   render();
 }
 function note(t){$("message").textContent=t}
+function closeScoreDetailIfOpen(){if(!$("score-dialog-overlay").hidden)closeScoreDetail()}
 let confirmingCapture=false;
 $("close").onclick=()=>openScreen("map");
 $("scrim").onclick=()=>openScreen("map");
+// Překryvný rozpis bodů. Bez změny zvoleného území či herního stavu.
+let scoreDetailType=null,scoreDialogReturnFocus=null;
+const scoreDialog=$("score-dialog-overlay");
+function closeScoreDetail(){
+  if(scoreDialog.hidden)return;
+  scoreDialog.hidden=true;scoreDetailType=null;
+  scoreDialogReturnFocus?.focus?.();scoreDialogReturnFocus=null;
+}
+function scoreDetailRow(label,value,extraClass=""){
+  return '<div class="score-detail-row '+extraClass+'"><span>'+
+    escapeStopText(label)+'</span><strong>'+escapeStopText(value)+'</strong></div>';
+}
+function showScoreDetail(kind){
+  const stop=STOPS.find(s=>s.id===selectedStop);
+  if(!stop)return;
+  const record=state.stops[stop.id];
+  const context={ownerRecord:record,gameDay:gameDay(),diffDays,
+    bonuses:ACTIVE_SCORE_BONUSES};
+  const detail=kind==="capture"?captureBreakdown(stop,context):holdingBreakdown(stop,context);
+  scoreDetailType=kind;
+  scoreDialogReturnFocus=document.activeElement;
+  $("score-dialog-title").textContent=kind==="capture"?"Body za obsazení":"Body denně";
+  $("score-dialog-stop").textContent=stop.name;
+  const body=detail.lines.map(line=>scoreDetailRow(
+    line.label+(kind==="capture"&&line.multiplier!==1?" (50 %)":""),
+    line.amount+" b."
+  )).join("");
+  const adjustment=detail.holdingAdjustment
+    ?scoreDetailRow("Stáří zastávky – bez denního výnosu",
+        detail.holdingAdjustment+" b.","score-detail-adjustment"):"";
+  const bonuses=detail.bonusLines.length
+    ?detail.bonusLines.map(b=>scoreDetailRow(b.label,"+"+b.amount+" b.")).join("")
+    :'<p class="score-detail-empty">Žádné aktuálně platné bonusy</p>';
+  $("score-dialog-lines").innerHTML=body+adjustment+
+    '<div class="score-detail-subtitle">Bonusy</div>'+bonuses+
+    scoreDetailRow("Celkem",detail.total+" b.","score-detail-total");
+  scoreDialog.hidden=false;
+  $("score-dialog-close").focus();
+}
+$("stopdetail").addEventListener("click",event=>{
+  const metric=event.target.closest("[data-score-detail]");
+  if(metric)showScoreDetail(metric.dataset.scoreDetail);
+});
+$("score-dialog-close").onclick=closeScoreDetail;
+scoreDialog.addEventListener("click",event=>{
+  if(event.target===scoreDialog)closeScoreDetail();
+});
+document.addEventListener("keydown",event=>{
+  if(scoreDialog.hidden)return;
+  if(event.key==="Escape"){event.preventDefault();event.stopImmediatePropagation();closeScoreDetail();}
+  if(event.key==="Tab"){
+    // Překryv obsahuje jediný interaktivní prvek, zavírací tlačítko.
+    event.preventDefault();$("score-dialog-close").focus();
+  }
+},true);
+
 for(const b of document.querySelectorAll(".nav button")) b.onclick=()=>openScreen(b.dataset.screen);
 $("show-challenge").onclick=()=>{
   const s=challengeStop();
