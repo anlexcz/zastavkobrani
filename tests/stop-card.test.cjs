@@ -60,7 +60,7 @@ test("Kategorie mají existující piktogramy Temaki, ale žádné emoji",()=>{
  const content=ctx.card(args);
  assert.match(content,/class="stop-mode-icon"/);
  assert.doesNotMatch(content,/class="stop-mode"[^>]*><img[^>]*><span>/);
- assert.match(content,/icons\/tram.svg/);
+ assert.match(content,/assets\/temaki\/tram.svg/);
  assert.doesNotMatch(content,/🚋|🚌|🚆/);
 });
 test("Neobsazená zastávka je v horním označení karty",()=>{
