@@ -46,8 +46,8 @@ test("Karta a rozpis jsou klikatelné a používají stejné funkce",()=>{
  assert.match(card,/data-score-detail="capture"/);
  assert.match(card,/data-score-detail="holding"/);
  assert.doesNotMatch(card,/Testovací stav je uložen jen v tomto prohlížeči/);
- assert.match(app,/function captureScore\(s\)\{return captureBreakdown\(s\)\.total\}/);
- assert.match(app,/function holdingScore\(s\)\{return holdingBreakdown\(s\)\.total\}/);
+ assert.match(app,/function captureScore\(s\)\{return captureBreakdown\(s,\{bonuses:ACTIVE_SCORE_BONUSES\}\)\.total\}/);
+ assert.match(app,/function holdingScore\(s\)\{return holdingBreakdown\(s,\{bonuses:ACTIVE_SCORE_BONUSES\}\)\.total\}/);
  assert.match(html,/id="score-dialog-overlay"/);
  assert.match(html,/role="dialog"/);
  assert.ok(html.indexOf('src="scoring.js')<html.indexOf('src="app.js'));
