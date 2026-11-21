@@ -1,3 +1,16 @@
+# GPS akční tlačítko a dopravní piktogramy (21. 11. 2026)
+
+[Otevřít aktuální test na telefonu](https://anlexcz.github.io/zastavkobrani/?v=gps24action)
+
+- Karta zobrazuje pouze jednobarevné piktogramy dopravních kategorií bez badge a viditelného názvu. Textový název zůstává jako `aria-label` a `title` pro přístupnost.
+- Podle schváleného UX má karta pouze jednu primární akci přes celou šířku: pro cizí/neobsazenou zastávku obsazení a pro vlastní údržbu. Pro obsazení se zobrazuje inline potvrzení Ano/Ne.
+- Stav tlačítka se průběžně odvozuje od aktualizované GPS polohy (vzdálenost nejvýše 30 m od příslušného povrchového kandidátního PID bodu, přesnost zařízení nejvýše ±30 m, stáří měření nejvýše 15 s), denního limitu, ochrany, cooldownu a případně stáří vlastnictví. Mimo dosah je barevné tlačítko utlumené a **skutečně disabled**; časové blokace zůstávají šedé.
+- Pod tlačítkem je živý údaj vzdálenosti a možnost „Povolit polohu“. Lokalizační oprávnění se žádá až po úkonu uživatele. Po pokusu o obsazení se dělá nové geolokační měření (maximumAge 0), takže stará pozice neopravňuje k akci.
+- Stav se kontroluje při GPS aktualizaci a nejméně každých pět sekund. Dosavadní lokální stav dvou hráčů zůstává zachován.
+- Pořád jde o klientský terénní test bez serverové autorizace a bez administrátorsky schválených GPS bodů. Nejde o skutečně zabezpečenou produkční hru.
+
+---
+
 # GPS test – oprava mapových okruhů a karty (21. 11. 2026)
 
 [Otevřít aktuální verzi](https://anlexcz.github.io/zastavkobrani/?v=gps23areas)
