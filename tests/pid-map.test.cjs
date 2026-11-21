@@ -6,7 +6,7 @@ const vm=require("node:vm");
 
 const dataSource=fs.readFileSync("pid-prague.js","utf8");
 const mapSource=fs.readFileSync("stop-map.js","utf8");
-const appSource=fs.readFileSync("app.js","utf8");
+const appSource=["app.js","js/game.js","js/game-actions.js","js/gps.js","js/storage.js","js/screens/daily.js","js/screens/ranking.js","js/screens/profile.js"].map(p=>fs.readFileSync(p,"utf8")).join("\n");
 const demoSource=fs.readFileSync("demo-world.js","utf8");
 const strategicSource=fs.readFileSync("pid-strategic.js","utf8");
 const ownerBorderSource=fs.readFileSync("pid-owner-boundaries.js","utf8");
