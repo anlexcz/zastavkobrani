@@ -18,7 +18,7 @@ test("Neutrální bonus +16 neplatí na převzetí",()=>{
  assert.equal(captureBreakdown(stop(["tram"]),{neutral:true}).total,40);
  assert.equal(captureBreakdown(stop(["tram"])).total,24);
 });
-test("Autobusové kategorie se pro obsazení sloučí",()=>{
+test("Městský a regionální autobus se ve všech herních výpočtech počítají jako jeden druh",()=>{
  const s=stop(["tram","urban_bus","regional_bus"]);
  assert.equal(captureBreakdown(s).total,32);
  assert.equal(holdingBreakdown(s).total,12);
@@ -77,4 +77,17 @@ test("Obsazovací základ ×2, schválený bonus neutrality a nulová změna den
  assert.equal(holdingBreakdown(stop(["bus"])).total,6);
  assert.equal(holdingBreakdown(stop(["tram","bus"])).total,12);
  assert.deepEqual(Array.from(RULES.declining),[6,5,4,3,2,1,0]);
+});
+
+test("Autobusová kombinace nemá zvýhodnění při držení ani AP",()=>{
+ const solo=stop(["bus"]),both=stop(["urban_bus","regional_bus"]);
+ assert.equal(captureBreakdown(both,{neutral:true}).total,captureBreakdown(solo,{neutral:true}).total);
+ assert.equal(holdingBreakdown(both).total,holdingBreakdown(solo).total);
+ assert.equal(actionCost(both,"capture"),actionCost(solo,"capture"));
+ const multi=stop(["tram","urban_bus","regional_bus"]);
+ const normalized=stop(["tram","bus"]);
+ assert.equal(captureBreakdown(multi).total,captureBreakdown(normalized).total);
+ assert.equal(holdingBreakdown(multi).total,holdingBreakdown(normalized).total);
+ assert.equal(actionCost(multi,"capture"),actionCost(normalized,"capture"));
+ assert.equal(actionCost(multi,"maintain"),actionCost(normalized,"maintain"));
 });
