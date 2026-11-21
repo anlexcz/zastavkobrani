@@ -1,0 +1,70 @@
+/* Zastávkobraní — společná škála. Jediné místo pro globální designové hodnoty.
+   Kořenové písmo zůstává na nastavení prohlížeče (typicky 16px).
+   Rozměry komponent jsou v rem; fixní pixely jsou vyhrazené pro hranice a technické limity. */
+:root {
+  color-scheme: dark;
+  font-size: 100%;
+  font-family: Inter, system-ui, sans-serif;
+  line-height: 1.5;
+  --bg: #151719;
+  --panel: #202225;
+  --panel-2: #2b2e31;
+  --text: #f2f2f2;
+  --muted: #b1b3b5;
+  --line: #3b3f43;
+  --accent: #f0523d;
+  --surface-overlay: #151719ed;
+  --nav-surface: #151719;
+  --color-success: #80c9a0;
+  --color-urgent: #f2a493;
+  --color-declining: #e2bd88;
+
+  /* Prostorový rytmus (4 / 8 / 12 / 16 / 24 / 32 CSS px při 16px základu). */
+  --space-1: .25rem;
+  --space-2: .5rem;
+  --space-3: .75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-xs: var(--space-1);
+  --space-sm: var(--space-2);
+  --space-md: var(--space-3);
+  --space-lg: var(--space-4);
+  --gap: var(--space-md);
+
+  /* Typografie: 16px kořen, kompaktní výchozí UI 14px, čitelné formuláře 16px. */
+  --font-body: .875rem;
+  --font-small: .75rem;
+  --font-meta: .6875rem;
+  --font-control: .875rem;
+  --font-form: 1rem;
+
+  --radius-sm: .5rem;
+  --radius-md: .625rem;
+  --radius: .875rem;
+  --border-width: 1px;
+
+  --control-height: 2.75rem;
+  --action-height: 3.5625rem;
+  --header-h: 4rem;
+  --nav-h: 4.0625rem;
+  --admin-sidebar-width: 14.25rem;
+  --admin-content-max: 76.875rem;
+  --admin-header-h: 4rem;
+
+  --z-ui: 1000;
+}
+*, *::before, *::after {box-sizing: border-box}
+html {min-width: 0}
+body {margin: 0; font: var(--font-body)/1.5 Inter, system-ui, sans-serif; color: var(--text); background: var(--bg)}
+button,input,select,textarea {font-family: inherit}
+button,select {color: inherit}
+button {cursor: pointer}
+button:disabled {cursor: default}
+:where(button,a,input,select,textarea,summary):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {scroll-behavior: auto}
+}
