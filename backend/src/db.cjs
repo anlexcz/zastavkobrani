@@ -1,6 +1,6 @@
 "use strict";
-const {Pool} = require("pg");
 function createPool(config) {
+  const {Pool} = require("pg");
   return new Pool({
     host: config.pgHost,
     port: config.pgPort,
