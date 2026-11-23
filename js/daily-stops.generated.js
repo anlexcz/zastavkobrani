@@ -48,7 +48,8 @@ export const DAILY_STOP_SCHEDULE=Object.freeze({
     "2026-12-03": "pidg_f254c9b6df98ad8b",
     "2026-12-04": "pidg_21bdb8533099b5a6",
     "2026-12-05": "pidg_5f9d4350c24dae3c",
-    "2026-12-06": "pidg_96c6dde7a9c2aa4d"
+    "2026-12-06": "pidg_96c6dde7a9c2aa4d",
+    "2026-12-07": "pidg_4d9d394d946e6f9c"
   },
   "overrides": {
     "2027-11-17": "pidg_d99633220c6ee5e5"
