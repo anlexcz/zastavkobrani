@@ -9,11 +9,11 @@ cd /srv/zastavkobrani
 git fetch origin
 git checkout feat/backend-foundation
 cd backend
-npm ci
+npm install --ignore-scripts --no-audit --no-fund
 npm test
 ```
 
-`npm ci` vyžaduje committovaný lockfile (připravený samostatně před serverovým nasazením). Bez lockfile nepoužívejte `npm ci`; nejprve na vývojovém stroji proveďte `npm install --package-lock-only` a lockfile commitněte. Neinstalujte globální balíčky.
+V této pracovní větvi zatím není lockfile; `npm install` jej lokálně vytvoří. Před řízeným nasazením je nutné přidat ověřený `package-lock.json`, poté používat reprodukovatelné `npm ci`. Neinstalujte globální balíčky.
 
 Zabezpečení: **aplikaci nespouštět jako vlastníka schématu databáze**. Nejprve vytvořit oddělenou roli `zastavkobrani_app` (NOLOGIN lze změnit až s připraveným lokálním peer mapováním; při SCRAM použít tajemství mimo Git). Peer přes Unix socket vyžaduje shodu OS a DB identity nebo výslovné `pg_ident.conf` mapování. Nepoužívat automaticky stávající vlastnickou DB roli pro veřejný web.
 
