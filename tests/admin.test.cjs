@@ -84,7 +84,7 @@ test("Mobilní administrace používá svislý drawer bez horizontálního menu"
 });
 
 test("Obě stránky načítají společné designové tokeny před specializovanými styly",()=>{
- const game=fs.readFileSync(path.join(ROOT,"index.html"),"utf8");
+ const game=fs.readFileSync(path.join(ROOT,"app/index.html"),"utf8");
  const admin=fs.readFileSync(path.join(ROOT,"admin/index.html"),"utf8");
  assert.ok(game.indexOf("design-system.css")<game.indexOf('href="style.css'));
  assert.ok(admin.indexOf("design-system.css")<admin.indexOf('href="../style.css'));

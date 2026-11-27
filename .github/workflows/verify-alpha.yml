@@ -19,6 +19,8 @@ jobs:
           node --check scoring.js
           node --check stop-card.js
           node --check app.js
+          node --check web/site.js
+          node --check web/content.js
           node --check admin/admin.js
           node --check admin/core.js
           find js -type f -name '*.js' -print0 | xargs -0 -n1 node --check

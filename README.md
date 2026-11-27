@@ -1,3 +1,16 @@
+# Aktuální struktura webu (27. 11. 2026)
+
+- `/` – veřejný web a proklikávatelné návrhy (hash navigace, bez autentizace).
+- `/app/` – původní funkční lokální GPS alfa, stejný stav localStorage.
+- `/admin/` – původní funkční náhled administrace.
+- `web/` – veřejné obrazovky, návrhy nových herních stránek a obsah.
+
+[Úvodní stránka](https://anlexcz.github.io/zastavkobrani/) · [GPS alfa](https://anlexcz.github.io/zastavkobrani/app/) · [Návrhy herního UI](https://anlexcz.github.io/zastavkobrani/#app/map)
+
+Starší záznamy níže popisují tehdejší stav, nikoli nová pravidla účtů či aktuální URL alfy. Produkční backend a zabezpečení ještě nejsou připojené.
+
+---
+
 # Zastávkobraní – aktuální mobilní alfa (UI v1, 21. 11. 2026)
 
 [Otevřít současnou alfu](https://anlexcz.github.io/zastavkobrani/?v=ui-v1)

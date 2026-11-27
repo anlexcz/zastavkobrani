@@ -4,7 +4,7 @@ const fs=require("node:fs");
 const vm=require("node:vm");
 const source=fs.readFileSync("transport-modes.js","utf8")+"\n"+fs.readFileSync("stop-card.js","utf8");
 const app=["app.js","js/game.js","js/game-actions.js","js/gps.js","js/storage.js","js/screens/daily.js","js/screens/ranking.js","js/screens/profile.js","js/screens/stop.js","js/ui.js"].map(p=>fs.readFileSync(p,"utf8")).join("\n");
-const html=fs.readFileSync("index.html","utf8");
+const html=fs.readFileSync("app/index.html","utf8");
 const ctx={};
 vm.runInNewContext(source+"\nthis.card=stopCardHtml;this.countdown=stopCountdown;",ctx);
 const stop={id:"demo",name:"Líbeznická",cats:["tram"],
