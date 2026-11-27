@@ -4,7 +4,7 @@ const fs=require("node:fs");
 const vm=require("node:vm");
 const src=fs.readFileSync("transport-modes.js","utf8")+"\n"+fs.readFileSync("scoring.js","utf8");
 const app=["app.js","js/game.js","js/game-actions.js","js/gps.js","js/storage.js","js/screens/daily.js","js/screens/ranking.js","js/screens/profile.js","js/screens/stop.js","js/ui.js"].map(p=>fs.readFileSync(p,"utf8")).join("\n");
-const html=fs.readFileSync("index.html","utf8");
+const html=fs.readFileSync("app/index.html","utf8");
 const ctx={};
 vm.runInNewContext(src+"\nthis.api={captureBreakdown,holdingBreakdown,actionCost,holdingIncome,RULES};",ctx);
 const {captureBreakdown,holdingBreakdown,actionCost,holdingIncome,RULES}=ctx.api;
