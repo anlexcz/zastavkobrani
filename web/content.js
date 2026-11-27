@@ -10,6 +10,3 @@ window.PROTO_CONTENT = {
 "podminky":["Podmínky","Pracovní zástupná stránka. Závazné podmínky budou doplněny před spuštěním."],
 "soukromi":["Ochrana osobních údajů","Pracovní zástupná stránka. Prototyp nepřijímá skutečné registrační údaje. Produkční zásady budou doplněny před spuštěním."]
 };
-window.PROTO_STOPS=[{name:"Kobylisy",district:"Kobylisy",owner:"Tepa",income:12,visited:true},{name:"Ládví",district:"Ďáblice",owner:"Tepa",income:12,visited:true},{name:"Vltavská",district:"Holešovice",owner:"Rys",income:12,visited:true},{name:"Národní třída",district:"Nové Město",owner:"",income:18,visited:false},{name:"Vozovna Kobylisy",district:"Kobylisy",owner:"",income:6,visited:false}];
-window.PROTO_DISTRICTS=["Kobylisy","Ďáblice","Holešovice","Nové Město","Bohnice","Libeň","Prosek","Střížkov"];
-window.PROTO_PLAYERS=[{name:"Rys",points:2648,color:"#ba68c8"},{name:"Tepa",points:1680,color:"#64b5f6"}];

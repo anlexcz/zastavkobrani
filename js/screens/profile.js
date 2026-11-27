@@ -22,7 +22,6 @@ function populateProfileSettings(){
  const player=PLAYERS.find(p=>p.id===getState().selected),profile=profileRecord();
  $("profile-username").value=player?.name||"";
  $("profile-display-name").value=profile.displayName||"";
- $("profile-discord").value=profile.discord||"";
  $("profile-form-status").textContent="";
  $("profile-image").value="";
  paintAvatar($("settings-avatar"),getState().selected);
@@ -51,7 +50,7 @@ function renderOwnedStops(){
  }).join(""):'<p class="empty-state">Zatím nevlastníš žádnou zastávku.</p>';
 }
 function playerEventEntries(){
- return getState().events.filter(e=>e.player===getState().selected&&diffDays(gameDay(),e.day)>=0&&diffDays(gameDay(),e.day)<30)
+ return getState().events.filter(e=>(e.player===getState().selected||e.previousOwner===getState().selected)&&diffDays(gameDay(),e.day)>=0&&diffDays(gameDay(),e.day)<30)
   .sort((a,b)=>Date.parse(b.at)-Date.parse(a.at));
 }
 function renderProfileEvents(){
@@ -59,9 +58,9 @@ function renderProfileEvents(){
  $("events-count").textContent=entries.length+" za 30 dní";
  $("events").innerHTML=shown.length?shown.map(e=>{
   const d=new Intl.DateTimeFormat("cs-CZ",{timeZone:"Europe/Prague",day:"numeric",month:"numeric",hour:"2-digit",minute:"2-digit"}).format(new Date(e.at));
-  const action=e.action==="capture"?(e.previousOwner?"Převzetí":"Obsazení"):e.action==="maintain"?"Údržba":e.action==="visit"?"Zastávka dne":"Událost";
+  const action=e.previousOwner===getState().selected?(e.action==="expire"?"Zánik vlastnictví":"Ztráta zastávky"):e.action==="capture"?(e.previousOwner?"Převzetí":"Obsazení"):e.action==="maintain"?"Údržba":e.action==="visit"?"Zastávka dne":"Událost";
   const stop=STOP_BY_ID.get(e.stopId);
-  return '<div class="player-event"><div><strong>'+escapeStopText(action)+(stop?" · "+escapeStopText(stop.name):"")+'</strong><small>'+d+'</small></div><span>'+ (Number.isFinite(e.points)?"+"+e.points+" b.":"") +'</span></div>';
+  return '<div class="player-event"><div><strong>'+escapeStopText(action)+(stop?" · "+escapeStopText(stop.name):"")+'</strong><small>'+d+'</small></div><span>'+ (e.player===getState().selected&&Number.isFinite(e.points)?"+"+e.points+" b.":"") +'</span></div>';
  }).join(""):'<p class="empty-state">Zatím žádné zaznamenané události.</p>';
  $("events-expand").hidden=entries.length<=5;
  $("events-expand").textContent=getEventsExpanded()?"Zobrazit méně":"Zobrazit další události ("+entries.length+")";

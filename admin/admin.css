@@ -111,3 +111,5 @@
 @media(max-width:420px){.admin-brand{font-size:1.25rem}.admin-header{padding-inline:var(--space-3)}.admin-menu-toggle{gap:var(--space-1)}}
 @media(prefers-reduced-motion:reduce){.admin-sidebar{transition:none}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important}}
+
+.admin-menu-group h2{font:600 var(--font-small)/1.4 Inter,system-ui,sans-serif;color:var(--muted);margin:var(--space-3) var(--space-3) var(--space-1);text-transform:uppercase;letter-spacing:.04em}.admin-menu-group button{font-weight:500}.admin-menu-group+.admin-menu-group{border-top:1px solid var(--line);padding-top:var(--space-2)}

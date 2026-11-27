@@ -34,7 +34,7 @@ const map = new maplibregl.Map({
   container:"map",style:"https://tiles.openfreemap.org/styles/liberty",
   center:[14.44,50.085],zoom:10.65,attributionControl:true
 });
-map.addControl(new maplibregl.NavigationControl({showCompass:false}),"top-left");
+if(matchMedia("(min-width:760px)").matches)map.addControl(new maplibregl.NavigationControl({showCompass:false}),"bottom-right");
 let selectedPlatform=null;
 map.on("load",()=>{
   installStopMap(map,STOPS,(id,pointId)=>{
@@ -75,7 +75,9 @@ map.on("style.load",()=>{
   }
 });
 map.on("error",event=>console.warn("MapLibre:",event.error?.message||event.error));
-let activeScreen="map";
+let activeScreen="map",otherPlayer=null,statPeriod="30",stopReturn="map";
+const tabMemory={map:"map",daily:"daily",ranking:"ranking",profile:"profile"};
+const tabFor=name=>name==="stop"?tabFor(stopReturn):name==="player"?"ranking":name.startsWith("profile")?"profile":name;
 let rankingPeriod="30";
 let dailyHistoryExpanded=false;
 let profileEventsExpanded=false;
@@ -88,7 +90,9 @@ const {profileRecord,playerLabel,avatarUrl,paintAvatar,populateProfileSettings,p
 });
 function openScreen(name){
   closeScoreDetailIfOpen();
+  if(name==="stop"&&activeScreen!=="stop")stopReturn=activeScreen;
   activeScreen=name;
+  if(name!=="stop")tabMemory[tabFor(name)]=name;
   const visible=name!=="map";
   $("sheet").hidden=!visible;
   const isStop=name==="stop";
@@ -96,20 +100,21 @@ function openScreen(name){
   $("scrim").hidden=!isStop;
   for(const el of document.querySelectorAll(".screen")) el.hidden=el.id!=="screen-"+name;
   for(const el of document.querySelectorAll(".nav button")){
-    const active=el.dataset.screen===(isStop?"map":name==="profile-settings"?"profile":name);
+    const active=el.dataset.screen===tabFor(name);
     el.classList.toggle("active",active);
     if(active)el.setAttribute("aria-current","page");else el.removeAttribute("aria-current");
   }
   if(name==="map") {selectedStop=null;selectedPlatform=null;confirmingCapture=false;}
   if(name==="profile-settings")populateProfileSettings();
+  if(visible){$("map-search-panel").hidden=true;$("map-search-toggle").setAttribute("aria-expanded","false");}
   if(visible)$("sheet").scrollTop=0;
   render();
 }
 function note(t){$("message").textContent=t}
 function closeScoreDetailIfOpen(){if(!$("score-dialog-overlay").hidden)closeScoreDetail();if(!$("history-dialog-overlay").hidden)closeHistoryDetail()}
 let confirmingCapture=false;
-$("close").onclick=()=>openScreen("map");
-$("scrim").onclick=()=>openScreen("map");
+$("close").onclick=()=>openScreen(stopReturn);
+$("scrim").onclick=()=>openScreen(stopReturn);
 // Překryvný rozpis bodů. Bez změny zvoleného území či herního stavu.
 let scoreDetailType=null,scoreDialogReturnFocus=null;
 const scoreDialog=$("score-dialog-overlay");
@@ -171,7 +176,8 @@ document.addEventListener("keydown",event=>{
   }
 },true);
 
-for(const b of document.querySelectorAll(".nav button")) b.onclick=()=>openScreen(b.dataset.screen);
+for(const b of document.querySelectorAll(".nav button")) b.onclick=()=>{const tab=b.dataset.screen;openScreen(tabFor(activeScreen)===tab?tab:tabMemory[tab]||tab)};
+for(const b of document.querySelectorAll("[data-open-screen]")) b.onclick=()=>openScreen(b.dataset.openScreen);
 $("show-challenge").onclick=()=>{
   const s=challengeStop();
   if(!s)return;
@@ -179,7 +185,7 @@ $("show-challenge").onclick=()=>{
   map.flyTo({center:[s.lon,s.lat],zoom:15.3,essential:true});
 };
 // Výběr GIS vrstvy neuzavírá detail.
-document.addEventListener("keydown",e=>{if(e.key==="Escape")openScreen("map")});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("map-search-panel").hidden){$("map-search-panel").hidden=true;$("map-search-toggle").setAttribute("aria-expanded","false")}else openScreen(activeScreen==="stop"?stopReturn:"map")}});
 
 const historyOverlay=$("history-dialog-overlay");
 let historyReturnFocus=null;
@@ -251,7 +257,10 @@ $("daily-visit").textContent=done?"Dnes splněno":"Splnit zastávku dne";
 $("daily-stop-hint").textContent=done?"Návštěva byla zaznamenána.":"Samostatná GPS návštěva · 0 AP";
 if(activeScreen==="daily")renderDailyHistory();
 renderRanking();
-if(activeScreen==="profile"){renderOwnedStops();renderProfileEvents();}}
+if(activeScreen==="profile"||activeScreen==="profile-stops")renderOwnedStops();
+if(activeScreen==="profile-activity")renderProfileEvents();
+if(activeScreen==="profile-statistics")renderStatistics();
+if(activeScreen==="player")renderOtherPlayer();}
 $("player").innerHTML=PLAYERS.map(p=>'<option value="'+p.id+'">'+p.name+'</option>').join("");
 $("player").addEventListener("change",e=>{state.selected=e.target.value;confirmingCapture=false;profileEventsExpanded=false;persist();note("");render()});
 const gameActions=createGameActions({
@@ -260,6 +269,27 @@ const gameActions=createGameActions({
   stopLocationState,persist,note,render,$
 });
 const {doGpsAction}=gameActions;
+function metricRow(label,value){return '<div class="profile-metric"><span>'+escapeStopText(label)+'</span><strong>'+escapeStopText(String(value))+'</strong></div>'}
+function renderStatistics(){
+ const id=state.selected,days=statPeriod==="30"?30:null;
+ const entries=state.ledger.filter(x=>x.player===id&&(!days||diffDays(gameDay(),x.day)>=0&&diffDays(gameDay(),x.day)<days));
+ $("profile-statistics").innerHTML=metricRow("Body celkem",total(id,days))+["capture","holding","daily","streak"].map((kind,i)=>metricRow(["Obsazování","Denní výnos","Zastávka dne","Série"][i],entries.filter(e=>e.type===kind).reduce((sum,e)=>sum+e.amount,0))).join("")+metricRow("Aktuálně vlastněné zastávky",owned());
+ for(const b of document.querySelectorAll("[data-stat-period]"))b.setAttribute("aria-pressed",String(b.dataset.statPeriod===statPeriod));
+}
+for(const b of document.querySelectorAll("[data-stat-period]"))b.onclick=()=>{statPeriod=b.dataset.statPeriod;renderStatistics()};
+function renderOtherPlayer(){
+ const p=PLAYERS.find(x=>x.id===otherPlayer);if(!p)return;
+ paintAvatar($("other-avatar"),p.id);$("other-name").textContent=playerLabel(p.id);$("other-handle").textContent="@"+p.name;
+ const list=STOPS.filter(s=>state.stops[s.id]?.owner===p.id).sort((a,b)=>a.name.localeCompare(b.name,"cs"));
+ $("other-stats").innerHTML=metricRow("Body za 30 dní",total(p.id,30))+metricRow("Body celkem",total(p.id))+metricRow("Vlastněné zastávky",list.length);
+ $("other-stops").innerHTML=list.map(s=>'<button class="owned-row" data-other-stop="'+escapeStopText(s.id)+'"><strong>'+escapeStopText(s.name)+'</strong><span>›</span></button>').join("")||'<p class="empty-state">Žádné zastávky.</p>';
+}
+$("leaderboard").addEventListener("click",e=>{const b=e.target.closest("[data-player-id]");if(!b)return;otherPlayer=b.dataset.playerId;openScreen(otherPlayer===state.selected?"profile":"player")});
+$("other-stops").addEventListener("click",e=>{const b=e.target.closest("[data-other-stop]");if(!b)return;selectedStop=b.dataset.otherStop;selectedPlatform=null;confirmingCapture=false;openScreen("stop")});
+const normalizeSearch=s=>String(s).normalize("NFD").replace(/\p{M}/gu,"").toLocaleLowerCase("cs");
+$("map-search-toggle").onclick=()=>{const panel=$("map-search-panel");panel.hidden=!panel.hidden;$("map-search-toggle").setAttribute("aria-expanded",String(!panel.hidden));if(!panel.hidden)$("map-search-input").focus()};
+$("map-search-input").oninput=()=>{const q=normalizeSearch($("map-search-input").value.trim());$("map-search-results").innerHTML=q?STOPS.filter(s=>normalizeSearch(s.name).includes(q)).slice(0,30).map(s=>'<button data-result-stop="'+escapeStopText(s.id)+'">'+escapeStopText(s.name)+'</button>').join("")||'<p>Žádné výsledky.</p>':""};
+$("map-search-results").onclick=e=>{const b=e.target.closest("[data-result-stop]");if(!b)return;const s=STOP_BY_ID.get(b.dataset.resultStop);if(!s)return;$("map-search-panel").hidden=true;$("map-search-toggle").setAttribute("aria-expanded","false");map.flyTo({center:[s.lon,s.lat],zoom:15.4});selectedStop=s.id;selectedPlatform=null;confirmingCapture=false;openScreen("stop")};
 $("profile-edit").onclick=()=>openScreen("profile-settings");
 $("settings-back").onclick=()=>openScreen("profile");
 $("events-expand").onclick=()=>{profileEventsExpanded=!profileEventsExpanded;renderProfileEvents()};
@@ -274,9 +304,9 @@ $("owned-list").addEventListener("click",event=>{
 });
 $("profile-form").addEventListener("submit",event=>{
  event.preventDefault();
- const name=$("profile-display-name").value.trim(),discord=$("profile-discord").value.trim();
+ const name=$("profile-display-name").value.trim();
  state.profiles??={};
- state.profiles[state.selected]={...profileRecord(),displayName:name.slice(0,36),discord:discord.slice(0,40),...(pendingProfileAvatar?{avatar:pendingProfileAvatar}:{})};
+ state.profiles[state.selected]={...profileRecord(),displayName:name.slice(0,36),...(pendingProfileAvatar?{avatar:pendingProfileAvatar}:{})};
  persist();openScreen("profile");
 });
 $("profile-image").addEventListener("change",event=>{

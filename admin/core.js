@@ -2,16 +2,209 @@
 import {isEligibleDailyStop} from "../js/daily-stops.js";
 
 export const ADMIN_SECTIONS=Object.freeze([
- {id:"overview",title:"Přehled",description:"Stav aplikace a otevřené úkoly",status:"ready"},
- {id:"daily",title:"Zastávka dne",description:"Kalendář, losování a ruční výjimky",status:"draft"},
- {id:"territories",title:"Zastávky a GPS",description:"Katalog herních území a fyzických bodů",status:"read"},
- {id:"imports",title:"PID importy",description:"Zdrojová data, změnové sady a schvalování",status:"planned"},
- {id:"players",title:"Hráči",description:"Účty, role, moderace a žádosti o výmaz",status:"planned"},
- {id:"ownership",title:"Vlastnictví a akce",description:"Převzetí, údržba, opravy a audit událostí",status:"planned"},
- {id:"economy",title:"Ekonomika",description:"Verze pravidel, bodování a bonusy",status:"planned"},
- {id:"achievements",title:"Achievementy",description:"Definice sad zastávek a podmínky odměn",status:"planned"},
- {id:"audit",title:"Audit",description:"Schválení, historie změn a dohledání zásahů",status:"planned"},
- {id:"system",title:"Systém",description:"Uzávěrky, diagnostika a provoz",status:"planned"}
+  {
+    "id": "overview",
+    "title": "Přehled",
+    "description": "Stav aplikace",
+    "status": "ready",
+    "group": "Přehled"
+  },
+  {
+    "id": "territories",
+    "title": "Herní zastávky",
+    "description": "Katalog území a GPS bodů",
+    "status": "read",
+    "group": "Mapa a zastávky"
+  },
+  {
+    "id": "platforms",
+    "title": "Stanoviště",
+    "description": "Fyzická stanoviště PID",
+    "status": "planned",
+    "group": "Mapa a zastávky"
+  },
+  {
+    "id": "districts",
+    "title": "Čtvrti",
+    "description": "Hranice a přiřazení zastávek",
+    "status": "planned",
+    "group": "Mapa a zastávky"
+  },
+  {
+    "id": "imports",
+    "title": "Import dat",
+    "description": "Zdrojová data a schvalování",
+    "status": "planned",
+    "group": "Mapa a zastávky"
+  },
+  {
+    "id": "exceptions",
+    "title": "Výjimky a nesrovnalosti",
+    "description": "Kontrola změn a GPS",
+    "status": "planned",
+    "group": "Mapa a zastávky"
+  },
+  {
+    "id": "daily",
+    "title": "Zastávka dne",
+    "description": "Kalendář a výjimky",
+    "status": "draft",
+    "group": "Hra"
+  },
+  {
+    "id": "ownership",
+    "title": "Vlastnictví",
+    "description": "Historie území",
+    "status": "planned",
+    "group": "Hra"
+  },
+  {
+    "id": "economy",
+    "title": "Herní ekonomika",
+    "description": "Bodování a bonusy",
+    "status": "planned",
+    "group": "Hra"
+  },
+  {
+    "id": "game-config",
+    "title": "Herní konfigurace",
+    "description": "Pravidla a provozní režim",
+    "status": "planned",
+    "group": "Hra"
+  },
+  {
+    "id": "events",
+    "title": "Herní události",
+    "description": "Chronologický přehled akcí",
+    "status": "planned",
+    "group": "Hra"
+  },
+  {
+    "id": "achievements",
+    "title": "Sbírky a úspěchy",
+    "description": "Budoucí rozšíření",
+    "status": "planned",
+    "group": "Hra"
+  },
+  {
+    "id": "players",
+    "title": "Seznam hráčů",
+    "description": "Přehled účtů",
+    "status": "planned",
+    "group": "Hráči"
+  },
+  {
+    "id": "accounts",
+    "title": "Správa účtů",
+    "description": "Moderace a ruční obnova hesel",
+    "status": "planned",
+    "group": "Hráči"
+  },
+  {
+    "id": "suspicious",
+    "title": "Podezřelé herní akce",
+    "description": "Kontrola bez automatických banů",
+    "status": "planned",
+    "group": "Hráči"
+  },
+  {
+    "id": "landing",
+    "title": "Landing page",
+    "description": "Texty veřejného webu",
+    "status": "planned",
+    "group": "Obsah a komunita"
+  },
+  {
+    "id": "news",
+    "title": "Novinky",
+    "description": "Články",
+    "status": "planned",
+    "group": "Obsah a komunita"
+  },
+  {
+    "id": "changelog",
+    "title": "Changelog",
+    "description": "Historie verzí",
+    "status": "planned",
+    "group": "Obsah a komunita"
+  },
+  {
+    "id": "faq",
+    "title": "FAQ",
+    "description": "Otázky a odpovědi",
+    "status": "planned",
+    "group": "Obsah a komunita"
+  },
+  {
+    "id": "rules",
+    "title": "Pravidla",
+    "description": "Herní dokumentace",
+    "status": "planned",
+    "group": "Obsah a komunita"
+  },
+  {
+    "id": "roadmap",
+    "title": "Stav vývoje",
+    "description": "Veřejná roadmapa",
+    "status": "planned",
+    "group": "Obsah a komunita"
+  },
+  {
+    "id": "contact",
+    "title": "Kontakt",
+    "description": "Kontaktní údaje",
+    "status": "planned",
+    "group": "Obsah a komunita"
+  },
+  {
+    "id": "terms",
+    "title": "Podmínky",
+    "description": "Verze podmínek",
+    "status": "planned",
+    "group": "Obsah a komunita"
+  },
+  {
+    "id": "privacy",
+    "title": "Soukromí",
+    "description": "Zásady ochrany údajů",
+    "status": "planned",
+    "group": "Obsah a komunita"
+  },
+  {
+    "id": "discord",
+    "title": "Discord",
+    "description": "Budoucí integrace",
+    "status": "planned",
+    "group": "Obsah a komunita"
+  },
+  {
+    "id": "system",
+    "title": "Stav služeb",
+    "description": "Diagnostika",
+    "status": "planned",
+    "group": "Systém"
+  },
+  {
+    "id": "jobs",
+    "title": "Plánované úlohy",
+    "description": "Uzávěrky a importy",
+    "status": "planned",
+    "group": "Systém"
+  },
+  {
+    "id": "audit",
+    "title": "Auditní log",
+    "description": "Historie zásahů",
+    "status": "planned",
+    "group": "Systém"
+  },
+  {
+    "id": "config",
+    "title": "Konfigurace",
+    "description": "Provozní nastavení",
+    "status": "planned",
+    "group": "Systém"
+  }
 ]);
 export function validDay(day){
  return typeof day==="string" && /^\d{4}-\d{2}-\d{2}$/.test(day)&&

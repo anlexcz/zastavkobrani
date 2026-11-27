@@ -157,7 +157,7 @@ test("Zobrazení denní zastávky pouze vycentruje mapu a nezobrazuje detail",()
  assert.doesNotMatch(content,/openScreen\("stop"\)/);
 });
 test("Profil má vlastní zastávky, rozbalení událostí a účetní nastavení",()=>{
- for(const id of ["owned-list","owned-count","events-expand","profile-edit","screen-profile-settings","profile-form","profile-display-name","profile-discord","profile-image","profile-username","settings-back"]){
+ for(const id of ["owned-list","owned-count","events-expand","profile-edit","screen-profile-settings","profile-form","profile-display-name","profile-email","profile-image","profile-username","settings-back"]){
   assert.match(html,new RegExp('id="'+id+'"'),id);
  }
  assert.match(app,/function renderOwnedStops/);
@@ -170,13 +170,13 @@ test("Profil má vlastní zastávky, rozbalení událostí a účetní nastaven�
  assert.doesNotMatch(app,/localStorage\.setItem\(["']password/);
 });
 
-test("Profil používá výchozí sbalené přístupné seznamy",()=>{
- assert.match(html,/<details class="profile-section compact-disclosure" id="owned-section">/);
- assert.match(html,/<details class="profile-section compact-disclosure" id="events-section">/);
- assert.doesNotMatch(html,/<details[^>]+id="owned-section"[^>]+open/);
- assert.doesNotMatch(html,/<details[^>]+id="events-section"[^>]+open/);
- for(const id of ["owned-title","player-events-title"])
-  assert.match(html,new RegExp('<summary[^>]*>[\\s\\S]*?id="'+id+'"'));
+test("Profil má samostatné podstránky a kompaktní rozcestník",()=>{
+ for(const id of ["profile-stops","profile-districts","profile-statistics","profile-activity","profile-settings","profile-help"]){
+  assert.ok(html.includes('id="screen-'+id+'"'));
+  assert.ok(html.includes('data-open-screen="'+id+'"'));
+ }
+ assert.doesNotMatch(html,/id="profile-discord"/);
+ assert.doesNotMatch(html,/<details[^>]+id="owned-section"/);
 });
 test("Kompaktní zápisy historie neztrácejí datum, AP ani získané body",()=>{
  assert.match(app,/history-item-points/);

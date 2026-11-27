@@ -10,7 +10,7 @@ const formatDay=day=>formatter.format(new Date(day+"T12:00:00Z"));
 const escapeHtml=text=>String(text??"").replace(/[&<>"']/g,char=>({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
 })[char]);
-const statusText={ready:"Funkční",draft:"Příprava změn",read:"Prohlížení",planned:"Připraveno"};
+const statusText={ready:"Funkční",draft:"Příprava změn",read:"Prohlížení",planned:"Plánováno"};
 const statusTag=s=>'<span class="admin-status '+(s==="ready"?"is-ready":"")+'">'+statusText[s]+'</span>';
 const state={
   stops:[],calendar:null,published:null,draft:null,view:"overview",
@@ -76,9 +76,9 @@ function initializeMenu(){
  });
 }
 function renderNavigation(){
- $("admin-menu").innerHTML=ADMIN_SECTIONS.map(section=>
+ $("admin-menu").innerHTML=[...new Set(ADMIN_SECTIONS.map(s=>s.group))].map(group=>'<div class="admin-menu-group"><h2>'+escapeHtml(group)+'</h2>'+ADMIN_SECTIONS.filter(s=>s.group===group).map(section=>
    '<button type="button" data-view="'+section.id+'" aria-current="'+(state.view===section.id?"page":"false")+'">'+
-   escapeHtml(section.title)+'</button>').join("");
+   escapeHtml(section.title)+'</button>').join("")+'</div>').join("");
  $("admin-menu").querySelectorAll("[data-view]").forEach(button=>{
   button.addEventListener("click",()=>{
     setMenuOpen(false,{restoreFocus:false});
@@ -314,9 +314,17 @@ function renderTerritories(){
 }
 function renderPlanned(sectionId){
  const current=ADMIN_SECTIONS.find(s=>s.id===sectionId);
+ if(current.group==="Obsah a komunita"&&sectionId!=="discord"){
+ $("admin-view").innerHTML=heading("OBSAH",current.title,current.description)+'<section class="admin-card"><label class="admin-field">Markdown – místní pracovní koncept<textarea id="content-draft" rows="10"></textarea></label><div class="admin-actions"><button class="admin-btn" id="content-export">Stáhnout koncept</button><button class="admin-btn" disabled>Publikovat</button></div><p class="admin-muted">Publikace vyžaduje serverové oprávnění. Text se nyní nikam neposílá.</p></section>';
+ $("content-export").onclick=()=>{const url=URL.createObjectURL(new Blob([$("content-draft").value],{type:"text/markdown;charset=utf-8"}));const a=document.createElement("a");a.href=url;a.download=sectionId+".md";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};return;
+ }
  const details={
  imports:["Ruční stažení a archivace zdrojových PID dat","Automatický výpočet rozdílů a návrh změn","Schválení, odložení a aktivace ve 03:00"],
- players:["Vyhledávání hráčů a jejich účtů","Role, pozastavení účtu a žádosti o výmaz","Moderace se zaznamenaným důvodem a auditní stopou"],
+ players:["Vyhledávání hráčů a jejich účtů","Interní příznak ověření bez veřejného odznaku"],
+ accounts:["Ruční obnova hesla a vynucení změny","Deaktivace s volbou ponechat nebo uvolnit území","Ukončení relací a audit zásahů"],
+ suspicious:["Ruční posouzení podezřelých akcí bez automatických banů"],
+ events:["Chronologický přehled akcí a filtrování"],
+ districts:["Import skutečných hranic a přiřazení zastávek"],
  ownership:["Přehled vlastníků a historie území","Kontrola bodového ledgeru, ochrany a údržby","Výjimečné opravy jako nové auditované události"],
  economy:["Zobrazení platných verzí herních pravidel","Příprava bonusů a časových akcí","Schválení a aktivace nové konfigurace"],
  achievements:["Definice tematických achievementů","Výběr skupiny zastávek a délky vlastnictví","Historie udělení a verzování definic"],
