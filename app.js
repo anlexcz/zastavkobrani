@@ -248,7 +248,7 @@ const {renderStop}=createStopScreen({
   playerLabel:(id)=>playerLabel(id),stopLocationState,stopCardHtml,stopCountdown,
   captureScore,holdingScore,renderStopHistory,$
 });
-function render(){closeDays();const p=PLAYERS.find(x=>x.id===state.selected);$("player").value=state.selected;$("profile").textContent=playerLabel(p.id);$("remaining").textContent=remaining()+"/"+RULES.dailyAP;$("ap-map").textContent=remaining()+" / "+RULES.dailyAP;$("owned").textContent=owned();$("points").textContent=total(p.id,30);$("clock").textContent="Herní den "+gameDay()+" · uzávěrka 03:00";$("profile-handle").textContent="Testovací účet · "+p.name;paintAvatar($("profile-avatar"),p.id);
+function render(){closeDays();const p=PLAYERS.find(x=>x.id===state.selected);$("player").value=state.selected;$("profile").textContent=playerLabel(p.id);$("remaining").textContent=remaining()+"/"+RULES.dailyAP;$("ap-map").textContent=remaining()+"/"+RULES.dailyAP;$("owned").textContent=owned();$("points").textContent=total(p.id,30);$("clock").textContent="Herní den "+gameDay()+" · uzávěrka 03:00";$("profile-handle").textContent="Testovací účet · "+p.name;paintAvatar($("profile-avatar"),p.id);
 refreshStopMapColors(map,state.stops,PLAYERS,selectedStop);
 const {stop:s,locationState}=renderStop();
 const challenge=challengeStop(),done=visitsFor(state.selected);
@@ -280,7 +280,7 @@ function metricRow(label,value){return '<div class="profile-metric"><span>'+esca
 function renderStatistics(){
  const id=state.selected,days=statPeriod==="30"?30:null;
  const entries=state.ledger.filter(x=>x.player===id&&(!days||diffDays(gameDay(),x.day)>=0&&diffDays(gameDay(),x.day)<days));
- $("profile-statistics").innerHTML=metricRow("Body celkem",total(id,days))+["capture","holding","daily","streak"].map((kind,i)=>metricRow(["Obsazování","Denní výnos","Zastávka dne","Série"][i],entries.filter(e=>e.type===kind).reduce((sum,e)=>sum+e.amount,0))).join("")+metricRow("Aktuálně vlastněné zastávky",owned());
+ $("profile-statistics").innerHTML=metricRow("Zastávkobody celkem",total(id,days))+["capture","holding","daily","streak"].map((kind,i)=>metricRow(["Obsazování","Denní výnos","Zastávka dne","Série"][i],entries.filter(e=>e.type===kind).reduce((sum,e)=>sum+e.amount,0))).join("")+metricRow("Aktuálně vlastněné zastávky",owned());
  for(const b of document.querySelectorAll("[data-stat-period]"))b.setAttribute("aria-pressed",String(b.dataset.statPeriod===statPeriod));
 }
 for(const b of document.querySelectorAll("[data-stat-period]"))b.onclick=()=>{statPeriod=b.dataset.statPeriod;renderStatistics()};
@@ -288,7 +288,7 @@ function renderOtherPlayer(){
  const p=PLAYERS.find(x=>x.id===otherPlayer);if(!p)return;
  paintAvatar($("other-avatar"),p.id);$("other-name").textContent=playerLabel(p.id);$("other-handle").textContent="@"+p.name;
  const list=STOPS.filter(s=>state.stops[s.id]?.owner===p.id).sort((a,b)=>a.name.localeCompare(b.name,"cs"));
- $("other-stats").innerHTML=metricRow("Body za 30 dní",total(p.id,30))+metricRow("Body celkem",total(p.id))+metricRow("Vlastněné zastávky",list.length);
+ $("other-stats").innerHTML=metricRow("Zastávkobody za 30 dní",total(p.id,30))+metricRow("Zastávkobody celkem",total(p.id))+metricRow("Vlastněné zastávky",list.length);
  $("other-stops").innerHTML=list.map(s=>'<button class="owned-row" data-other-stop="'+escapeStopText(s.id)+'"><strong>'+escapeStopText(s.name)+'</strong><span>›</span></button>').join("")||'<p class="empty-state">Žádné zastávky.</p>';
 }
 $("leaderboard").addEventListener("click",e=>{const b=e.target.closest("[data-player-id]");if(!b)return;otherPlayer=b.dataset.playerId;openScreen(otherPlayer===state.selected?"profile":"player")});

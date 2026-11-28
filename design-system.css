@@ -13,6 +13,19 @@
   --muted: #b1b3b5;
   --line: #3b3f43;
   --accent: #f0523d;
+  --accent-ink: #151719;
+  --font-ui: Inter, system-ui, sans-serif;
+  --font-display: "Bebas Neue", Impact, sans-serif;
+  --focus-ring: #f2a493;
+  --surface-input: #17191b;
+  --surface-hover: #383b3f;
+  --surface-selected: #39302d;
+  --surface-warning: #322723;
+  --border-warning: #725245;
+  --text-warning: #e7c7ba;
+  --surface-protected: #372b2b;
+  --border-protected: #654341;
+  --text-protected: #e9cbca;
   --surface-overlay: #151719ed;
   --nav-surface: #151719;
   --color-success: #80c9a0;
@@ -62,9 +75,20 @@ button,select {color: inherit}
 button {cursor: pointer}
 button:disabled {cursor: default}
 :where(button,a,input,select,textarea,summary):focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 @media (prefers-reduced-motion: reduce) {
   :root {scroll-behavior: auto}
 }
+
+/* Shared component primitives. */
+:where(button,.button,.admin-btn){font:600 var(--font-control)/1.35 var(--font-ui);color:var(--text);background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:var(--space-2) var(--space-3);min-height:var(--control-height)}
+:where(button,.button,.admin-btn).primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+:where(button,.button,.admin-btn):disabled{opacity:.5;cursor:not-allowed}
+:where(input:not([type=checkbox],[type=radio],[type=file],[type=range]),select,textarea){font:400 var(--font-form)/1.4 var(--font-ui);color:var(--text);background:var(--surface-input);border:1px solid var(--line);border-radius:var(--radius-sm);padding:var(--space-2) var(--space-3);min-height:var(--control-height);min-width:0}
+.ui-icon{display:inline-block;width:1.25em;height:1.25em;flex:none;vertical-align:-.2em;fill:none;stroke:currentColor}
+.ui-unit{display:inline-flex;align-items:center;margin-inline-start:.2em;vertical-align:baseline;line-height:1}
+.ui-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+:where(.card,.admin-card,.admin-kpi){background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md)}
+@media(prefers-reduced-motion:reduce){:where(button,a,input,select,textarea){transition:none!important;animation:none!important}}

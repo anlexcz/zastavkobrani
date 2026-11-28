@@ -2,6 +2,7 @@
 // Stručná karta podle aktuálního zadání. Původní obsáhlá karta Alphy 1.9 je nahrazena.
 const STOP_MODE_LABELS=TRANSPORT_MODE_LABELS;
 const STOP_MODE_ICONS=TRANSPORT_MODE_ICONS;
+const pointUnit=()=>globalThis.ZBIcons?.unit("stop-points")||"";
 const TEMAKI_ICON_ROOT="assets/temaki/";
 function stopModeIcon(code){
   const name=STOP_MODE_ICONS[code];
@@ -43,8 +44,8 @@ function stopCardHtml({stop,record,owner,selectedPlayer,gameDay,diffDays,capture
     (locked?'<div class="stop-protection"><span>Ochrana území</span><strong data-protection-countdown="'+escapeStopText(record.protectedUntil)+'">'+stopCountdown(record.protectedUntil,now)+'</strong></div>':'')+
     '<div class="stop-modes">'+modes+'</div>'+
     '<div class="stop-metrics">'+
-      '<button type="button" class="stop-metric" data-score-detail="capture" aria-label="Zobrazit rozpis bodů za obsazení"><strong>'+escapeStopText(points)+'</strong><span>Bodů za obsazení</span><span class="stop-metric-more" aria-hidden="true">ⓘ</span></button>'+
-      '<button type="button" class="stop-metric" data-score-detail="holding" aria-label="Zobrazit rozpis denního výnosu"><strong>'+escapeStopText(yieldPoints)+'</strong><span>'+ (hasOwner?'Aktuální výnos / den':'Plný výnos / den')+'</span><span class="stop-metric-more" aria-hidden="true">ⓘ</span></button>'+
+      '<button type="button" class="stop-metric" data-score-detail="capture" aria-label="Zobrazit rozpis bodů za obsazení"><strong>'+escapeStopText(points)+pointUnit()+'</strong><span>Bodů za obsazení</span><span class="stop-metric-more" aria-hidden="true">ⓘ</span></button>'+
+      '<button type="button" class="stop-metric" data-score-detail="holding" aria-label="Zobrazit rozpis denního výnosu"><strong>'+escapeStopText(yieldPoints)+pointUnit()+'</strong><span>'+ (hasOwner?'Aktuální výnos / den':'Plný výnos / den')+'</span><span class="stop-metric-more" aria-hidden="true">ⓘ</span></button>'+
     '</div>'+
     (hasOwner?'<div class="stop-life-summary"><span>'+escapeStopText(age===1?"Den akce · bez výnosu":fullYield?"Plný denní výnos":yieldPoints>0?"Klesající výnos":"Výnos dosáhl nuly")+'</span>'+
       '<span>'+age+'. herní den vlastnictví</span></div>':'')+

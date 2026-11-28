@@ -19,6 +19,7 @@ jobs:
           node --check scoring.js
           node --check stop-card.js
           node --check app.js
+          node --check js/icons.js
           node --check web/routes.js
           node --check web/site.js
           node --check web/content.js

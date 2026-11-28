@@ -32,10 +32,11 @@ capture.disabled=!s||captureTimeBlocked||!locationState.ok||isActionBusy();
 capture.dataset.block=captureTimeBlocked?"time":locationState.ok?"":"location";
 capture.textContent=mine?"Tvoje zastávka":protectionOther?
   "Převzetí za "+stopCountdown(rec.protectedUntil):remaining()<cost?
-  "Nedostatek AP (potřeba "+cost+")":(rec?.owner?"Převzít · ":"Obsadit · ")+cost+" AP";
+  "Nedostatek akčních bodů (potřeba "+cost+")":(rec?.owner?"Převzít · ":"Obsadit · ")+cost+" akčních bodů";
 maintain.disabled=!s||maintainTimeBlocked||!locationState.ok||isActionBusy();
 maintain.dataset.block=maintainTimeBlocked?"time":locationState.ok?"":"location";
-maintain.textContent=protectedNow?"Údržba za "+stopCountdown(rec.protectedUntil):remaining()<maintainCost?"Nedostatek AP (potřeba "+maintainCost+")":"Udržet · "+maintainCost+" AP";
+maintain.textContent=protectedNow?"Údržba za "+stopCountdown(rec.protectedUntil):remaining()<maintainCost?"Nedostatek akčních bodů (potřeba "+maintainCost+")":"Udržet · "+maintainCost+" akčních bodů";
+for(const button of [capture,maintain]){const label=button.textContent;button.setAttribute("aria-label",label);if(label.endsWith(" akčních bodů")){button.textContent=label.slice(0,-" akčních bodů".length);button.insertAdjacentHTML("beforeend",globalThis.ZBIcons.unit("zap"));}}
 $("stop-location-status").textContent=locationState.status;
 $("stop-distance").textContent=locationState.distance===null?"—":formatStopDistance(locationState.distance);
 $("stop-request-location").hidden=!!getGpsSnapshot()?.watch&&!!getGpsSnapshot()?.position;

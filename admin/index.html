@@ -8,9 +8,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../design-system.css?v=1">
+<link rel="stylesheet" href="../design-system.css?v=2">
 <link rel="stylesheet" href="../style.css?v=ui-v5">
-<link rel="stylesheet" href="./admin.css?v=2">
+<link rel="stylesheet" href="./admin.css?v=3">
 </head>
 <body class="admin-body">
 <header class="admin-header">
@@ -19,9 +19,7 @@
     <a class="admin-back" href="../app/">Zpět do hry <span aria-hidden="true">↗</span></a>
     <button class="admin-menu-toggle" id="admin-menu-toggle" type="button"
       aria-label="Otevřít nabídku administrace" aria-expanded="false" aria-controls="admin-sidebar">
-      <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-        <path d="M4 7h16M4 12h16M4 17h16"/>
-      </svg><span id="admin-menu-current">Přehled</span>
+      <svg data-ui-icon="menu" viewBox="0 0 24 24" aria-hidden="true"></svg><span id="admin-menu-current">Přehled</span>
     </button>
   </div>
 </header>
@@ -42,6 +40,7 @@
     <div id="admin-alert" class="admin-alert" role="status" aria-live="polite" hidden></div>
   </main>
 </div>
+<script src="../js/icons.js?v=1"></script>
 <script src="../pid-prague.js?v=20261119"></script>
 <script type="module" src="./admin.js?v=2"></script>
 </body>
