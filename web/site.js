@@ -3,12 +3,12 @@ const root=document.querySelector("#root"), C=window.PROTO_CONTENT;
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const icons={map:"M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z M9 3v15 M15 6v15",daily:"M3 5h18v16H3z M7 3v4 M17 3v4 M3 10h18 M9 15l2 2 4-4",ranking:"M7 3h10v8a5 5 0 0 1-10 0z M7 6H3v3l4 4 M17 6h4v3l-4 4 M12 16v5 M8 21h8",profile:"M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M4 21v-2a8 8 0 0 1 16 0v2",zap:"m13 2-9 12h7l-1 8 10-12h-7z",search:"M10 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14 M15 15l6 6",back:"M19 12H5m7-7-7 7 7 7"};
 const icon=k=>'<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="'+icons[k]+'"/></svg>';
-const link=(p,t,cls="")=>'<a class="'+cls+'" href="#'+p+'">'+t+'</a>';
+const link=(p,t,cls="")=>'<a class="'+cls+'" href="'+SiteRoutes.url(p)+'">'+t+'</a>';
 const row=(p,t,v="")=>link(p,'<span>'+t+'</span><span class="muted">'+v+' ›</span>',"list-row");
 const card=(t,v)=>'<div class="card"><small>'+t+'</small><div class="stat">'+v+'</div></div>';
 const progress=n=>'<div class="progress" aria-label="'+n+' %"><span style="width:'+n+'%"></span></div>';
 const notice='<div class="notice">LOKÁLNÍ ALFA · Skutečné účty zatím nejsou dostupné. Formulář neposílá žádné přihlašovací údaje.</div>';
-const footer=()=>'<footer>'+["jak-hrat","pravidla","novinky","faq","changelog","vyvoj","kontakt","podminky","soukromi"].map(p=>link(p,C[p][0])).join("")+'<a href="admin/">Administrace (alfa)</a>'+'</footer>';
+const footer=()=>'<footer>'+["jak-hrat","pravidla","novinky","faq","vyvoj","kontakt","podminky","soukromi"].map(p=>link(p,C[p][0])).join("")+'<a href="admin/">Administrace (alfa)</a>'+'</footer>';
 const brand=()=>link("","ZASTÁVKOBRANÍ","brand");
 const publicHeader=()=>'<header>'+brand()+'<nav class="public-nav">'+link("jak-hrat","Jak hrát")+link("novinky","Novinky")+link("faq","FAQ")+link("login","Hrát","button primary")+'</nav></header>';
 const title=(t,back)=> (back?link(back,"‹ Zpět","button"):"")+'<h1>'+t+'</h1>';
@@ -18,10 +18,14 @@ function auth(p){const reg=p==="register";if(p==="logout")return '<div class="au
 
 const authPages=["login","register","logout","forgot-password","change-password","onboarding"];
 function render(){
- const p=location.hash.slice(1).replace(/^\//,"");
- if(p==="admin"||p.startsWith("admin/")){location.replace("admin/");return}
- if(p==="app"||p.startsWith("app/")){location.replace("app/");return}
- const page=authPages.includes(p)?auth(p):!p?landing():C[p]?'<article class="article">'+title(C[p][0])+'<p>'+esc(C[p][1])+'</p>'+(p==="novinky"?row("novinky/prototyp","Připravujeme první veřejnou verzi"):p==="jak-hrat"?link("pravidla","Podrobná pravidla","button"):"")+'</article>':title("Stránka nenalezena")+link("","Zpět na úvod","button");
+ const legacy=location.hash.slice(1).replace(/^\//,"");
+ const basePath=new URL(document.baseURI).pathname;
+ const p=SiteRoutes.resolve(location.pathname.slice(basePath.length),location.hash);
+ if(legacy==="app"||legacy.startsWith("app/")){location.replace(new URL("app/",document.baseURI));return;}
+ if(legacy==="admin"||legacy.startsWith("admin/")){location.replace(new URL("admin/",document.baseURI));return;}
+ if(legacy&&p!==null){location.replace(new URL(SiteRoutes.url(p),document.baseURI));return;}
+ 
+ const page=authPages.includes(p)?auth(p):p===""?landing():C[p]?'<article class="article">'+title(C[p][0])+'<p>'+esc(C[p][1])+'</p>'+(p==="vyvoj"?'<h2>Changelog</h2><p>'+esc(C.changelog[1])+'</p>':p==="novinky"?row("novinky/prototyp","Připravujeme první veřejnou verzi"):p==="jak-hrat"?link("pravidla","Podrobná pravidla","button"):"")+'</article>':title("Stránka nenalezena")+link("","Zpět na úvod","button");
  root.innerHTML=publicHeader()+'<main>'+page+'</main>'+footer();
  document.title=(C[p]?.[0]|| (p==="login"?"Přihlášení":p==="register"?"Registrace":"Zastávkobraní"))+(p?" | Zastávkobraní":"");
  window.scrollTo(0,0);

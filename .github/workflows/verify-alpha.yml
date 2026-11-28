@@ -1,7 +1,7 @@
 name: Verify Zastavkobrani Alpha
 on:
   push:
-    branches: [main]
+    branches: [main, 'feat/**']
   workflow_dispatch:
 permissions:
   contents: read
@@ -19,6 +19,7 @@ jobs:
           node --check scoring.js
           node --check stop-card.js
           node --check app.js
+          node --check web/routes.js
           node --check web/site.js
           node --check web/content.js
           node --check admin/admin.js
