@@ -23,12 +23,12 @@ function render(){
  const p=SiteRoutes.resolve(location.pathname.slice(basePath.length),location.hash);
  if(legacy==="app"||legacy.startsWith("app/")){location.replace(new URL("app/",document.baseURI));return;}
  if(legacy==="admin"||legacy.startsWith("admin/")){location.replace(new URL("admin/",document.baseURI));return;}
- if(legacy&&p!==null){location.replace(new URL(SiteRoutes.url(p),document.baseURI));return;}
+ if(legacy&&Object.hasOwn(SiteRoutes.paths,legacy)&&p!==null){location.replace(new URL(SiteRoutes.url(p),document.baseURI));return;}
  
  const page=authPages.includes(p)?auth(p):p===""?landing():C[p]?'<article class="article">'+title(C[p][0])+'<p>'+esc(C[p][1])+'</p>'+(p==="vyvoj"?'<h2>Changelog</h2><p>'+esc(C.changelog[1])+'</p>':p==="novinky"?row("novinky/prototyp","Připravujeme první veřejnou verzi"):p==="jak-hrat"?link("pravidla","Podrobná pravidla","button"):"")+'</article>':title("Stránka nenalezena")+link("","Zpět na úvod","button");
  root.innerHTML=publicHeader()+'<main>'+page+'</main>'+footer();
  document.title=(C[p]?.[0]|| (p==="login"?"Přihlášení":p==="register"?"Registrace":"Zastávkobraní"))+(p?" | Zastávkobraní":"");
  window.scrollTo(0,0);
 }
-root.addEventListener("submit",e=>{if(e.target.id!=="auth-form")return;e.preventDefault();if(location.hash==="#register")location.hash="onboarding";else if(location.hash==="#change-password")location.href="app/";else location.href="app/"});
+root.addEventListener("submit",e=>{if(e.target.id!=="auth-form")return;e.preventDefault();const p=SiteRoutes.resolve(location.pathname.slice(new URL(document.baseURI).pathname.length));location.href=new URL(p==="register"?SiteRoutes.url("onboarding"):"app/",document.baseURI)});
 window.addEventListener("hashchange",render);render();

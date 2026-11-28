@@ -1,4 +1,5 @@
 "use strict";
+import {encodeGameRoute,decodeGameRoute} from "./js/navigation.js";
 import {gameDay,addDays,diffDays,pragueBoundaryUtc,nextGameBoundary} from "./js/game-time.js";
 import {STORAGE_KEY,loadStoredGame,saveStoredGame} from "./js/storage.js";
 import {formatStopDistance,stopLocationState as deriveStopLocationState} from "./js/gps.js";
@@ -88,9 +89,12 @@ const {profileRecord,playerLabel,avatarUrl,paintAvatar,populateProfileSettings,p
   getState:()=>state,getEventsExpanded:()=>profileEventsExpanded,setPendingProfileAvatar:value=>{pendingProfileAvatar=value},
   STOPS,STOP_BY_ID,PLAYERS,holdingScore,stopCountdown,escapeStopText,$
 });
-function openScreen(name){
+const screenScroll=new Map();
+function openScreen(name,{historyMode="push",restore=false}={}){
+  if(!$( "screen-"+name)&&name!=="map")name="map";
+  if(activeScreen!=="map")screenScroll.set(activeScreen,$("sheet").scrollTop);
   closeScoreDetailIfOpen();
-  if(name==="stop"&&activeScreen!=="stop")stopReturn=activeScreen;
+  if(name==="stop"&&activeScreen!=="stop"&&historyMode!=="none")stopReturn=activeScreen;
   activeScreen=name;
   if(name!=="stop")tabMemory[tabFor(name)]=name;
   const visible=name!=="map";
@@ -108,7 +112,10 @@ function openScreen(name){
   if(name==="profile-settings")populateProfileSettings();
   if(visible){$("map-search-panel").hidden=true;$("map-search-toggle").setAttribute("aria-expanded","false");}
   if(visible)$("sheet").scrollTop=0;
+  const hash=encodeGameRoute({screen:name,player:otherPlayer,stop:selectedStop,returnScreen:stopReturn});
+  if(historyMode!=="none"&&location.hash!==hash)history[historyMode==="replace"?"replaceState":"pushState"](null,"",location.pathname+location.search+hash);
   render();
+  if(visible&&(restore||screenScroll.has(name)))$("sheet").scrollTop=screenScroll.get(name)||0;
 }
 function note(t){$("message").textContent=t}
 function closeScoreDetailIfOpen(){if(!$("score-dialog-overlay").hidden)closeScoreDetail();if(!$("history-dialog-overlay").hidden)closeHistoryDetail()}
@@ -352,7 +359,18 @@ $("maintain").onclick=()=>doGpsAction("maintain");
 $("daily-visit").onclick=()=>doGpsAction("visit");
 $("reset").onclick=()=>{if(!confirm("Opravdu resetovat testovací data linky 22?"))return;localStorage.removeItem(STORAGE);state=init(true);persist();selectedStop=null;note("Test byl vynulován.");openScreen("profile")};
 gpsController=createGpsController({map,maplibregl,render,note,$});
-window.addEventListener("storage",e=>{if(e.key===STORAGE){state=load();render()}});render();
+window.addEventListener("storage",e=>{if(e.key===STORAGE){state=load();render()}});
+function restoreRoute(){
+ const r=decodeGameRoute(location.hash);
+ otherPlayer=PLAYERS.some(p=>p.id===r.player)?r.player:null;
+ selectedStop=STOP_BY_ID.has(r.stop)?r.stop:null;selectedPlatform=null;confirmingCapture=false;stopReturn=r.returnScreen;
+ if(r.screen==="player"&&!otherPlayer)r.screen="ranking";
+ if(r.screen==="stop"&&!selectedStop)r.screen="map";
+ if(stopReturn==="player"&&!otherPlayer)stopReturn="ranking";
+ openScreen(r.screen,{historyMode:"none",restore:true});
+}
+window.addEventListener("popstate",restoreRoute);
+restoreRoute();
 setInterval(()=>{
   if(activeScreen==="stop"&&selectedStop){
     const record=state.stops[selectedStop];
