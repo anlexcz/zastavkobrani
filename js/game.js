@@ -27,7 +27,7 @@ function init(withSeed=true){
  events.sort((a,b)=>Date.parse(b.at)-Date.parse(a.at));
  return {version:3,selected:"p1",stops,ledger,events,visits:{},lastClosedDay:addDays(day,-1)};
 }
-function award(player,amount,type,day=gameDay()){getState().ledger.push({player,amount,type,day,at:new Date().toISOString()})}
+function award(player,amount,type,day=gameDay(),stopId=null){getState().ledger.push({player,amount,type,day,at:new Date().toISOString(),...(stopId?{stopId}:{})})}
 function captureScore(s,neutral=false){return captureBreakdown(s,{bonuses:ACTIVE_SCORE_BONUSES,neutral}).total}
 function holdingScore(s,record=null,day=gameDay()){return holdingBreakdown(s,{ownerRecord:record,gameDay:day,diffDays,bonuses:ACTIVE_SCORE_BONUSES}).total}
 function closeDays(){
@@ -38,7 +38,7 @@ function closeDays(){
    const age=diffDays(d,item.anchor);
    if(age>0&&age<=14){
     const income=holdingScore(stop,item,d);
-    if(income>0)award(item.owner,income,"holding",d);
+    if(income>0)award(item.owner,income,"holding",d,stop.id);
    }
    if(age>=14&&holdingScore(stop,item,d)===0){
     getState().events.unshift({action:"expire",stopId:stop.id,day:d,at:new Date().toISOString(),previousOwner:item.owner,text:stop.name+": vlastnictví vypršelo"});

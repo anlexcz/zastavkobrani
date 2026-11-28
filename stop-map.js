@@ -292,6 +292,7 @@ function installStopMap(map, territories, showTerritory, players=[], ownership={
       "circle-opacity":.96,
       "circle-stroke-color":"#e2e4e5",
       "circle-stroke-width":["interpolate",["linear"],["zoom"],9,.35,12,.65,15,1.25,18,1.4]}});
+  map.addLayer({id:"game-daily-ring",type:"circle",source:"game-stop-points",filter:["==",["get","territoryId"],""],paint:{"circle-color":"rgba(0,0,0,0)","circle-stroke-color":"#e7bf63","circle-stroke-width":2,"circle-radius":["interpolate",["linear"],["zoom"],0,5,12,8,16,10,20,11]}});
   map.addLayer({id:"game-cluster",type:"symbol",source:"game-territories",
     filter:["has","point_count"],minzoom:CLUSTER_VISIBLE_ZOOM,maxzoom:PLATFORM_ZOOM,
     layout:{"icon-image":ringIconExpression(players),
@@ -377,4 +378,15 @@ function refreshStopMapColors(map,ownership,players,selectedId) {
   for(const id of ["game-territory","game-platform","game-platform-metro"])
     map.setPaintProperty(id,"circle-stroke-width",
       ["case",["==",["get","territoryId"],selectedId||""],3,1.6]);
+}
+
+let lastHighlightKey=null;
+function refreshGameHighlights(map,ownership,player,filter,visited,dailyId){
+ if(!map.getLayer("game-daily-ring"))return;
+ const matching=territoryPoints.filter(s=>{const owner=ownership[s.id]?.owner;return filter==="all"||filter==="mine"&&owner===player||filter==="neutral"&&!owner||filter==="others"&&!!owner&&owner!==player;}).filter(s=>!visited||visited.has(s.id)).map(s=>s.id);
+ const key=JSON.stringify([matching,dailyId,filter,!!visited]);if(key===lastHighlightKey)return;lastHighlightKey=key;
+ const expr=["in",["get","territoryId"],["literal",matching]];
+ for(const id of ["game-territory","game-platform","game-platform-metro"])if(map.getLayer(id))map.setPaintProperty(id,"circle-opacity",["case",expr,1,.22]);
+ if(map.getLayer("game-strategic-fill"))map.setPaintProperty("game-strategic-fill","fill-opacity",["case",expr,.20,.045]);
+ map.setFilter("game-daily-ring",["==",["get","territoryId"],dailyId||""]);
 }

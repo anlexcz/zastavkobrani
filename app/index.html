@@ -11,7 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <link rel="stylesheet" href="design-system.css?v=2">
-<link rel="stylesheet" href="style.css?v=ui-v7">
+<link rel="stylesheet" href="style.css?v=ui-v8">
 </head>
 <body>
 <div id="map" role="region" aria-label="Mapa herních zastávek Prahy"></div><div id="map-error" class="map-error" hidden></div>
@@ -22,7 +22,7 @@
 <button id="map-search-toggle" class="map-search-toggle" aria-label="Vyhledat zastávku" aria-expanded="false"><svg data-ui-icon="search" viewBox="0 0 24 24" aria-hidden="true"></svg></button><div id="map-search-panel" class="map-search-panel" hidden><label for="map-search-input">Vyhledat zastávku</label><input id="map-search-input" type="search" autocomplete="off" placeholder="Název zastávky"><div id="map-search-results"></div></div>
 <button id="gps-toggle" class="gps-toggle" type="button" aria-pressed="false" title="Zapnout GPS">◎ <span>Zapnout GPS</span></button>
 <div id="gps-status" class="gps-status" role="status" aria-live="polite" hidden></div>
-<div class="map-layer-controls">
+<div id="offline-banner" class="offline-banner" hidden>Bez připojení · herní akce nejsou dostupné</div><div class="map-layer-controls">
   <button id="map-layers-toggle" class="map-layers-toggle" type="button" aria-expanded="false" aria-controls="map-layers-panel" aria-label="Nastavit vrstvy mapy" title="Vrstvy mapy">
     <svg data-ui-icon="layers" viewBox="0 0 24 24" aria-hidden="true"></svg>
   </button>
@@ -30,7 +30,7 @@
     <strong>Vrstvy mapy</strong>
     <label><input type="checkbox" id="layer-stops" checked><span>Zastávky</span></label>
     <label><input type="checkbox" id="layer-polygons" checked><span>Barevná území</span></label>
-    <small>Území jsou pouze vizuální, ne GPS dosah.</small>
+    <label>Vlastnictví<select id="owner-filter"><option value="all">Všechny</option><option value="mine">Moje</option><option value="neutral">Neutrální</option><option value="others">Ostatních</option></select></label><label><input id="visited-filter" type="checkbox">Zvýraznit navštívené</label><small>Území jsou pouze vizuální, ne GPS dosah.</small>
   </div>
 </div>
 <div class="test-label">TESTOVACÍ DATA LINKY 22 · LOKÁLNÍ DEMO</div>
@@ -65,7 +65,7 @@
       <span class="daily-time-label">Do konce herního dne</span><strong class="daily-countdown" id="challenge-countdown">—</strong>
       <p id="challengeinfo" class="daily-status"></p><button id="show-challenge" class="primary">Ukázat na mapě</button>
     </div>
-    <div class="daily-history-head"><h2>Historie zastávek dne</h2><small>Posledních 30 dní</small></div>
+    <div class="daily-streak" id="daily-streak"></div><div class="daily-history-head"><h2>Historie zastávek dne</h2><small>Posledních 30 dní</small></div>
     <div id="daily-history" class="daily-history"></div><button id="daily-history-expand" type="button" class="history-expand" aria-expanded="false">Zobrazit celou historii</button>
   </div>
   <div class="screen" id="screen-ranking" hidden>
@@ -95,10 +95,10 @@
     </div>
 
   </div>
-  <div class="screen" id="screen-profile-stops" hidden><button type="button" class="settings-back" data-open-screen="profile">‹ Zpět na profil</button><h1 id="owned-title">Moje zastávky</h1><div class="owned-list" id="owned-list"></div></div>
+  <div class="screen" id="screen-profile-stops" hidden><button type="button" class="settings-back" data-open-screen="profile">‹ Zpět na profil</button><h1 id="owned-title">Moje zastávky</h1><label class="game-filter">Řazení<select id="owned-sort"><option value="expiry">Naléhavost</option><option value="name">Název</option><option value="income">Denní výnos</option></select></label><div class="owned-list" id="owned-list"></div></div>
   <div class="screen" id="screen-profile-districts" hidden><button type="button" class="settings-back" data-open-screen="profile">‹ Zpět na profil</button><h1>Moje čtvrti</h1><p class="empty-state">Připravujeme skutečné hranice čtvrtí a jejich přiřazení k zastávkám. Zatím nelze vypočítat průzkum ani vládu.</p></div>
   <div class="screen" id="screen-profile-statistics" hidden><button type="button" class="settings-back" data-open-screen="profile">‹ Zpět na profil</button><h1>Statistiky</h1><div class="ranking-switch" role="group" aria-label="Období statistik"><button data-stat-period="30" aria-pressed="true">30 dní</button><button data-stat-period="all" aria-pressed="false">Celkem</button></div><div id="profile-statistics" class="profile-links"></div></div>
-  <div class="screen" id="screen-profile-activity" hidden><button type="button" class="settings-back" data-open-screen="profile">‹ Zpět na profil</button><h1 id="player-events-title">Moje události</h1><p id="events-count" class="muted"></p><div id="events" class="events"></div><button type="button" id="events-expand" class="history-expand" aria-expanded="false">Zobrazit další události</button></div>
+  <div class="screen" id="screen-profile-activity" hidden><button type="button" class="settings-back" data-open-screen="profile">‹ Zpět na profil</button><h1 id="player-events-title">Moje události</h1><p id="events-count" class="muted"></p><label class="game-filter">Typ události<select id="events-filter"><option value="all">Vše</option><option value="actions">Moje akce</option><option value="income">Denní výnos</option><option value="loss">Ztráty</option></select></label><div id="events" class="events"></div><button type="button" id="events-expand" class="history-expand" aria-expanded="false">Zobrazit další události</button></div>
   <div class="screen" id="screen-profile-help" hidden><button type="button" class="settings-back" data-open-screen="profile">‹ Zpět na profil</button><h1>Nápověda</h1><div class="profile-links"><a href="jak-hrat/">Jak hrát ›</a><a href="jak-hrat/pravidla/">Pravidla ›</a><a href="faq/">FAQ ›</a><a href="kontakt/">Kontakt ›</a></div></div>
   <div class="screen" id="screen-player" hidden><button type="button" class="settings-back" data-open-screen="ranking">‹ Zpět na žebříček</button><div class="profile-intro"><div id="other-avatar" class="profile-avatar"></div><div><h1 id="other-name">Hráč</h1><span id="other-handle" class="muted"></span></div></div><div id="other-stats" class="profile-links"></div><h2>Vlastněné zastávky</h2><div id="other-stops" class="owned-list"></div><h2>Ovládané čtvrti</h2><p class="muted">Data čtvrtí zatím nejsou připravena.</p></div>
   <div class="screen" id="screen-profile-settings" hidden>
@@ -148,5 +148,5 @@
 <script src="scoring.js?v=ui-v3"></script>
 <script src="js/icons.js?v=1"></script>
 <script src="stop-card.js?v=ui-v3"></script>
-<script type="module" src="app.js?v=ui-v6"></script>
+<script type="module" src="app.js?v=ui-v8"></script>
 </body></html>

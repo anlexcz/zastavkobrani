@@ -1,4 +1,5 @@
 "use strict";
+import {dailyStreak,visitedStops} from "./js/progress.js";
 import {encodeGameRoute,decodeGameRoute} from "./js/navigation.js";
 import {gameDay,addDays,diffDays,pragueBoundaryUtc,nextGameBoundary} from "./js/game-time.js";
 import {STORAGE_KEY,loadStoredGame,saveStoredGame} from "./js/storage.js";
@@ -203,7 +204,7 @@ function closeHistoryDetail(){
  historyReturnFocus=null;
 }
 function stopHistoryEntries(stop){
- return state.events.filter(e=>e.stopId===stop.id&&diffDays(gameDay(),e.day)>=0&&diffDays(gameDay(),e.day)<30&&["capture","maintain","expire"].includes(e.action))
+ return state.events.filter(e=>e.stopId===stop.id&&diffDays(gameDay(),e.day)>=0&&diffDays(gameDay(),e.day)<30&&["capture","expire"].includes(e.action))
   .sort((a,b)=>Date.parse(b.at)-Date.parse(a.at));
 }
 function renderStopHistory(stop){
@@ -250,18 +251,21 @@ const {renderStop}=createStopScreen({
 });
 function render(){closeDays();const p=PLAYERS.find(x=>x.id===state.selected);$("player").value=state.selected;$("profile").textContent=playerLabel(p.id);$("remaining").textContent=remaining()+"/"+RULES.dailyAP;$("ap-map").textContent=remaining()+"/"+RULES.dailyAP;$("owned").textContent=owned();$("points").textContent=total(p.id,30);$("clock").textContent="Herní den "+gameDay()+" · uzávěrka 03:00";$("profile-handle").textContent="Testovací účet · "+p.name;paintAvatar($("profile-avatar"),p.id);
 refreshStopMapColors(map,state.stops,PLAYERS,selectedStop);
+refreshGameHighlights(map,state.stops,state.selected,$("owner-filter").value,$("visited-filter").checked?visitedStops(state,state.selected):null,visitsFor(state.selected)?null:challengeStop()?.id);
 const {stop:s,locationState}=renderStop();
 const challenge=challengeStop(),done=visitsFor(state.selected);
 $("challenge").textContent=challenge?.name||"Není dostupná";
+const streak=dailyStreak(state.visits,state.selected,gameDay());$("daily-streak").innerHTML='<strong>'+streak+' dní v sérii</strong><span>64 zastávkobodů za splnění · bonus 256 každých 7 dní</span><div class="streak-track">'+Array.from({length:7},(_,i)=>'<i class="'+(i<(streak?((streak-1)%7)+1:0)?"is-done":"")+'"></i>').join("")+'</div>';
 $("challengeinfo").textContent=done?"Dnes splněno":"Zatím nesplněno";
 $("challengeinfo").classList.toggle("is-done",done);
 $("challenge-countdown").textContent=stopCountdown(nextGameBoundary());
 $("show-challenge").disabled=!challenge;
 const isDailyStop=!!s&&s.id===challenge?.id;
 $("daily-stop-action").hidden=!isDailyStop;
-$("daily-visit").disabled=!isDailyStop||done||!locationState.ok||gameActions?.isBusy();
+$("daily-visit").disabled=navigator.onLine===false||!isDailyStop||done||!locationState.ok||gameActions?.isBusy();
 $("daily-visit").textContent=done?"Dnes splněno":"Splnit zastávku dne";
 $("daily-stop-hint").textContent=done?"Návštěva byla zaznamenána.":"Samostatná GPS návštěva · 0 AP";
+$("offline-banner").hidden=navigator.onLine!==false;if(navigator.onLine===false){$("capture").disabled=true;$("maintain").disabled=true;$("confirm-yes").disabled=true;}
 if(activeScreen==="daily")renderDailyHistory();
 renderRanking();
 if(activeScreen==="profile"||activeScreen==="profile-stops")renderOwnedStops();
@@ -280,7 +284,7 @@ function metricRow(label,value){return '<div class="profile-metric"><span>'+esca
 function renderStatistics(){
  const id=state.selected,days=statPeriod==="30"?30:null;
  const entries=state.ledger.filter(x=>x.player===id&&(!days||diffDays(gameDay(),x.day)>=0&&diffDays(gameDay(),x.day)<days));
- $("profile-statistics").innerHTML=metricRow("Zastávkobody celkem",total(id,days))+["capture","holding","daily","streak"].map((kind,i)=>metricRow(["Obsazování","Denní výnos","Zastávka dne","Série"][i],entries.filter(e=>e.type===kind).reduce((sum,e)=>sum+e.amount,0))).join("")+metricRow("Aktuálně vlastněné zastávky",owned());
+ $("profile-statistics").innerHTML=metricRow("Zastávkobody celkem",total(id,days))+["capture","holding","daily","streak"].map((kind,i)=>metricRow(["Obsazování","Denní výnos","Zastávka dne","Série"][i],entries.filter(e=>e.type===kind).reduce((sum,e)=>sum+e.amount,0))).join("")+metricRow("Aktuálně vlastněné zastávky",owned())+metricRow("Navštívené zastávky",visitedStops(state,id).size+" / "+STOPS.length);
  for(const b of document.querySelectorAll("[data-stat-period]"))b.setAttribute("aria-pressed",String(b.dataset.statPeriod===statPeriod));
 }
 for(const b of document.querySelectorAll("[data-stat-period]"))b.onclick=()=>{statPeriod=b.dataset.statPeriod;renderStatistics()};
@@ -299,6 +303,9 @@ $("map-search-input").oninput=()=>{const q=normalizeSearch($("map-search-input")
 $("map-search-results").onclick=e=>{const b=e.target.closest("[data-result-stop]");if(!b)return;const s=STOP_BY_ID.get(b.dataset.resultStop);if(!s)return;$("map-search-panel").hidden=true;$("map-search-toggle").setAttribute("aria-expanded","false");map.flyTo({center:[s.lon,s.lat],zoom:15.4});selectedStop=s.id;selectedPlatform=null;confirmingCapture=false;openScreen("stop")};
 $("profile-edit").onclick=()=>openScreen("profile-settings");
 $("settings-back").onclick=()=>openScreen("profile");
+$("owned-sort").onchange=renderOwnedStops;$("events-filter").onchange=renderProfileEvents;
+$("owner-filter").onchange=render;$("visited-filter").onchange=render;
+window.addEventListener("online",render);window.addEventListener("offline",render);
 $("events-expand").onclick=()=>{profileEventsExpanded=!profileEventsExpanded;renderProfileEvents()};
 $("owned-list").addEventListener("click",event=>{
  const btn=event.target.closest("[data-owned-stop]");

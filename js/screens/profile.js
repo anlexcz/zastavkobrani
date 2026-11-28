@@ -1,4 +1,5 @@
 "use strict";
+import {dailyIncomeGroups} from "../progress.js";
 import {gameDay,diffDays,addDays,pragueBoundaryUtc} from "../game-time.js";
 // Funkce profilu čtou sdílený stav, ale neprovádějí herní operace.
 export function createProfileScreen({getState,getEventsExpanded,setPendingProfileAvatar,STOPS,STOP_BY_ID,PLAYERS,holdingScore,stopCountdown,escapeStopText,$}){
@@ -38,7 +39,7 @@ function profileOwnedItems(){
  }).sort((a,b)=>a.expiry-b.expiry||a.stop.name.localeCompare(b.stop.name,"cs"));
 }
 function renderOwnedStops(){
- const items=profileOwnedItems();$("owned-count").textContent=String(items.length);
+ const items=profileOwnedItems();const sort=$("owned-sort")?.value;if(sort==="name")items.sort((a,b)=>a.stop.name.localeCompare(b.stop.name,"cs"));if(sort==="income")items.sort((a,b)=>b.income-a.income||a.expiry-b.expiry);$("owned-count").textContent=String(items.length);
  $("owned-list").innerHTML=items.length?items.map(x=>{
   const urgency=x.decline?(x.daysLeft<=3?"is-urgent":"is-declining"):"";
   const status=x.protectedNow?"Ochrana "+stopCountdown(new Date(x.protectedUntil).toISOString()):
@@ -54,16 +55,21 @@ function playerEventEntries(){
   .sort((a,b)=>Date.parse(b.at)-Date.parse(a.at));
 }
 function renderProfileEvents(){
- const entries=playerEventEntries(),shown=getEventsExpanded()?entries:entries.slice(0,5);
+ const filter=$("events-filter")?.value||"all",id=getState().selected;
+ const entries=playerEventEntries().filter(e=>filter==="all"||(filter==="loss"?e.previousOwner===id:filter==="actions"?e.player===id:false));
+ const incomes=["all","income"].includes(filter)?dailyIncomeGroups(getState().ledger,id,gameDay()):[];
+ const grouped=new Map();for(const e of entries){const g=grouped.get(e.day)||{events:[],income:null};g.events.push(e);grouped.set(e.day,g);}for(const income of incomes){const g=grouped.get(income.day)||{events:[],income:null};g.income=income;grouped.set(income.day,g);}
+ const days=[...grouped.keys()].sort().reverse();const shown=getEventsExpanded()?days:days.slice(0,5);
  $("events-count").textContent=entries.length+" za 30 dní";
- $("events").innerHTML=shown.length?shown.map(e=>{
+ const eventHtml=e=>{
   const d=new Intl.DateTimeFormat("cs-CZ",{timeZone:"Europe/Prague",day:"numeric",month:"numeric",hour:"2-digit",minute:"2-digit"}).format(new Date(e.at));
   const action=e.previousOwner===getState().selected?(e.action==="expire"?"Zánik vlastnictví":"Ztráta zastávky"):e.action==="capture"?(e.previousOwner?"Převzetí":"Obsazení"):e.action==="maintain"?"Údržba":e.action==="visit"?"Zastávka dne":"Událost";
   const stop=STOP_BY_ID.get(e.stopId);
   return '<div class="player-event"><div><strong>'+escapeStopText(action)+(stop?" · "+escapeStopText(stop.name):"")+'</strong><small>'+d+'</small></div><span>'+ (e.player===getState().selected&&Number.isFinite(e.points)?"+"+e.points+" b.":"") +'</span></div>';
- }).join(""):'<p class="empty-state">Zatím žádné zaznamenané události.</p>';
- $("events-expand").hidden=entries.length<=5;
- $("events-expand").textContent=getEventsExpanded()?"Zobrazit méně":"Zobrazit další události ("+entries.length+")";
+ };
+ $("events").innerHTML=shown.length?shown.map(day=>{const g=grouped.get(day),income=g.income;return '<section class="activity-day"><h2>'+escapeStopText(day)+'</h2>'+(income?'<details class="income-detail"><summary>Denní výnos · +'+income.total+'</summary>'+income.items.map(x=>'<div class="profile-metric"><span>'+escapeStopText(STOP_BY_ID.get(x.stopId)?.name||"Starší záznam bez ID zastávky")+'</span><strong>+'+x.amount+'</strong></div>').join("")+'</details>':"")+g.events.map(eventHtml).join("")+'</section>';}).join(""):'<p class="empty-state">Zatím žádné zaznamenané události.</p>';
+ $("events-expand").hidden=days.length<=5;
+ $("events-expand").textContent=getEventsExpanded()?"Zobrazit méně":"Zobrazit další dny ("+days.length+")";
  $("events-expand").setAttribute("aria-expanded",String(getEventsExpanded()));
 }
 
