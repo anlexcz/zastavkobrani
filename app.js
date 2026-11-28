@@ -1,4 +1,5 @@
 "use strict";
+import {loadMapView,saveMapView,normalizeMapFilters} from "./js/map-preferences.js";
 import {dailyStreak,visitedStops} from "./js/progress.js";
 import {encodeGameRoute,decodeGameRoute} from "./js/navigation.js";
 import {gameDay,addDays,diffDays,pragueBoundaryUtc,nextGameBoundary} from "./js/game-time.js";
@@ -32,12 +33,15 @@ function persist(){saveStoredGame(state)}
 let gpsController=null;
 function stopLocationState(stop){return deriveStopLocationState(stop,gpsController?.snapshot())}
 // MapLibre + vlastní vektorový styl. Herní stav zůstává oddělený od podkladu.
+const savedMapView=loadMapView(localStorage);
 const map = new maplibregl.Map({
   container:"map",style:"https://tiles.openfreemap.org/styles/liberty",
-  center:[14.44,50.085],zoom:10.65,attributionControl:true
+  ...(savedMapView||{center:[14.44,50.085],zoom:10.65}),bearing:0,pitch:0,dragRotate:false,pitchWithRotate:false,attributionControl:true
 });
 if(matchMedia("(min-width:760px)").matches)map.addControl(new maplibregl.NavigationControl({showCompass:false}),"bottom-right");
 let selectedPlatform=null;
+map.touchZoomRotate?.disableRotation();
+map.on("moveend",()=>{const c=map.getCenter();saveMapView(localStorage,[c.lng,c.lat],map.getZoom());});
 map.on("load",()=>{
   installStopMap(map,STOPS,(id,pointId)=>{
     selectedStop=id;selectedPlatform=pointId;
@@ -190,7 +194,7 @@ $("show-challenge").onclick=()=>{
   const s=challengeStop();
   if(!s)return;
   openScreen("map");
-  map.flyTo({center:[s.lon,s.lat],zoom:15.3,essential:true});
+  gpsController?.stopFollowing();map.flyTo({center:[s.lon,s.lat],zoom:15.3,essential:true});
 };
 // Výběr GIS vrstvy neuzavírá detail.
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("map-search-panel").hidden){$("map-search-panel").hidden=true;$("map-search-toggle").setAttribute("aria-expanded","false")}else openScreen(activeScreen==="stop"?stopReturn:"map")}});
@@ -258,7 +262,7 @@ $("challenge").textContent=challenge?.name||"Není dostupná";
 const streak=dailyStreak(state.visits,state.selected,gameDay());$("daily-streak").innerHTML='<strong>'+streak+' dní v sérii</strong><span>64 zastávkobodů za splnění · bonus 256 každých 7 dní</span><div class="streak-track">'+Array.from({length:7},(_,i)=>'<i class="'+(i<(streak?((streak-1)%7)+1:0)?"is-done":"")+'"></i>').join("")+'</div>';
 $("challengeinfo").textContent=done?"Dnes splněno":"Zatím nesplněno";
 $("challengeinfo").classList.toggle("is-done",done);
-$("challenge-countdown").textContent=stopCountdown(nextGameBoundary());
+$("challenge-countdown").dataset.until=nextGameBoundary();$("challenge-countdown").textContent=stopCountdown(nextGameBoundary());
 $("show-challenge").disabled=!challenge;
 const isDailyStop=!!s&&s.id===challenge?.id;
 $("daily-stop-action").hidden=!isDailyStop;
@@ -300,11 +304,14 @@ $("other-stops").addEventListener("click",e=>{const b=e.target.closest("[data-ot
 const normalizeSearch=s=>String(s).normalize("NFD").replace(/\p{M}/gu,"").toLocaleLowerCase("cs");
 $("map-search-toggle").onclick=()=>{const panel=$("map-search-panel");panel.hidden=!panel.hidden;$("map-search-toggle").setAttribute("aria-expanded",String(!panel.hidden));if(!panel.hidden)$("map-search-input").focus()};
 $("map-search-input").oninput=()=>{const q=normalizeSearch($("map-search-input").value.trim());$("map-search-results").innerHTML=q?STOPS.filter(s=>normalizeSearch(s.name).includes(q)).slice(0,30).map(s=>'<button data-result-stop="'+escapeStopText(s.id)+'">'+escapeStopText(s.name)+'</button>').join("")||'<p>Žádné výsledky.</p>':""};
-$("map-search-results").onclick=e=>{const b=e.target.closest("[data-result-stop]");if(!b)return;const s=STOP_BY_ID.get(b.dataset.resultStop);if(!s)return;$("map-search-panel").hidden=true;$("map-search-toggle").setAttribute("aria-expanded","false");map.flyTo({center:[s.lon,s.lat],zoom:15.4});selectedStop=s.id;selectedPlatform=null;confirmingCapture=false;openScreen("stop")};
+$("map-search-results").onclick=e=>{const b=e.target.closest("[data-result-stop]");if(!b)return;const s=STOP_BY_ID.get(b.dataset.resultStop);if(!s)return;$("map-search-panel").hidden=true;$("map-search-toggle").setAttribute("aria-expanded","false");gpsController?.stopFollowing();map.flyTo({center:[s.lon,s.lat],zoom:15.4});selectedStop=s.id;selectedPlatform=null;confirmingCapture=false;openScreen("stop")};
 $("profile-edit").onclick=()=>openScreen("profile-settings");
 $("settings-back").onclick=()=>openScreen("profile");
 $("owned-sort").onchange=renderOwnedStops;$("events-filter").onchange=renderProfileEvents;
-$("owner-filter").onchange=render;$("visited-filter").onchange=render;
+let mapFilters;try{mapFilters=normalizeMapFilters(JSON.parse(localStorage.getItem("zastavkobrani-map-filters-v1")));}catch{mapFilters=normalizeMapFilters(null);}
+$("owner-filter").value=mapFilters.owner;$("visited-filter").checked=mapFilters.visited;
+function updateMapFilters(){try{localStorage.setItem("zastavkobrani-map-filters-v1",JSON.stringify({owner:$("owner-filter").value,visited:$("visited-filter").checked}));}catch{}render();}
+$("owner-filter").onchange=updateMapFilters;$("visited-filter").onchange=updateMapFilters;
 window.addEventListener("online",render);window.addEventListener("offline",render);
 $("events-expand").onclick=()=>{profileEventsExpanded=!profileEventsExpanded;renderProfileEvents()};
 $("owned-list").addEventListener("click",event=>{
@@ -313,7 +320,7 @@ $("owned-list").addEventListener("click",event=>{
  const stop=STOP_BY_ID.get(btn.dataset.ownedStop);
  if(!stop)return;
  selectedStop=stop.id;selectedPlatform=null;confirmingCapture=false;
- map.flyTo({center:[stop.lon,stop.lat],zoom:15.4,essential:true});
+ gpsController?.stopFollowing();map.flyTo({center:[stop.lon,stop.lat],zoom:15.4,essential:true});
  openScreen("stop");
 });
 $("profile-form").addEventListener("submit",event=>{
@@ -395,5 +402,9 @@ setInterval(()=>{
  if(activeScreen==="daily")$("challenge-countdown").textContent=stopCountdown(nextGameBoundary());
  if(activeScreen==="stop"&&selectedStop){const e=$("stopdetail").querySelector("[data-expiry-countdown]");if(e)e.textContent=stopExpiryCountdown(e.dataset.expiryCountdown);}
 },1000);
-setInterval(()=>{render()},5000);
+const timePopover=$("time-popover");
+document.addEventListener("click",e=>{const target=e.target.closest(".countdown-trigger");if(!target){if(!e.target.closest("#time-popover"))timePopover.hidden=true;return;}const until=target.dataset.until||target.dataset.protectionCountdown||target.dataset.expiryCountdown;const timestamp=Date.parse(until);if(!Number.isFinite(timestamp))return;timePopover.textContent=new Intl.DateTimeFormat("cs-CZ",{timeZone:"Europe/Prague",dateStyle:"medium",timeStyle:"medium"}).format(new Date(timestamp));timePopover.hidden=false;const r=target.getBoundingClientRect();timePopover.style.left=Math.max(8,Math.min(r.left,innerWidth-timePopover.offsetWidth-8))+"px";timePopover.style.top=Math.max(8,Math.min(r.bottom+6,innerHeight-timePopover.offsetHeight-8))+"px";});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")timePopover.hidden=true;});
+setInterval(()=>{if(!document.hidden)render()},5000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)render();});
 

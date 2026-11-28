@@ -11,7 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <link rel="stylesheet" href="design-system.css?v=2">
-<link rel="stylesheet" href="style.css?v=ui-v8">
+<link rel="stylesheet" href="style.css?v=ui-v9">
 </head>
 <body>
 <div id="map" role="region" aria-label="Mapa herních zastávek Prahy"></div><div id="map-error" class="map-error" hidden></div>
@@ -62,7 +62,7 @@
   <div class="screen" id="screen-daily" hidden>
     <div class="eyebrow">Denní výzva</div><h1>Zastávka dne</h1>
     <div class="daily-feature"><div class="daily-feature-label">Dnešní zastávka</div><h2 id="challenge"></h2>
-      <span class="daily-time-label">Do konce herního dne</span><strong class="daily-countdown" id="challenge-countdown">—</strong>
+      <span class="daily-time-label">Do konce herního dne</span><button type="button" class="daily-countdown countdown-trigger" id="challenge-countdown">—</button>
       <p id="challengeinfo" class="daily-status"></p><button id="show-challenge" class="primary">Ukázat na mapě</button>
     </div>
     <div class="daily-streak" id="daily-streak"></div><div class="daily-history-head"><h2>Historie zastávek dne</h2><small>Posledních 30 dní</small></div>
@@ -148,5 +148,5 @@
 <script src="scoring.js?v=ui-v3"></script>
 <script src="js/icons.js?v=1"></script>
 <script src="stop-card.js?v=ui-v3"></script>
-<script type="module" src="app.js?v=ui-v8"></script>
-</body></html>
+<script type="module" src="app.js?v=ui-v9"></script>
+<div id="time-popover" role="status" hidden></div></body></html>

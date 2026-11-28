@@ -14,19 +14,11 @@ function escapeStopText(value){
   })[ch]);
 }
 function stopCountdown(until,now=Date.now()){
-  const ms=Math.max(0,Date.parse(until)-now);
-  const seconds=Math.ceil(ms/1000);
-  const hours=Math.floor(seconds/3600);
-  const minutes=Math.floor((seconds%3600)/60);
-  const sec=seconds%60;
-  return String(hours).padStart(2,"0")+":"+String(minutes).padStart(2,"0")+":"+String(sec).padStart(2,"0");
+ const delta=Date.parse(until)-now;if(!Number.isFinite(delta))return "—";
+ const s=Math.max(0,Math.ceil(delta/1000)),d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);
+ return d?d+" d "+h+" h":h?h+" h "+m+" min":m?m+" min "+s%60+" s":s+" s";
 }
-function stopExpiryCountdown(until,now=Date.now()){
- const seconds=Math.max(0,Math.ceil((Date.parse(until)-now)/1000));
- const days=Math.floor(seconds/86400),rest=seconds%86400;
- const time=String(Math.floor(rest/3600)).padStart(2,"0")+":"+String(Math.floor(rest%3600/60)).padStart(2,"0")+":"+String(rest%60).padStart(2,"0");
- return days?days+" "+(days===1?"den":days>=2&&days<=4?"dny":"dní")+" "+time:time;
-}
+function stopExpiryCountdown(until,now=Date.now()){return stopCountdown(until,now);}
 function stopCardHtml({stop,record,owner,selectedPlayer,gameDay,diffDays,captureScore,holdingScore,expiresAt=null,now=Date.now()}){
   if(!stop)return "";
   const hasOwner=!!record?.owner;
@@ -41,7 +33,7 @@ function stopCardHtml({stop,record,owner,selectedPlayer,gameDay,diffDays,capture
   const points=stop.cats.length?captureScore(stop):"—";
   const yieldPoints=stop.cats.length?holdingScore(stop):"—";
   return '<div class="stop-card">'+
-    (locked?'<div class="stop-protection"><span>Ochrana území</span><strong data-protection-countdown="'+escapeStopText(record.protectedUntil)+'">'+stopCountdown(record.protectedUntil,now)+'</strong></div>':'')+
+    (locked?'<div class="stop-protection"><span>Ochrana území</span><button type="button" class="countdown-trigger" data-protection-countdown="'+escapeStopText(record.protectedUntil)+'">'+stopCountdown(record.protectedUntil,now)+'</button></div>':'')+
     '<div class="stop-modes">'+modes+'</div>'+
     '<div class="stop-metrics">'+
       '<button type="button" class="stop-metric" data-score-detail="capture" aria-label="Zobrazit rozpis bodů za obsazení"><strong>'+escapeStopText(points)+pointUnit()+'</strong><span>Bodů za obsazení</span><span class="stop-metric-more" aria-hidden="true">ⓘ</span></button>'+
@@ -49,7 +41,7 @@ function stopCardHtml({stop,record,owner,selectedPlayer,gameDay,diffDays,capture
     '</div>'+
     (hasOwner?'<div class="stop-life-summary"><span>'+escapeStopText(age===1?"Den akce · bez výnosu":fullYield?"Plný denní výnos":yieldPoints>0?"Klesající výnos":"Výnos dosáhl nuly")+'</span>'+
       '<span>'+age+'. herní den vlastnictví</span></div>':'')+
-    (hasOwner&&age>=9&&expiresAt?'<div class="stop-expiry"><span>Do zániku bez údržby</span><strong data-expiry-countdown="'+escapeStopText(expiresAt)+'">'+stopExpiryCountdown(expiresAt,now)+'</strong></div>':'')+
+    (hasOwner&&age>=9&&expiresAt?'<div class="stop-expiry"><span>Do zániku bez údržby</span><button type="button" class="countdown-trigger" data-expiry-countdown="'+escapeStopText(expiresAt)+'">'+stopExpiryCountdown(expiresAt,now)+'</button></div>':'')+
 
   '</div>';
 }

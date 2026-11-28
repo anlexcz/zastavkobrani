@@ -1,7 +1,7 @@
 "use strict";
 // GPS sledování a mapové vykreslování se nedotýká herních účtů ani jejich bodů.
 export function createGpsController({map,maplibregl,render,note,$}){
-let gpsWatch=null,gpsMarker=null,gpsPosition=null,gpsPermissionDenied=false;
+let gpsWatch=null,gpsMarker=null,gpsPosition=null,gpsPermissionDenied=false,following=false;
 // Vizuální sledování GPS. Akce samostatně vyžadují nové přesné měření.
 const gpsButton=$("gps-toggle"), gpsStatus=$("gps-status");
 function gpsMessage(text) {gpsStatus.hidden=!text;gpsStatus.textContent=text;}
@@ -26,9 +26,12 @@ function drawAccuracy(){
   } else map.getSource("gps-accuracy").setData(point);
 }
 map.on("style.load",drawAccuracy);
+function setFollowing(value){following=value;gpsButton.setAttribute("aria-pressed",String(value));gpsButton.querySelector("span").textContent=value?"Ukončit sledování":"Sledovat polohu";}
+function clearMarker(){if(gpsMarker){gpsMarker.remove();gpsMarker=null;}if(map.getSource("gps-accuracy"))map.getSource("gps-accuracy").setData({type:"FeatureCollection",features:[]});}
+map.on("movestart",e=>{if(e.originalEvent&&following)setFollowing(false);});
 function disableGps(){
   if(gpsWatch!==null)navigator.geolocation.clearWatch(gpsWatch);
-  gpsWatch=null;gpsPosition=null;gpsPermissionDenied=false;render();
+  gpsWatch=null;gpsPosition=null;gpsPermissionDenied=false;setFollowing(false);render();
   if(gpsMarker){gpsMarker.remove();gpsMarker=null;}
   if(map.getSource("gps-accuracy"))map.getSource("gps-accuracy").setData({
     type:"FeatureCollection",features:[]});
@@ -38,7 +41,7 @@ function disableGps(){
 }
 function gpsError(error){
   gpsPermissionDenied=error.code===1;
-  gpsPosition=null;
+  gpsPosition=null;clearMarker();setFollowing(false);
   gpsMessage(({1:"Přístup k GPS byl zamítnut.",2:"GPS polohu nelze určit.",3:"Časový limit GPS vypršel."})[error.code]||"GPS není dostupná.");
   if(gpsWatch!==null)navigator.geolocation.clearWatch(gpsWatch);
   gpsWatch=null;
@@ -46,15 +49,14 @@ function gpsError(error){
   gpsButton.querySelector("span").textContent="Zapnout GPS";
   render();
 }
-function requestGps(){
+function requestGps(follow=true){
   gpsPermissionDenied=false;
-  if(gpsWatch!==null){render();return;}
+  if(gpsWatch!==null){if(follow){setFollowing(true);if(gpsPosition)map.jumpTo({center:[gpsPosition.lng,gpsPosition.lat]});}render();return;}
   if(!navigator.geolocation||!window.isSecureContext){
     gpsMessage("GPS vyžaduje HTTPS a podporu polohy v prohlížeči.");return;
   }
   gpsMessage("Zjišťuji polohu…");
-  gpsButton.setAttribute("aria-pressed","true");
-  gpsButton.querySelector("span").textContent="Vypnout GPS";
+  setFollowing(follow);
   gpsWatch=navigator.geolocation.watchPosition((position)=>{
     const coords=position.coords;
     gpsPosition={lng:coords.longitude,lat:coords.latitude,
@@ -63,8 +65,8 @@ function requestGps(){
     if(!gpsMarker){
       const el=document.createElement("div");el.className="gps-dot";
       gpsMarker=new maplibregl.Marker({element:el,anchor:"center"}).setLngLat([gpsPosition.lng,gpsPosition.lat]).addTo(map);
-      map.flyTo({center:[gpsPosition.lng,gpsPosition.lat],zoom:Math.max(map.getZoom(),15)});
-    }else gpsMarker.setLngLat([gpsPosition.lng,gpsPosition.lat]);
+      if(following)map.jumpTo({center:[gpsPosition.lng,gpsPosition.lat],zoom:Math.max(map.getZoom(),15)});
+    }else {gpsMarker.setLngLat([gpsPosition.lng,gpsPosition.lat]);if(following)map.jumpTo({center:[gpsPosition.lng,gpsPosition.lat]});}
     drawAccuracy();
     gpsMessage("GPS přesnost ±"+Math.round(gpsPosition.accuracy)+" m · akce kontrolují nové měření");
     render();
@@ -73,12 +75,12 @@ function requestGps(){
 }
 $("stop-request-location").onclick=()=>{
   if(gpsPermissionDenied){note("Povol polohu v nastavení oprávnění tohoto webu v prohlížeči.");}
-  requestGps();
+  requestGps(false);
 };
 gpsButton.addEventListener("click",()=>{
-  if(gpsWatch!==null){disableGps();return;}
+  if(following){setFollowing(false);return;}
   requestGps();
 });
 
-return {requestGps,disableGps,snapshot:()=>({position:gpsPosition,permissionDenied:gpsPermissionDenied,watch:gpsWatch})};
+return {requestGps,disableGps,stopFollowing:()=>setFollowing(false),snapshot:()=>({position:gpsPosition,permissionDenied:gpsPermissionDenied,watch:gpsWatch})};
 }

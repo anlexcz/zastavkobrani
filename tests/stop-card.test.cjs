@@ -28,7 +28,7 @@ test("Ochrana má viditelný odpočet nahoře a na tlačítku převzetí",()=>{
  const content=ctx.card({...args,owner:{name:"Sova"},
   record:{owner:"p2",anchor:"2026-11-19",protectedUntil:"2026-11-19T13:01:02Z"}});
  assert.match(content,/Ochrana území/);
- assert.match(content,/01:01:02/);
+ assert.match(content,/1 h 1 min/);
  assert.match(content,/data-protection-countdown/);
  assert.match(app,/Převzetí za/);
  assert.match(app,/setInterval\(\(\)=>\{/);
@@ -52,8 +52,8 @@ test("Neznámé HTML v kategorii se escapuje",()=>{
 });
 test("Odpočet správně přechází na nulu",()=>{
  const until="2026-11-19T12:00:05Z";
- assert.equal(ctx.countdown(until,Date.parse("2026-11-19T12:00:00Z")),"00:00:05");
- assert.equal(ctx.countdown(until,Date.parse("2026-11-19T12:00:10Z")),"00:00:00");
+ assert.equal(ctx.countdown(until,Date.parse("2026-11-19T12:00:00Z")),"5 s");
+ assert.equal(ctx.countdown(until,Date.parse("2026-11-19T12:00:10Z")),"0 s");
 });
 
 test("Kategorie mají existující piktogramy Temaki, ale žádné emoji",()=>{
@@ -79,7 +79,7 @@ test("Akční UI má jedno tlačítko a GPS stav bez přímého obsazení při n
  assert.match(html,/id="stop-request-location"/);
  assert.match(app,/stopLocationState\(s\)/);
  assert.match(app,/capture\.disabled=!s\|\|captureTimeBlocked\|\|!locationState\.ok/);
- assert.match(app,/const GPS_STALE_MS=15000/);
+ assert.match(app,/const GPS_STALE_MS=10000/);
 });
 
 test("Nové AP nahrazují limit tří obsazení",()=>{
@@ -128,8 +128,8 @@ test("Odpočet zániku používá dny, ochrana hodiny",()=>{
  const scope={};
  vm.runInNewContext(source+"\nthis.formatExpiry=stopExpiryCountdown",scope);
  const now=Date.parse("2026-11-10T12:00:00Z");
- assert.equal(scope.formatExpiry("2026-11-12T13:02:03Z",now),"2 dny 01:02:03");
- assert.equal(scope.formatExpiry("2026-11-10T13:00:00Z",now),"01:00:00");
+ assert.equal(scope.formatExpiry("2026-11-12T13:02:03Z",now),"2 d 1 h");
+ assert.equal(scope.formatExpiry("2026-11-10T13:00:00Z",now),"1 h 0 min");
 });
 
 test("Čtyři hlavní položky navigace mají ikony a přístupné názvy",()=>{
